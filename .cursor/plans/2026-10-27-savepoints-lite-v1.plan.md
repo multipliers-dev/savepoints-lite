@@ -6,7 +6,7 @@ todos:
     content: "PR 1: Skill + defaults.yml (no committed .agents in hub), alwaysApply rule, AGENTS/CLAUDE/README, plugin manifests, bootstrap slim + verify-protocol-files.sh"
     status: pending
   - id: adopt-and-verify
-    content: "PR 2: docs/adopt.md, templates/consumer/, skills/savepoints/verification.md manual checklists"
+    content: "PR 2: docs/adopt.md, README adoption link, templates/consumer/, skills/savepoints/verification.md manual checklists"
     status: pending
   - id: plan-closure
     content: "Docs-only PR: # Shipped, archive plan, mark plan-closure completed"
@@ -223,7 +223,7 @@ Current [`src/index.ts`](src/index.ts) is a placeholder (`console.log("ready")`)
 
 ## Implementation slices (merge-safe)
 
-Recommended **two implementation PRs** + docs closure (skill + wiring is self-contained; adoption doc can ship with slice 1 if small).
+Recommended **two implementation PRs** + docs closure. Each slice is **merge-safe on its own** — no cross-slice links to files that do not exist yet on `main`.
 
 ### Slice `protocol-core` (Open PR only)
 
@@ -232,29 +232,32 @@ Recommended **two implementation PRs** + docs closure (skill + wiring is self-co
 - `skills/savepoints/SKILL.md`, `skills/savepoints/defaults.yml`, `skills/README.md` — **not** `verification.md` (slice 2)  
 - Override template only (e.g. `.agents/savepoints-lite.template.yml` or under `templates/consumer/`) — **no** committed `.agents/savepoints-lite.yml` in this repo  
 - `.cursor/rules/savepoints-lite.mdc`  
-- `AGENTS.md`, `CLAUDE.md`, `README.md`  
+- `AGENTS.md`, `CLAUDE.md`, [`README.md`](README.md) — product overview and Notion MCP prerequisite; **do not** link to [`docs/adopt.md`](docs/adopt.md) (file does not exist until slice 2)  
 - `plugin.json`, `.cursor-plugin/*`  
 - Bootstrap slim + `scripts/verify-protocol-files.sh`  
 
 **Acceptance:**
 
 - `npm test` and `npm run typecheck` pass (verifier only)  
-- `verify-protocol-files.sh` checks protocol-core artifacts only (`SKILL.md`, `defaults.yml`, plugin manifests, rule) — **must not** require `verification.md`  
+- `verify-protocol-files.sh` checks protocol-core artifacts only (`SKILL.md`, `defaults.yml`, plugin manifests, rule) — **must not** require `verification.md` or `docs/adopt.md`  
+- Root `README.md` contains **no** reference to `docs/adopt.md` (grep / verifier assertion acceptable)  
 - No new hooks beyond existing git-hook stack  
 
 ### Slice `adopt-and-verify` (Open PR only)
 
 **Deliverables:**
 
-- [`docs/adopt.md`](docs/adopt.md)  
+- [`docs/adopt.md`](docs/adopt.md) **created in this slice** (first appearance in repo)  
+- **Same PR:** update root [`README.md`](README.md) to add an adoption section linking to [`docs/adopt.md`](docs/adopt.md) (relative path, e.g. `[docs/adopt.md](docs/adopt.md)`) — link lands in the **same commit** as the adopt doc so the slice stays merge-safe  
 - [`templates/consumer/`](templates/consumer/) (rule snippet + optional AGENTS.md fragment)  
-- [`skills/savepoints/verification.md`](skills/savepoints/verification.md) **created here** (first appearance in repo) with checklists; update `SKILL.md` to link it  
+- [`skills/savepoints/verification.md`](skills/savepoints/verification.md) **created here** with checklists; update `SKILL.md` to link it  
 
 **Acceptance:**
 
 - Adopt doc describes Cursor + Claude paths  
+- `README.md` links to `docs/adopt.md` and the target file exists in this PR  
 - Manual verification section clearly labeled  
-- Extend `verify-protocol-files.sh` to require `verification.md` in this slice (optional tightening)  
+- Extend `verify-protocol-files.sh` to require `verification.md` and `docs/adopt.md` in this slice (optional tightening)  
 
 ### `plan-closure` (docs-only, after slices merge)
 
@@ -335,7 +338,7 @@ Authority: Open PR only — implement and open the PR; do not merge.
 
 Topology: start from latest origin/main; branch represents only this slice; PR base must be main.
 
-Deliverables: per plan — skill, defaults.yml (no committed .agents in hub), override template, alwaysApply rule, AGENTS.md/CLAUDE.md, plugin manifests, bootstrap slim, verify-protocol-files.sh, README. Mark protocol-core completed in plan frontmatter in this PR.
+Deliverables: per plan — skill, defaults.yml (no committed .agents in hub), override template, alwaysApply rule, AGENTS.md/CLAUDE.md, plugin manifests, bootstrap slim, verify-protocol-files.sh, README without any docs/adopt.md link. Mark protocol-core completed in plan frontmatter in this PR.
 
 Verification: npm test && npm run typecheck. Do not create Notion test rows unless explicitly asked.
 ```
@@ -351,7 +354,7 @@ Authority: Open PR only — implement and open the PR; do not merge.
 
 Topology: start from latest origin/main; branch represents only this slice; PR base must be main.
 
-Deliverables: docs/adopt.md, templates/consumer/, skills/savepoints/verification.md. Mark adopt-and-verify completed in plan frontmatter in this PR.
+Deliverables: docs/adopt.md (new), README.md adoption link to docs/adopt.md in the same PR, templates/consumer/, skills/savepoints/verification.md. Mark adopt-and-verify completed in plan frontmatter in this PR.
 
 Verification: npm test && npm run typecheck; manual checklist documented (no required Notion writes in CI).
 ```
