@@ -30,7 +30,7 @@ isProject: false
 | documentation | [PR #6](https://github.com/multipliers-dev/savepoints-lite/pull/6) — `docs/architecture.md`, `docs/publishing.md`, adopt stub, README landing |
 | npm-publication | Operator gate — `@1.0.0` on registry ([PR #7](https://github.com/multipliers-dev/savepoints-lite/pull/7) Trusted Publishing workflow); evidence table in plan body § npm-publication (2026-10-27) |
 | adopt-and-verify | [PR #8](https://github.com/multipliers-dev/savepoints-lite/pull/8) — adopt doc, `templates/consumer/`, `skills/savepoints/verification.md`, `docs/adoption-verification-record.md`, hub self-adoption |
-| plan-closure | This archive (docs-only closure PR) |
+| plan-closure | [PR #12](https://github.com/multipliers-dev/savepoints-lite/pull/12) — this archive |
 
 **Prerequisites verified on `main`:** `docs/architecture.md` and `docs/publishing.md` present; `npm test` + `npm run verify` + `npm run validate:plans` pass at closure (2026-10-27).
 
