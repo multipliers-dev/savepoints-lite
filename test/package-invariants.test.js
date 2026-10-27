@@ -18,8 +18,9 @@ describe("package invariants", () => {
     expect(pkg.publishConfig?.access).toBe("public");
     expect(pkg.publishConfig?.provenance).toBe(true);
     expect(pkg.files).toEqual(
-      expect.arrayContaining(["skills/**", "README.md", "docs/**"]),
+      expect.arrayContaining(["skills/**", "README.md", "LICENSE", "docs/**"]),
     );
+    expect(pkg.license).toBe("MIT");
     expect(pkg.scripts.typecheck).toBeUndefined();
     expect(pkg.scripts.verify).toBeDefined();
   });
@@ -48,6 +49,18 @@ describe("package invariants", () => {
     const readme = readRoot("README.md");
     expect(readme).not.toMatch(/integration (has been |is )verified/i);
     expect(readme).not.toMatch(/verified (in|on|with) (Cursor|Claude)/i);
+  });
+
+  it("LICENSE exists with MIT copyright and is listed for tarball", () => {
+    const licensePath = join(root, "LICENSE");
+    expect(existsSync(licensePath)).toBe(true);
+    const license = readRoot("LICENSE");
+    expect(license).toMatch(/^MIT License\n\nCopyright \(c\) 2026 Michael Truong/m);
+    const listed = readRoot("scripts/expected-package-paths.txt")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    expect(listed).toContain("LICENSE");
   });
 
   it("documentation files exist for tarball", () => {
@@ -79,7 +92,7 @@ describe("package invariants", () => {
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
-    expect(listed).toHaveLength(11);
+    expect(listed).toHaveLength(12);
     for (const rel of listed) {
       expect(existsSync(join(root, rel))).toBe(true);
     }
