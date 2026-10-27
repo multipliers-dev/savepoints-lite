@@ -275,8 +275,10 @@ describe("package invariants", () => {
     ).toBe(false);
 
     const workspacePkg = JSON.parse(readRoot("package.json"));
-    expect(workspacePkg.name).toBe(installedPkg.name);
-    expect(workspacePkg.version).toBe(installedPkg.version);
+    const dogfoodVersion =
+      workspacePkg.devDependencies["@multipliers-dev/savepoints-lite"];
+    expect(installedPkg.version).toBe(dogfoodVersion);
+    expect(installedPkg.name).toBe(workspacePkg.name);
     expect(workspacePkg.files).toContain("templates/**");
     expect(workspacePkg.files).not.toContain("docs/**");
   });
