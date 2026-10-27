@@ -79,7 +79,7 @@ No env vars for v1. The `savepoints-lite` hub repo does **not** commit `.agents/
 
 | Property | Type | Notes |
 | --- | --- | --- |
-| Name | Title | SQLite key typically `Name` |
+| Name | Title | Exact Notion property name: `Name` |
 | Repository | Text | |
 | Agent | Text | |
 | Session ID | Text | Omit when unknown |
@@ -215,7 +215,7 @@ Current [`src/index.ts`](src/index.ts) is a placeholder (`console.log("ready")`)
 | Remove `src/`, `tsx`, `typescript`, `dev`/`start` scripts | No executable product code |
 | Replace with [`scripts/verify-protocol-files.sh`](scripts/verify-protocol-files.sh) | CI/pre-commit guard: required paths exist, `defaults.yml` contains UUIDs, `plugin.json` / `.cursor-plugin/*.json` parse |
 | [`package.json`](package.json) scripts: `test` + `typecheck` → both run verifier (keeps Husky/CI contract without a fake TS app) | Preserves team-harness hook story with minimal churn |
-| Update [`README.md`](README.md) | Product description, adopt link, Notion MCP prerequisite |
+| Update [`README.md`](README.md) | Product description and Notion MCP prerequisite only — **no** link to `docs/adopt.md` until that file exists in adopt-and-verify |
 
 **Keep unchanged unless required:** [`.cursor/hooks.json`](.cursor/hooks.json), [`.cursor/environment.json`](.cursor/environment.json), Husky prepare scripts — Lite explicitly does **not** add Savepoints hooks.
 
