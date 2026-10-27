@@ -73,8 +73,27 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 
 **Notion:** not applicable — no write attempted.
 
+#### Run C — after session-log activation rewrite (fresh subagent, hub root, 2026-10-27)
+
+**Setup:** Commit `2738fc8` on `slice/adopt-and-verify` (session-log–focused `AGENTS.md`, `.cursor/rules/savepoints-lite.mdc`, consumer templates). Subagent task: one-sentence `docs/publishing.md` clarification + `npm test`; prompt did **not** mention Savepoints. Repro edit **reverted** afterward so PR scope stays verification-only.
+
+**Confirmed facts (subagent audit appendix):**
+
+- Read `.cursor/rules/savepoints-lite.mdc` via Read: **no**
+- Any path under `node_modules/@multipliers-dev/savepoints-lite/` read via Read: **none**
+- Read `savepoints-notion` provider SKILL: **no**
+- Notion MCP tools invoked: **none**
+- Savepoint record attempted: **no**
+
+**Hypotheses:**
+
+- Stronger activation wording alone does not close scenario 4 — agents still finish the primary task without loading the installed workflow.
+- Subagent harness may not mirror desktop always-applied rule injection; a **desktop** implicit-logging re-run after `2738fc8` remains the authoritative next check.
+
+**Notion:** not applicable — no write attempted; operator authorization not exercised.
+
 ## Slice completion gate
 
 `adopt-and-verify` plan todo stays **pending** until required manual hub scenarios are **Passed** (or operator-waived with PR rationale). Scenario **4 Fail** blocks claiming implicit logging works.
 
-**Current PR branch:** hub implementation + automated checks **Pass**; manual scenario **4 Fail** (two observed runs); other manual scenarios **Not run**.
+**Current PR branch:** hub implementation + automated checks **Pass**; manual scenario **4 Fail** (three observed runs, including post–activation-rewrite Run C); other manual scenarios **Not run**.
