@@ -2,6 +2,10 @@
 
 Pin `@multipliers-dev/savepoints-lite` (exact version) and run `npm ci`. Instruction-only — no Savepoints lifecycle hooks.
 
+### Ongoing logging authorization
+
+Installing the package or connecting Notion MCP does **not** alone authorize production Notion writes. **Opt-in** is completing Savepoints **activation** in your repo: copy `savepoints-lite.mdc` (`alwaysApply: true`) and merge this snippet into `AGENTS.md`. Once activated, maintain the session log **without** separate authorization before each entry, subject to host Notion MCP permissions. If activation is incomplete or consent is unclear, do not write; fail open without claiming persistence. Manual behavioral verification per the package checklist requires operator authorization for that verification session only — not per routine log entry.
+
 ### Session log
 
 Maintain a running session log in Notion.

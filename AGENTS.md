@@ -30,6 +30,14 @@ Cloud Agents: committed `.cursor/environment.json` runs `npm ci` (triggers `prep
 
 This repository **consumes** the published npm package it ships. `npm ci` installs `@multipliers-dev/savepoints-lite@1.0.0` as a devDependency (exact version in `package.json` + lockfile). Instruction-only — **no** Savepoints lifecycle hooks.
 
+### Ongoing logging authorization
+
+Installing the package or connecting Notion MCP does **not** alone authorize production Notion writes. **Opt-in** is Savepoints **activation** in the repo: this hub has committed `.cursor/rules/savepoints-lite.mdc` (`alwaysApply: true`) plus the session-log section below — that is ongoing logging authorization for agents at the hub root.
+
+Once opted in, maintain the session log **without** asking for separate authorization before each entry, subject to host Notion MCP permissions. If activation is absent or consent is unclear, do not write to Notion; request activation or explicit consent where appropriate; otherwise fail open without claiming persistence.
+
+[`skills/savepoints/verification.md`](skills/savepoints/verification.md) **manual verification** (deliberate checklist runs, especially failure simulations) requires **explicit operator authorization for that verification session** — separate from routine session logging and **not** a reason to skip logging during ordinary work when this repo is activated.
+
 ### Session log
 
 Maintain a running session log in Notion.

@@ -1,6 +1,6 @@
 # Adoption verification record (adopt-and-verify)
 
-Durable record of automated checks and manual agent behavioral runs. Status values: **Pass**, **Fail**, **Not run**. Link Notion page URLs in the GitHub PR description when operator authorization applies — not in this file.
+Durable record of automated checks and manual agent behavioral runs. Status values: **Pass**, **Fail**, **Not run**. Link Notion page URLs in the GitHub PR description when recording verification evidence — not in this file. **Ongoing session logging** opt-in is committed hub activation; **verification-session authorization** applies to deliberate checklist runs (see `skills/savepoints/verification.md` § Authorization).
 
 ## Automated checks
 
@@ -15,7 +15,7 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 
 ## Manual hub dogfooding (§ B in verification.md)
 
-**Operator authorization required** for scenarios 4–11 and Notion portions of 13.
+**Verification-session authorization** required before deliberate failure simulations and other non-routine checklist writes (especially scenarios **9–11**). Scenarios **4–8** use **ongoing logging opt-in** (hub: committed activation) — not separate per-entry authorization.
 
 | # | Scenario | Status | Date | Evidence |
 | --- | --- | --- | --- | --- |
@@ -52,7 +52,21 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 - “Read and follow” may be interpreted as optional file inspection rather than router → provider → persistence execution.
 - Competing instructions (user rules, skills, task completion) may outrank Savepoints at session end without an explicit completion boundary.
 
-**Notion:** not applicable — no write attempted; operator authorization not exercised.
+**Notion:** not applicable — no write attempted.
+
+#### Run D — parent-owned activation docs (Cursor parent, hub root, 2026-10-27)
+
+**Setup:** Commit `dd80ba7` (delegated-work + verification split). Primary task was doc/activation updates, `npm test` / `npm run verify`, commit, push, PR #8 body update; prompt did **not** mention Savepoints.
+
+**Confirmed facts:**
+
+- `AGENTS.md` and `savepoints-lite.mdc` were in always-applied workspace rules.
+- Installed router under `node_modules` was **not** read; Notion MCP was **not** invoked for session logging.
+- Agent stated it skipped Notion because there was **no operator authorization** for the Savepoints DB — conflating **manual verification** authorization with **routine** session logging.
+
+**Instruction fix (subsequent commit):** activation and `verification.md` now separate ongoing logging opt-in (activation) from verification-session authorization. Scenario **4** remains **Fail** until a fresh desktop implicit-logging run **observes** router invocation — not because wording alone.
+
+**Notion:** not applicable — no write attempted.
 
 ### Runs B–C — historical subagent-local logging attempts
 
@@ -89,6 +103,8 @@ These runs assumed the **subagent** would implicitly log. Activation now assigns
 
 ## Slice completion gate
 
-`adopt-and-verify` plan todo stays **pending** until required manual hub scenarios are **Passed** (or operator-waived with PR rationale). Scenarios **4** and **5** remain open — do not mark **Passed** without an observed successful run (operator-authorized Notion write when applicable).
+`adopt-and-verify` plan todo stays **pending** until required manual hub scenarios are **Passed** (or operator-waived with PR rationale). Scenarios **4** and **5** remain open — do not mark **Passed** without an observed successful run when ongoing logging is opted in.
 
-**Current PR branch:** hub implementation + automated checks **Pass**; scenario **4 Fail** (Run A — parent work without logging); scenario **5 Not run** (parent-owned delegated logging); Runs B–C retained as historical subagent-local attempts only; other manual scenarios **Not run**.
+**Remaining behavioral check:** fresh **desktop** Cursor session, ordinary development task, no Savepoints mention — confirm primary agent invokes installed router and attempts persistence (hub activation = opt-in). Record outcome as scenario **4** evidence; do not pass on instruction edits alone.
+
+**Current PR branch:** hub implementation + automated checks **Pass**; scenario **4 Fail** (Runs A, D — parent work without logging); scenario **5 Not run**; Runs B–C historical subagent-local only; authorization ambiguity documented and addressed in activation/docs (Run D); other manual scenarios **Not run**.

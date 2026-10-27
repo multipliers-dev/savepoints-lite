@@ -64,6 +64,16 @@ Activation files must be **thin** — they describe the session-log triggers and
 
 The **primary agent** owns the session log for the whole session, including work done by subagents. Subagents in isolated worktrees are not required to install the package or write Savepoints; when delegated work returns, the parent records it using its own `node_modules` router and Notion MCP.
 
+### Ongoing logging authorization (opt-in)
+
+| Case | Behavior |
+| --- | --- |
+| **Normal operation, logging authorized** | Activation is complete (Cursor rule + `AGENTS.md` session-log section). Record after meaningful work, decisions, task switches, and errors **without** asking for separate authorization before each entry, subject to Notion MCP host permissions. Fail open on write failure; do not claim persistence without provider confirmation. |
+| **Normal operation, not authorized or unclear** | Package install or Notion MCP connection alone is **not** consent. Do not write to Notion; complete activation or obtain explicit consent; otherwise fail open without claiming persistence. |
+| **Manual verification** | Running the behavioral checklist ([`skills/savepoints/verification.md`](../skills/savepoints/verification.md)) — deliberate test writes, failure simulations, and other non-routine checks — requires **explicit operator authorization for that verification session**. That gate does **not** replace activation opt-in and does **not** require per-entry authorization during ordinary development when activation is already in place. |
+
+`.agents/savepoints-lite.yml` and `.agents/savepoints-notion.yml` override provider routing only; they are **not** the ongoing-logging opt-in mechanism.
+
 ### Claude Code and an existing `CLAUDE.md`
 
 Many repositories already have a root `CLAUDE.md` with Claude-specific instructions. **Do not replace that file** with the template snippet alone.
@@ -111,7 +121,7 @@ Absent override files are normal — package defaults apply.
 
 ### Manual
 
-Real Cursor and Claude Code sessions per the verification checklist. **Notion writes to the production Savepoints database require explicit operator authorization** for each run.
+Real Cursor and Claude Code sessions per the verification checklist. **Verification-session authorization** (explicit operator consent to run deliberate checklist scenarios, especially failure simulations) is separate from **ongoing session logging** authorized by activation — see [Ongoing logging authorization](#ongoing-logging-authorization-opt-in).
 
 | Checklist location | When to use |
 | --- | --- |

@@ -5,6 +5,10 @@ alwaysApply: true
 
 Savepoints Lite is **instruction-only** (no lifecycle hooks).
 
+## Ongoing logging authorization
+
+npm install and Notion MCP connection alone do **not** authorize writes. **Opt-in** = Savepoints activation in this repo (this rule with `alwaysApply: true` plus `AGENTS.md` session log). When opted in, log after each trigger below **without** per-entry authorization prompts, subject to MCP permissions. Manual verification checklist runs (see `skills/savepoints/verification.md`) need operator authorization for that session only — do **not** treat that as permission to skip routine logging during normal work.
+
 ## Session log
 
 Maintain a running session log in Notion. Do not wait until the session ends.
