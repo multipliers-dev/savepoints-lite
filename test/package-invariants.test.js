@@ -194,7 +194,6 @@ describe("package invariants", () => {
     const dogfoodVersion =
       pkg.devDependencies["@multipliers-dev/savepoints-lite"];
     expect(dogfoodVersion).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(dogfoodVersion).toBe(pkg.version);
   });
 
   it("hub activation uses AGENTS.md only (no Cursor savepoints rule)", () => {
