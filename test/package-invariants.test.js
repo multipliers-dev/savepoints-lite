@@ -134,7 +134,7 @@ describe("package invariants", () => {
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
-    expect(listed).toHaveLength(16);
+    expect(listed).toHaveLength(15);
     for (const rel of listed) {
       expect(existsSync(join(root, rel))).toBe(true);
     }
@@ -196,28 +196,32 @@ describe("package invariants", () => {
     );
   });
 
-  it("hub activation references installed router under node_modules", () => {
+  it("hub activation uses AGENTS.md only (no Cursor savepoints rule)", () => {
     const routerPath =
       "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md";
-    const rule = readRoot(".cursor/rules/savepoints-lite.mdc");
-    expect(rule).toMatch(/alwaysApply:\s*true/);
-    expect(rule).toContain(routerPath);
-    expect(rule).toMatch(/not.*skills\//i);
+    expect(existsSync(join(root, ".cursor/rules/savepoints-lite.mdc"))).toBe(
+      false,
+    );
     const agents = readRoot("AGENTS.md");
     expect(agents).toContain(routerPath);
     expect(agents).toMatch(/session log/i);
     expect(agents).toMatch(/does not count as recording an entry/i);
+    expect(agents).not.toMatch(/savepoints-lite\.mdc/);
     const claude = readRoot("CLAUDE.md").trim();
     expect(claude).toBe("@AGENTS.md");
   });
 
-  it("consumer activation templates reference installed router path", () => {
+  it("consumer AGENTS snippet is runtime-only (no adoption install prose)", () => {
     const routerPath =
       "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md";
-    const templateRule = readRoot(
-      "templates/consumer/.cursor/rules/savepoints-lite.mdc",
-    );
-    expect(templateRule).toContain(routerPath);
+    const snippet = readRoot("templates/consumer/AGENTS.md.snippet");
+    expect(snippet).toContain(routerPath);
+    expect(snippet).toMatch(/session log/i);
+    expect(snippet).toMatch(/does not count as recording an entry/i);
+    expect(snippet).not.toMatch(/savepoints-lite\.mdc/);
+    expect(snippet).not.toMatch(/templates\/consumer/);
+    expect(snippet).not.toMatch(/npm ci/i);
+    expect(snippet).not.toMatch(/Pin `@multipliers-dev\/savepoints-lite`/);
   });
 
   it("does not ship a committed consumer fixture directory", () => {

@@ -22,7 +22,7 @@ npm install @multipliers-dev/savepoints-lite --save-dev
 
 Use a committed lockfile and `npm ci` in CI for reproducible skill versions.
 
-Installing the package does **not** automatically activate Savepoints. See the [adoption guide](./docs/adopt.md) for setup requirements and current integration support.
+Installing the package does **not** automatically activate Savepoints. Activation is a **committed Savepoints Lite section in root `AGENTS.md`** (runtime logging contract); Claude Code loads the same file via `CLAUDE.md` (`@AGENTS.md`). See the [adoption guide](./docs/adopt.md) for install, merge steps, and verification.
 
 ## Prerequisites
 
@@ -42,7 +42,7 @@ Agents must read skills from this install root. **Do not** vendor or copy skill 
 
 ## Documentation
 
-- [docs/adopt.md](./docs/adopt.md) — installation and adoption (prerequisites, pinned install, activation status)
+- [docs/adopt.md](./docs/adopt.md) — installation, `AGENTS.md` activation, Claude import, verification
 - [docs/architecture.md](./docs/architecture.md) — router vs provider boundaries, Savepoint protocol, configuration precedence, append outcomes, v1 exclusions
 
 ## License

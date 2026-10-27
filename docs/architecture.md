@@ -7,7 +7,7 @@ Contrast with [multipliers-dev/savepoints](https://github.com/multipliers-dev/sa
 ```mermaid
 flowchart TB
     subgraph Consumer["Consumer repository"]
-        Activation["Cursor rule / CLAUDE.md / AGENTS.md"]
+        Activation["AGENTS.md (+ CLAUDE.md import)"]
         Package["npm dependency"]
     end
 
@@ -40,7 +40,7 @@ flowchart TB
 
 | Layer | Responsibility |
 | --- | --- |
-| **Consumer activation** | Thin rules in the consumer repo (Cursor rule, `CLAUDE.md`, `AGENTS.md`) that tell agents **when** to read the installed router skill and **where** it lives under `node_modules`. [`docs/adopt.md`](./adopt.md) documents install prerequisites and current support; copy-paste activation templates ship in a later adoption slice. |
+| **Consumer activation** | Root `AGENTS.md` session-log section (shared contract); Claude Code loads it via `CLAUDE.md` (`@AGENTS.md`). Tells agents **when** to read the installed router skill and **where** it lives under `node_modules`. [`docs/adopt.md`](./adopt.md) documents install and merge steps; canonical snippet in `templates/consumer/`. |
 | **Router** [`skills/savepoints/SKILL.md`](../skills/savepoints/SKILL.md) | Event detection, Savepoint assembly, read `storage.provider`, load matching provider skill from the **same** npm install, handle `success` / `failure` / `unconfirmed`. **No** Notion properties, SQL, or MCP calls. |
 | **Provider** [`skills/savepoints-notion/SKILL.md`](../skills/savepoints-notion/SKILL.md) (v1) | Map Savepoint → Notion, Notion MCP write, bounded async confirmation, return outcome. **Does not** decide when to Savepoint. |
 | **Distribution** | npm package only — consumers must not vendor or copy skills. |
@@ -58,6 +58,18 @@ node_modules/@multipliers-dev/savepoints-lite/skills/savepoints-notion/SKILL.md
 ```
 
 `node_modules` must exist in the agent execution environment. npm does **not** register skills with Cursor or Claude native discovery — activation is consumer-owned.
+
+### Consumer activation (runtime contract)
+
+| Piece | Role |
+| --- | --- |
+| **Root `AGENTS.md`** | Sole runtime logging contract — when to record, parent-agent delegation, installed router path, fail-open behavior ([`templates/consumer/AGENTS.md.snippet`](../templates/consumer/AGENTS.md.snippet) on GitHub until templates ship in npm) |
+| **`CLAUDE.md`** | Claude Code only — import hook (`@AGENTS.md`); does not duplicate Savepoints prose |
+| **Cursor** | Same committed `AGENTS.md` section; no separate Savepoints Cursor rule in the adoption path |
+
+Install steps and host-specific wiring: [`docs/adopt.md`](./adopt.md).
+
+**Next npm release (after `1.0.0`):** consumer templates under `templates/consumer/` in the tarball (`AGENTS.md.snippet`, `CLAUDE.md.snippet` only). Registry `@1.0.0` has **no** templates — use GitHub or upgrade.
 
 ## Savepoint protocol
 

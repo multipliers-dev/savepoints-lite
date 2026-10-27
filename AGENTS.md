@@ -32,7 +32,7 @@ This repository **consumes** the published npm package it ships. `npm ci` instal
 
 ### Ongoing logging authorization
 
-Installing the package or connecting Notion MCP does **not** alone authorize production Notion writes. **Opt-in is per host:** **Cursor** — `.cursor/rules/savepoints-lite.mdc` (`alwaysApply: true`); **Claude Code** — the session-log section below via [`CLAUDE.md`](CLAUDE.md) (`@AGENTS.md`). This hub commits both surfaces for dogfooding; a host needs only its own files — missing Cursor config does not block Claude, and missing `CLAUDE.md` does not block Cursor.
+Installing the package or connecting Notion MCP does **not** alone authorize production Notion writes. **Opt-in** = this Savepoints Lite session-log section committed in root `AGENTS.md`. Instruction-only — **no** Savepoints lifecycle hooks.
 
 Once opted in, maintain the session log **without** asking for separate authorization before each entry, subject to host Notion MCP permissions. If activation is absent or consent is unclear, do not write to Notion; request activation or explicit consent where appropriate; otherwise fail open without claiming persistence.
 
@@ -69,12 +69,12 @@ If logging fails, continue the primary work without retry loops.
 - `node_modules` must exist — do **not** use this repository's `skills/` tree as the instruction source.
 - Fail open on write failure; never claim Notion persistence without confirmed write.
 
-| Surface | Mechanism |
+| Host | Load mechanism |
 | --- | --- |
-| **Cursor** | [`.cursor/rules/savepoints-lite.mdc`](.cursor/rules/savepoints-lite.mdc) (`alwaysApply: true`) — same session-log contract |
+| **Cursor** | Root `AGENTS.md` (including this section) |
 | **Claude Code** | [`CLAUDE.md`](CLAUDE.md) imports this file (`@AGENTS.md`) |
 
-Consumer copy-paste templates: [`templates/consumer/`](templates/consumer/). Verification: [`skills/savepoints/verification.md`](skills/savepoints/verification.md), [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md).
+Consumer snippet: [`templates/consumer/AGENTS.md.snippet`](templates/consumer/AGENTS.md.snippet). Verification: [`skills/savepoints/verification.md`](skills/savepoints/verification.md), [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md).
 
 ## Discipline
 

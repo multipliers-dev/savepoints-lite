@@ -8,8 +8,8 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 | --- | --- | --- | --- | --- |
 | `npm ci` at hub root | Hub repo | Pass | 2026-10-27 | Installs published `@1.0.0` devDependency from registry |
 | Hub lockfile pins `@1.0.0` | `package.json` / `package-lock.json` | Pass | 2026-10-27 | Exact devDependency committed on branch |
-| Hub activation paths | Rule + `AGENTS.md` + `CLAUDE.md` | Pass | 2026-10-27 | Reference `node_modules/.../skills/savepoints/SKILL.md` only |
-| `npm test` + `npm run verify` | Workspace tarball | Pass | 2026-10-27 | 16 paths; validates **workspace** `npm pack` — not the immutable registry `@1.0.0` (12 files) |
+| Hub activation paths | `AGENTS.md` + `CLAUDE.md` (no `.mdc` rule) | Pass | 2026-10-27 | Reference `node_modules/.../skills/savepoints/SKILL.md` only |
+| `npm test` + `npm run verify` | Workspace tarball | Pass | 2026-10-27 | 15 paths (post–`AGENTS.md`-only activation); validates **workspace** `npm pack` — not the immutable registry `@1.0.0` (12 files) |
 | `npm run validate:plans` | Plan frontmatter | Pass | 2026-10-27 | |
 | Registry portability | Temp dir outside repo | Pass | 2026-10-27 | `npm install @multipliers-dev/savepoints-lite@1.0.0`; router, provider, schema, defaults present; temp dir removed |
 
@@ -105,6 +105,31 @@ These runs assumed the **subagent** would implicitly log. Activation now assigns
 
 `adopt-and-verify` plan todo stays **pending** until required manual hub scenarios are **Passed** (or operator-waived with PR rationale). Scenarios **4** and **5** remain open — do not mark **Passed** without an observed successful run when ongoing logging is opted in.
 
-**Remaining behavioral check:** fresh **desktop** Cursor session, ordinary development task, no Savepoints mention — confirm primary agent invokes installed router and attempts persistence (hub activation = opt-in). Record outcome as scenario **4** evidence; do not pass on instruction edits alone.
+**Remaining behavioral check:** fresh **desktop** Cursor session with **`.cursor/rules/savepoints-lite.mdc` removed**, ordinary development task, no Savepoints mention — confirm Cursor loads root `AGENTS.md`, primary agent invokes installed router, and attempts persistence. Record outcome as scenario **4** evidence; do not pass on instruction edits alone or on Notion rows from the implementation session.
 
 **Current PR branch:** hub implementation + automated checks **Pass**; scenario **4 Fail** (Runs A, D — parent work without logging); scenario **5 Not run**; Runs B–C historical subagent-local only; authorization ambiguity documented and addressed in activation/docs (Run D); other manual scenarios **Not run**.
+
+## AGENTS.md-only activation (2026-10-27)
+
+Retired hub and consumer `savepoints-lite.mdc` rules; single runtime contract in root `AGENTS.md` (Claude via `CLAUDE.md` `@AGENTS.md`). Historical runs above that reference `.mdc` describe the prior activation mechanism — left unchanged.
+
+### Behavioral verification — Cursor without `.mdc` (Run E)
+
+| Item | Status |
+| --- | --- |
+| Fresh desktop Cursor session, `.mdc` absent | **Not run** |
+| Ordinary dev task without Savepoints mention | **Not run** |
+| Observed router → provider → Notion persistence | **Not run** |
+| Delegated-work parent logging (scenario **5**) | **Not run** |
+
+**Why not run here:** This implementation session cannot stand in for an authoritative fresh desktop Cursor chat after rule removal. Notion entries created while executing this task are **not** evidence of implicit logging.
+
+**Minimal manual procedure (operator):**
+
+1. Merge PR #8 activation on hub (or consumer) with **no** `savepoints-lite.mdc` committed.
+2. Open a **new** Cursor Agent chat on the repo; confirm root `AGENTS.md` is in context (Cursor project rules / agent instructions).
+3. Ask for a small, ordinary change (e.g. one-line doc fix) **without** mentioning Savepoints or Notion.
+4. After the agent finishes, verify tool history: read installed `node_modules/.../skills/savepoints/SKILL.md`, Notion MCP create attempted, row visible in Savepoints DB.
+5. Optional scenario **5:** delegate a subagent task without Savepoints in the prompt; confirm **parent** logs after handoff.
+
+Record Pass/Fail in scenario **4** / **5** rows above when complete.

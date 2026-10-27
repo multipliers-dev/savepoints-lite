@@ -1,10 +1,10 @@
 ## Savepoints Lite (session logging)
 
-Pin `@multipliers-dev/savepoints-lite` (exact version) and run `npm ci`. Instruction-only — no Savepoints lifecycle hooks.
+Instruction-only — **no** Savepoints lifecycle hooks.
 
 ### Ongoing logging authorization
 
-Installing the package or connecting Notion MCP does **not** alone authorize production Notion writes. **Opt-in (Claude Code)** is merging this snippet into `AGENTS.md` and loading it from `CLAUDE.md` (`@AGENTS.md`). **Cursor** activates separately via `savepoints-lite.mdc` (`alwaysApply: true`); Claude-only repos do not need that rule. Once activated **for your host**, maintain the session log **without** separate authorization before each entry, subject to host Notion MCP permissions. If activation is incomplete or consent is unclear for that host, do not write; fail open without claiming persistence. Manual behavioral verification per the package checklist requires operator authorization for that verification session only — not per routine log entry.
+Installing the package or connecting Notion MCP does **not** alone authorize production Notion writes. **Opt-in** = this Savepoints Lite session-log section committed in the repository root `AGENTS.md`. Once activated, maintain the session log **without** separate authorization before each entry, subject to host Notion MCP permissions. If activation is absent or consent is unclear, do not write; fail open without claiming persistence. Manual behavioral verification per the package checklist requires operator authorization for that verification session only — not per routine log entry.
 
 ### Session log
 
@@ -31,7 +31,3 @@ If logging fails, continue the primary work without retry loops.
 
 - `node_modules` must exist — do not use vendored `skills/` copies.
 - Fail open on write failure; never claim Notion persistence without confirmed write.
-
-**Cursor:** copy `savepoints-lite.mdc` from your template source to `.cursor/rules/` (`alwaysApply: true`) — from `node_modules/@multipliers-dev/savepoints-lite/templates/consumer/.cursor/rules/` when your installed version ships templates; on published `@1.0.0`, copy from the [savepoints-lite GitHub repo](https://github.com/multipliers-dev/savepoints-lite/tree/main/templates/consumer).
-
-**Claude Code:** add `@AGENTS.md` to your existing `CLAUDE.md` (or create `CLAUDE.md` with only that line if the file does not exist yet).
