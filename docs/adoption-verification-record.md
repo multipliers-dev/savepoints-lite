@@ -103,11 +103,16 @@ These runs assumed the **subagent** would implicitly log. Activation now assigns
 
 ## Slice completion gate
 
-`adopt-and-verify` merged to `main` ([PR #8](https://github.com/multipliers-dev/savepoints-lite/pull/8)); plan archived 2026-10-27 with documented manual gaps (scenario **4** **Fail**; most scenarios **Not run**). See `# Shipped` in [`.cursor/plans/archive/2026-10-27-savepoints-lite-v1.plan.md`](../.cursor/plans/archive/2026-10-27-savepoints-lite-v1.plan.md). Fresh desktop runs remain required before claiming implicit logging verified.
+| Gate | Status |
+| --- | --- |
+| Implementation + automated checks ([PR #8](https://github.com/multipliers-dev/savepoints-lite/pull/8)) | **Merged** — hub self-adoption, portability, `npm test` / `npm run verify` |
+| Manual § B behavioral verification (plan acceptance) | **Not passed** — scenario **4** **Fail**; scenario **5** and most others **Not run** (table above unchanged) |
 
-**Remaining behavioral check:** fresh **desktop** Cursor session with **`.cursor/rules/savepoints-lite.mdc` removed**, ordinary development task, no Savepoints mention — confirm Cursor loads root `AGENTS.md`, primary agent invokes installed router, and attempts persistence. Record outcome as scenario **4** evidence; do not pass on instruction edits alone or on Notion rows from the implementation session.
+**Operator verification exception (2026-10-27, [PR #12](https://github.com/multipliers-dev/savepoints-lite/pull/12)):** The operator accepts **deferring** outstanding manual hub scenarios rather than blocking v1 plan closure. Rationale: implementation and publication evidence are sufficient to ship; failed and not-run rows remain the source of truth until fresh authorized runs update them. **Cross-repo `@1.1.0` consumer adoption** may produce incidental session logs during normal work — that is **not** checklist behavioral verification and must not be recorded as Pass without an explicit verification session per `skills/savepoints/verification.md`.
 
-**Current PR branch:** hub implementation + automated checks **Pass**; scenario **4 Fail** (Runs A, D — parent work without logging); scenario **5 Not run**; Runs B–C historical subagent-local only; authorization ambiguity documented and addressed in activation/docs (Run D); other manual scenarios **Not run**.
+`adopt-and-verify` is **administratively closed** with this exception — **not** “behaviorally verified.” Plan archive: `# Shipped` § Verification exception in [`.cursor/plans/archive/2026-10-27-savepoints-lite-v1.plan.md`](../.cursor/plans/archive/2026-10-27-savepoints-lite-v1.plan.md).
+
+**Follow-up (still required before production claims):** fresh **desktop** Cursor session at hub or consumer root with **no** `savepoints-lite.mdc`, ordinary dev task without Savepoints mention — confirm installed router read, Notion MCP attempt, and update scenario **4** / **5** rows. Procedure unchanged in [Run E](#behavioral-verification--cursor-without-mdc-run-e) below.
 
 ## AGENTS.md-only activation (2026-10-27)
 

@@ -12,7 +12,7 @@ todos:
     content: "Operator release gate: @1.0.0 on registry (manual, no provenance); Trusted Publisher + publish.yml; clean install verified; evidence in plan + docs/publishing.md"
     status: completed
   - id: adopt-and-verify
-    content: "After npm publication: expand docs/adopt.md, templates/consumer/, skills/savepoints/verification.md; mandatory hub self-adoption (exact @1.0.0 devDep + activation); temp-dir registry portability check; record hub manual verification (Passed/Failed/Not run) — pending until implementation and required behavioral verification complete"
+    content: "Implementation merged ([PR #8](https://github.com/multipliers-dev/savepoints-lite/pull/8)): adopt doc, templates/consumer/, verification.md, adoption record, hub self-adoption, registry portability. Manual § B behavioral verification **not passed** — administratively closed 2026-10-27 with **operator verification exception** ([PR #12](https://github.com/multipliers-dev/savepoints-lite/pull/12)); scenario 4 Fail and other Not run rows preserved in adoption-verification-record.md"
     status: completed
   - id: plan-closure
     content: "Docs-only PR: durable docs + publication + adoption evidence, deviations, # Shipped, archive plan"
@@ -29,7 +29,7 @@ isProject: false
 | protocol-core | [PR #4](https://github.com/multipliers-dev/savepoints-lite/pull/4) — npm package, router + Notion provider skills, hub CI/pre-commit |
 | documentation | [PR #6](https://github.com/multipliers-dev/savepoints-lite/pull/6) — `docs/architecture.md`, `docs/publishing.md`, adopt stub, README landing |
 | npm-publication | Operator gate — `@1.0.0` on registry ([PR #7](https://github.com/multipliers-dev/savepoints-lite/pull/7) Trusted Publishing workflow); evidence table in plan body § npm-publication (2026-10-27) |
-| adopt-and-verify | [PR #8](https://github.com/multipliers-dev/savepoints-lite/pull/8) — adopt doc, `templates/consumer/`, `skills/savepoints/verification.md`, `docs/adoption-verification-record.md`, hub self-adoption |
+| adopt-and-verify | [PR #8](https://github.com/multipliers-dev/savepoints-lite/pull/8) — implementation merged; **behavioral verification not passed** (verification exception at plan closure — see below) |
 | plan-closure | [PR #12](https://github.com/multipliers-dev/savepoints-lite/pull/12) — this archive |
 
 **Prerequisites verified on `main`:** `docs/architecture.md` and `docs/publishing.md` present; `npm test` + `npm run verify` + `npm run validate:plans` pass at closure (2026-10-27).
@@ -50,6 +50,17 @@ isProject: false
 | Manual hub dogfooding (§ B) | **Incomplete** | Same record — scenario **4** **Fail** (Runs A, D); scenario **5** and **1–3, 6–13** **Not run**; Run E (AGENTS.md-only, no `.mdc`) **Not run** |
 
 Do **not** claim implicit Notion session logging is production-verified until fresh desktop runs pass scenarios **4** / **5** per `skills/savepoints/verification.md`.
+
+### Verification exception (operator decision, 2026-10-27)
+
+The plan’s original `adopt-and-verify` acceptance required manual hub scenarios **Passed** or an **operator waiver with PR rationale**. Outstanding work did not meet that bar (scenario **4** **Fail**; scenario **5**, Run E, and most other § B scenarios **Not run** — unchanged in [`docs/adoption-verification-record.md`](../../../docs/adoption-verification-record.md)).
+
+**Operator decision (recorded in [PR #12](https://github.com/multipliers-dev/savepoints-lite/pull/12)):**
+
+1. **Defer** remaining manual hub verification to follow-up fresh desktop sessions — no claim that deferral satisfies the original pass criteria.
+2. **Cross-repository `@1.1.0` adoption** (separate rollout) may surface implicit logging during normal development; that observation is **not** behavioral verification and does not update scenario rows without an authorized checklist run.
+3. **`adopt-and-verify` is administratively closed** — implementation and automated checks shipped; **not** “behaviorally verified” or “technically passed” for § B.
+4. **Preserve** all **Fail** / **Not run** scenario evidence for future investigation; do not reopen the v1 plan for routine work.
 
 ### Accepted deviations from this plan
 
