@@ -8,10 +8,12 @@
     "start": "tsx src/index.ts",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
+    "validate:plans": "plan-validator --repo-root . --allow-empty",
     "prepare": "sh scripts/prepare-git-hooks.sh",
     "verify:git-hooks": "sh scripts/verify-git-hooks.sh"
   },
   "devDependencies": {
+    "@multipliers-dev/plan-validator": "0.1.0",
     "husky": "^9.1.7",
     "tsx": "^4.23.12",
     "typescript": "^5.9.2",
