@@ -263,16 +263,17 @@ describe("package invariants", () => {
     readRegistryDogfoodManifest(dogfoodVersion);
   });
 
-  it("hub activation uses AGENTS.md only (no Cursor savepoints rule)", () => {
-    const routerPath =
-      "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md";
+  it("hub AGENTS.md does not commit per-repo Savepoints session-log activation", () => {
     expect(existsSync(join(root, ".cursor/rules/savepoints-lite.mdc"))).toBe(
       false,
     );
     const agents = readRoot("AGENTS.md");
-    expect(agents).toContain(routerPath);
-    expect(agents).toMatch(/session log/i);
-    expect(agents).toMatch(/does not count as recording an entry/i);
+    expect(agents).not.toMatch(/## Savepoints Lite \(hub dogfooding\)/);
+    expect(agents).not.toMatch(/## Savepoints Lite \(session logging\)/);
+    expect(agents).not.toContain(
+      "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md",
+    );
+    expect(agents).toMatch(/team-harness/i);
     expect(agents).not.toMatch(/savepoints-lite\.mdc/);
     const claude = readRoot("CLAUDE.md").trim();
     expect(claude).toBe("@AGENTS.md");
