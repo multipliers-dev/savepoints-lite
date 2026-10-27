@@ -6,7 +6,7 @@ todos:
     content: "PR 1: @multipliers-dev/savepoints-lite package (skills, defaults, schema), pack verification, minimal README — no adopt.md link, no consumer activation templates"
     status: pending
   - id: adopt-and-verify
-    content: "PR 2: docs/adopt.md, README link, activation templates, AGENTS/CLAUDE guidance, verification.md, consumer fixture checks, manual Cursor/Claude verification"
+    content: "PR 2 (after operator npm publish of slice 1 version): docs/adopt.md, README link, activation templates, pinned registry dependency, manual Cursor/Claude verification"
     status: pending
   - id: plan-closure
     content: "Docs-only PR: verify vs plan, record deviations, # Shipped, archive plan"
@@ -20,7 +20,7 @@ isProject: false
 
 **In scope:** Append-only session logging via an **npm-distributed** router skill ([`skills/savepoints/SKILL.md`](skills/savepoints/SKILL.md)) that delegates to provider skills (`savepoints-notion` in v1), using the consumer’s **existing Notion MCP** — instruction-only, no executable persistence runtime.
 
-**Out of scope:** Everything in the product brief (read/recovery, queues, hooks, custom MCP server, local spool, summarization, metrics) and **§ Scope exclusions** below. **Deferred:** `savepoints-postgres`, connection management, schema migrations, dynamic provider discovery, multi-provider writes, Cursor marketplace packaging.
+**Out of scope:** Everything in the product brief (read/recovery, queues, Savepoints capture hooks, custom MCP server, local spool, summarization, metrics) and **§ Scope exclusions** below. **Deferred:** `savepoints-postgres`, connection management, schema migrations, dynamic provider discovery, multi-provider writes, Cursor marketplace packaging.
 
 **Contrast with [`multipliers-dev/savepoints`](https://github.com/multipliers-dev/savepoints):** Full Savepoints optimizes for *durable learnings* (five-check rubric, `emit-learning`, lifecycle hooks, Postgres submit workers). Lite optimizes for *activity/session narrative* with **immediate appends** and **no lifecycle/host automation** — with a **router → provider skill** split so *what* to record, *where* (provider selection), and *how* (MCP writes) stay separated.
 
@@ -302,13 +302,29 @@ Follow [`@multipliers-dev/plan-validator`](https://www.npmjs.com/package/@multip
 | **`publishConfig`** | `access: public`, `provenance: true` (match plan-validator) |
 | **`files`** | Ship `skills/**`, package `README.md`, and any packaged config templates — **no** `bin`, **no** compiled runtime |
 | **`engines`** | Node `>=22` (align with plan-validator floor) |
-| **Install** | Consumer `devDependency` (or `dependency`): `npm install @multipliers-dev/savepoints-lite@<exact-version>` |
+| **Install** | Consumer `devDependency` (or `dependency`): declare an **exact semver** in `package.json` (e.g. `"@multipliers-dev/savepoints-lite": "1.0.0"`) — not a floating range for production adoption |
 | **Verify publish** | `npm pack --dry-run` (and/or `prepack` script) asserts expected paths land in tarball |
-| **Updates** | `npm update` refreshes skill files under `node_modules`; **activation text unchanged** (stable path pattern) |
+| **Reproducibility** | **npm is the single source of truth** for installed skill file versions: committed **lockfile**, `npm ci` in CI and reproducible environments, **Renovate** (or equivalent) PRs to bump the dependency — **no** separate skill-copy or skill-update mechanism; **activation text unchanged** across version bumps (stable `node_modules` path pattern) |
 
 **Out of scope:** installation CLI, bootstrap script, executable Savepoints runtime, custom MCP server.
 
-**Publication verification (protocol-core):** CI/local script confirms tarball contains router + Notion provider skills and default YAML. Optional follow-up: publish dry-run in CI (no npm publish in v1 implementation unless operator authorizes separately).
+**Publication verification (protocol-core):** CI/local script confirms tarball contains router + Notion provider skills and default YAML. **npm publish to the registry is an operator step after protocol-core merges** — not part of the implementation PR unless explicitly authorized.
+
+### Publication and adoption sequence
+
+```text
+protocol-core merges to main
+    → operator publishes @multipliers-dev/savepoints-lite@<version> to npm
+    → adopt-and-verify starts (consumer pins that published version)
+```
+
+| Phase | What is validated |
+| --- | --- |
+| **protocol-core** | Package is publishable; `npm pack` / dry-run proves tarball contents |
+| **Between slices (optional)** | Local `npm pack` + `file:` or packed tarball install for **early smoke** only — does **not** satisfy adoption verification |
+| **adopt-and-verify** | Consumer fixture and manual agent checks use the **published registry version** pinned in `package.json` + lockfile (`npm ci`) |
+
+Do **not** treat `file:` workspace links as the acceptance path for slice 2; they may help developers before the first publish, but slice 2 must confirm the real npm distribution path.
 
 ---
 
@@ -328,7 +344,7 @@ Establish only:
 | **Claude Code** | Short [`CLAUDE.md`](CLAUDE.md) pointer (preserve existing content; **append** Savepoints section) |
 | **Other agents** | [`AGENTS.md`](AGENTS.md) pointer where applicable (preserve existing content) |
 
-Document in [`docs/adopt.md`](docs/adopt.md) (slice 2): `npm install`, `node_modules` requirement, Notion MCP prerequisite, optional `.agents` overrides, **no skill vendoring**, npm does not auto-register native skill discovery.
+Document in [`docs/adopt.md`](docs/adopt.md) (slice 2): pinned registry dependency + lockfile + `npm ci`, Renovate-friendly updates, `node_modules` requirement, Notion MCP prerequisite, optional `.agents` overrides, **no skill vendoring**, npm does not auto-register native skill discovery.
 
 **Hub repo (`savepoints-lite`):** apply the same activation pattern when dogfooding after slice 2; slice 1 does **not** add consumer activation templates or modify hub `AGENTS.md` / `CLAUDE.md` beyond preserving existing content.
 
@@ -342,7 +358,7 @@ Append-only; one Savepoint per meaningful completed event; immediate writes (no 
 
 ## Scope exclusions (v1)
 
-Do not implement: PostgreSQL provider; SQLite storage; custom MCP server; custom logging runtime; installation CLI; hooks or lifecycle handlers; background workers; local queue/spool; multiple simultaneous providers; retrieval or dashboards; Cursor marketplace / plugin packaging; provider registry runtime; TypeScript adapter interfaces beyond the behavioral `append` contract.
+Do not implement: PostgreSQL provider; SQLite storage; custom MCP server; custom logging runtime; installation CLI; **Savepoints activity-capture hooks or lifecycle handlers** (see **Repository bootstrap** — unrelated repo Git/Husky/Cursor bootstrap hooks stay); background workers; local queue/spool; multiple simultaneous providers; retrieval or dashboards; Cursor marketplace / plugin packaging; provider registry runtime; TypeScript adapter interfaces beyond the behavioral `append` contract.
 
 ---
 
@@ -361,7 +377,7 @@ Current [`src/index.ts`](src/index.ts) is a placeholder (`console.log("ready")`)
 | Update [`README.md`](README.md) (slice 1) | Minimal package purpose + Notion MCP prerequisite — **no** `docs/adopt.md` link until slice 2 |
 | **Remove** (if present after bootstrap) | `.cursor-plugin/`, root `plugin.json` — marketplace distribution out of scope |
 
-**Keep unchanged unless required:** [`.cursor/hooks.json`](.cursor/hooks.json), [`.cursor/environment.json`](.cursor/environment.json), Husky prepare scripts — Lite explicitly does **not** add Savepoints hooks.
+**Keep unchanged unless required:** [`.cursor/hooks.json`](.cursor/hooks.json), [`.cursor/environment.json`](.cursor/environment.json), Husky / `prepare` / pre-commit scripts — v1 does **not** add **Savepoints activity-capture** hooks (no `observe`, `stop`, `beforeSubmitPrompt`, or similar for logging). **Do not remove or slim existing repository development hooks** (e.g. Husky shims, `ensure-hooks`, team-harness bootstrap) unless a slice explicitly requires unrelated hub cleanup.
 
 ---
 
@@ -396,15 +412,18 @@ Two implementation PRs + docs closure. Each slice is **merge-safe on its own** �
 
 **Rationale:**
 
-- Consumer adoption, activation, and behavioral verification depend on the npm package from slice 1.
+- Consumer adoption, activation, and behavioral verification depend on a **published** npm package from slice 1.
+
+**Prerequisite (operator, between PRs):** After **protocol-core** merges, publish `@multipliers-dev/savepoints-lite@<version>` to the npm registry before opening adopt-and-verify.
 
 **Agent instruction:** Do not merge. Stop after opening the PR.
 
-**Goal:** `docs/adopt.md`, README adoption link (same PR), `templates/consumer/`, `verification.md`, consumer fixture for `node_modules` skill paths, documented manual Cursor/Claude verification (Notion writes only with authorization).
+**Goal:** `docs/adopt.md`, README adoption link (same PR), `templates/consumer/`, `verification.md`, consumer fixture with **pinned registry dependency** + lockfile, documented manual Cursor/Claude verification (Notion writes only with authorization).
 
 **Acceptance:**
 
 - `docs/adopt.md` and README link land in **one** PR  
+- Consumer fixture uses published version (not `file:`) for manual verification; documents semver pin + `npm ci` / Renovate pattern  
 - Checklists cover provider delegation, `node_modules` paths, persistence honesty, anti-loop  
 - Fixture documented; CI may validate fixture layout only (not agent behavior)  
 
@@ -436,7 +455,7 @@ Two implementation PRs + docs closure. Each slice is **merge-safe on its own** �
 | --- | --- |
 | Package skills + defaults | `verify-package-contents` / `npm pack --dry-run` (protocol-core; extend in adopt-and-verify for docs) |
 | `storage.provider: notion` in router defaults; Notion `data_source_id` in provider defaults | grep/assert in respective `defaults.yml` |
-| No accidental hook additions | script asserts `.cursor/hooks.json` has no savepoints-specific hooks |
+| No Savepoints capture hooks | script asserts `.cursor/hooks.json` has no savepoints-lite / Savepoints-logging hook entries; **does not** forbid existing Husky or unrelated bootstrap hooks |
 
 **Do not** build an “agent compliance test framework.”
 
@@ -456,7 +475,7 @@ Use [`skills/savepoints/verification.md`](skills/savepoints/verification.md):
 | 6b | **Persistence honesty** | Agent does not claim “saved to Notion” unless sync create succeeded or bounded async poll reached `succeeded` |
 | 6c | **No Savepoint-on-failure loop** | After a failed Savepoint write, agent reports in chat only; does not immediately open another Savepoint solely to record that failure |
 | 7 | **Claude Code** | Repeat 2–5 in Claude with same DB |
-| 8 | **No hooks** | Confirm logging still works with only instructions (no new lifecycle hooks) |
+| 8 | **No Savepoints capture hooks** | Logging works via instructions + activation only — no new Savepoints lifecycle hooks; existing repo Husky/bootstrap hooks unchanged |
 | 9 | **Provider delegation** | With default config, router delegates to `savepoints-notion` skill (Notion MCP); router text does not inline Notion property/SQL steps |
 
 Record manual run date + Notion page URLs in PR description or verification checklist (not committed secrets).
@@ -467,7 +486,7 @@ Record manual run date + Notion page URLs in PR description or verification chec
 
 | Topic | Limitation / decision |
 | --- | --- |
-| **Enforcement** | Instructions + `alwaysApply` rule are **best-effort**; models can still skip writes — v1 accepts this by design (no hooks). |
+| **Enforcement** | Instructions + `alwaysApply` rule are **best-effort**; models can still skip writes — v1 accepts this by design (**no Savepoints capture hooks**; repo dev hooks unaffected). |
 | **npm vs activation** | `npm install` alone does **not** enable logging; consumers need activation templates + Notion MCP (`docs/adopt.md`). |
 | **Cloud Agents** | Rely on `AGENTS.md` (+ optional future `.cursor/CLOUD.md` one-pager); rules may load but must not assume hook delivery. |
 | **Session ID** | Inconsistent across hosts; optional by design. |
@@ -476,8 +495,7 @@ Record manual run date + Notion page URLs in PR description or verification chec
 | **PostgreSQL / multi-provider** | Deferred — `savepoints-postgres` skill only; no dual-write in v1. |
 | **Async creates** | Prefer `allow_async: false`; when async is unavoidable, **bounded** poll (no indefinite wait); then success, terminal failure, or unconfirmed — never imply persistence on queue alone. |
 | **Skill name** | **Decision:** use `savepoints` (slash `/savepoints`) vs `savepoints-lite` — recommend **`savepoints`** for ergonomics with repo name `savepoints-lite` disambiguating the product. |
-| **npm publish** | First publish is operator step after protocol-core merges; pin exact version in consumer `package.json`. |
-| **Unresolved** | Whether hub uses `file:` link vs published tarball for fixture smoke before first npm publish — decide in adopt-and-verify. |
+| **npm publish** | Operator publishes after protocol-core merges; adopt-and-verify pins that registry version + lockfile. Optional local `npm pack` smoke before publish does not replace registry validation. |
 
 ---
 
@@ -516,7 +534,7 @@ Verification: npm test && npm run typecheck. Do not create Notion test rows unle
 ```text
 @.cursor/plans/2026-10-27-savepoints-lite-v1.plan.md
 
-Implement slice adopt-and-verify only. Prerequisite: protocol-core merged. Do not archive the plan.
+Implement slice adopt-and-verify only. Prerequisites: protocol-core merged; operator has published @multipliers-dev/savepoints-lite@<version> to npm. Do not archive the plan.
 
 Authority: Open PR only — implement and open the PR; do not merge.
 
