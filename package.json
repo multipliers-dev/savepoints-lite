@@ -1,13 +1,32 @@
 {
-  "name": "savepoints-lite",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@multipliers-dev/savepoints-lite",
+  "version": "1.0.0",
+  "description": "Instruction-only Savepoints router and Notion provider skills for append-only session logging via existing Notion MCP",
+  "license": "MIT",
   "type": "module",
+  "private": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/multipliers-dev/savepoints-lite.git"
+  },
+  "homepage": "https://github.com/multipliers-dev/savepoints-lite",
+  "bugs": {
+    "url": "https://github.com/multipliers-dev/savepoints-lite/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "files": [
+    "skills/**",
+    "README.md"
+  ],
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
-    "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "verify": "sh scripts/verify-package-contents.sh",
     "validate:plans": "plan-validator --repo-root . --allow-empty",
     "prepare": "sh scripts/prepare-git-hooks.sh",
     "verify:git-hooks": "sh scripts/verify-git-hooks.sh"
@@ -15,8 +34,7 @@
   "devDependencies": {
     "@multipliers-dev/plan-validator": "0.1.0",
     "husky": "^9.1.7",
-    "tsx": "^4.23.12",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "yaml": "^2.8.1"
   }
 }

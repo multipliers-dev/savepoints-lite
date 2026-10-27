@@ -4,7 +4,7 @@ overview: npm-first instruction package (@multipliers-dev/savepoints-lite) shipp
 todos:
   - id: protocol-core
     content: "PR 1: @multipliers-dev/savepoints-lite package (skills, defaults, schema), npm verify script, hub AGENTS.md/CI/pre-commit without typecheck — no adopt.md link, no Savepoints activation"
-    status: pending
+    status: completed
   - id: adopt-and-verify
     content: "PR 2 (after operator npm publish): docs/adopt.md, fixtures/consumer/, templates/consumer/, activation, manual Cursor/Claude verification via pinned registry dependency"
     status: pending
