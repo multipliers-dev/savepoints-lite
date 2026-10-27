@@ -78,7 +78,7 @@ flowchart LR
 
 **Out of scope here:** marketplace `vendor/` sync, team-harness wrapper skills, engineering invariants / User Rules, removing per-repo npm deps or `AGENTS.md` activation.
 
-**Coordination:** Marketplace slice `sl-phase1-contract` implements against the contract defined here; progress on that initiative is recorded only in the marketplace plan (plan-status PRs there).
+**Coordination:** Cursor Team Marketplace treats the published Savepoints Lite `2.0.0` release as an external prerequisite. All OSS readiness and configuration-contract implementation is owned by this repository.
 
 ### Execution flow
 
@@ -127,11 +127,13 @@ Instruction-only; no environment variables, hooks, background processes, or new 
 - Add [`templates/consumer/savepoints-notion.yml.example`](templates/consumer/savepoints-notion.yml.example) with `YOUR_NOTION_DATA_SOURCE_ID`.
 - Router/provider separation unchanged; provider owns Notion mapping and MCP write + bounded confirmation.
 
-### Open questions (resolve in `oss-readiness-contract` implementation PR)
+### Implementation decisions (non-blocking)
+
+Resolve during `oss-readiness-contract` / `release-verification`; none block merging this plan or starting hub implementation.
 
 1. **Instruction-context field name** for tier 1 (e.g. `integration.destination.data_source_id` vs a labeled delegation block) — pick one; enforce via skill markdown + tests.
 2. **Packaged `defaults.yml` shape** when tier 3 is optional: empty string vs omitted key vs placeholder only in the example template (must not ship maintainer UUID).
-3. **Plan closure timing:** archive after publish evidence on registry (recommended, aligns with marketplace `gate-publish`) — record version, date, and clean install check in closure PR or `# Shipped` note.
+3. **Plan closure timing:** archive after publish evidence on registry (recommended) — record version, date, and clean install check in closure PR or `# Shipped` note.
 
 ---
 
@@ -194,7 +196,7 @@ The hub [`package.json`](package.json) carries two version concepts during the p
 **Acceptance:**
 
 - **Skills / config:** three-tier `destination.data_source_id` precedence; router carries explicit destination in delegation context; provider does not read User Rules; tier-1-invalid no fallback; missing destination fail-open without MCP write
-- [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml): no maintainer `data_source_id`; resolve open question #2 in implementation
+- [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml): no maintainer `data_source_id`; decide tier-3 defaults shape during implementation (see non-blocking decisions above)
 - [`templates/consumer/savepoints-notion.yml.example`](templates/consumer/savepoints-notion.yml.example) with `YOUR_NOTION_DATA_SOURCE_ID`
 - [`scripts/expected-package-paths.txt`](scripts/expected-package-paths.txt) updated if new template paths ship
 - Tests updated (including no maintainer UUID in shipped paths; precedence / fail-open invariants as practical)
