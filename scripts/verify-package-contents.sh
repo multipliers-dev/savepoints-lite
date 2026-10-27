@@ -3,24 +3,21 @@ set -e
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+EXPECTED_PATHS_FILE="$SCRIPT_DIR/expected-package-paths.txt"
 
-required_paths="
-skills/README.md
-skills/savepoints/SKILL.md
-skills/savepoints/schema.md
-skills/savepoints/defaults.yml
-skills/savepoints-notion/SKILL.md
-skills/savepoints-notion/defaults.yml
-README.md
-package.json
-"
+if [ ! -f "$EXPECTED_PATHS_FILE" ]; then
+  echo "verify-package-contents: missing $EXPECTED_PATHS_FILE" >&2
+  exit 1
+fi
 
-for rel in $required_paths; do
+while IFS= read -r rel || [ -n "$rel" ]; do
+  [ -z "$rel" ] && continue
   if [ ! -f "$rel" ]; then
     echo "verify-package-contents: missing required file: $rel" >&2
     exit 1
   fi
-done
+done < "$EXPECTED_PATHS_FILE"
 
 if grep -q 'docs/adopt.md' README.md 2>/dev/null; then
   echo "verify-package-contents: README.md must not reference docs/adopt.md (slice 2)" >&2
@@ -32,24 +29,30 @@ if grep -qE 'savepoints-lite|savepoints.*logging|observe\.sh' .cursor/hooks.json
   exit 1
 fi
 
+export EXPECTED_PATHS_FILE
 node --input-type=module <<'NODE'
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const expected = [
-  "README.md",
-  "package.json",
-  "skills/README.md",
-  "skills/savepoints-notion/defaults.yml",
-  "skills/savepoints-notion/SKILL.md",
-  "skills/savepoints/defaults.yml",
-  "skills/savepoints/schema.md",
-  "skills/savepoints/SKILL.md",
-].sort();
+const pathsFile = process.env.EXPECTED_PATHS_FILE;
+if (!pathsFile) {
+  console.error("verify-package-contents: EXPECTED_PATHS_FILE not set");
+  process.exit(1);
+}
+
+const expected = readFileSync(pathsFile, "utf8")
+  .split("\n")
+  .map((line) => line.trim())
+  .filter(Boolean)
+  .sort();
 
 const raw = execSync("npm pack --dry-run --json --ignore-scripts", {
   encoding: "utf8",
   stdio: ["ignore", "pipe", "pipe"],
   env: { ...process.env, npm_config_ignore_scripts: "true" },
+  cwd: dirname(dirname(pathsFile)),
 });
 
 const jsonStart = raw.indexOf("[");

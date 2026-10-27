@@ -47,6 +47,23 @@ describe("package invariants", () => {
     expect(skill).toMatch(/Plain string/);
   });
 
+  it("notion provider requires synchronous create when supported", () => {
+    const skill = readRoot("skills/savepoints-notion/SKILL.md");
+    expect(skill).toMatch(/allow_async:\s*false/);
+    expect(skill).toMatch(/absent.*savepoints-notion\.yml/i);
+  });
+
+  it("expected package paths file matches verify script usage", () => {
+    const listed = readRoot("scripts/expected-package-paths.txt")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    expect(listed).toHaveLength(8);
+    for (const rel of listed) {
+      expect(existsSync(join(root, rel))).toBe(true);
+    }
+  });
+
   it("required skill files exist", () => {
     const paths = [
       "skills/savepoints/SKILL.md",

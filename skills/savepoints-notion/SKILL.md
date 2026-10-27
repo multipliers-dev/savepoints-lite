@@ -15,19 +15,26 @@ Provider-neutral Savepoint per router [schema.md](../savepoints/schema.md).
 
 ## Configuration resolution
 
-Read `destination.data_source_id` with this precedence:
+Resolve `destination.data_source_id` in two steps (static; no dynamic discovery):
+
+1. Start from package [defaults.yml](./defaults.yml) next to this skill under `node_modules`.
+2. If consumer `.agents/savepoints-notion.yml` exists and sets `destination.data_source_id`, that value **overrides** the package default.
+
+An absent `.agents/savepoints-notion.yml` is normal — use the packaged default. Only the **resolved** value after step 2 is authoritative.
 
 | Precedence | Location | Overrides |
 | --- | --- | --- |
-| 1 (highest) | Consumer `.agents/savepoints-notion.yml` | `destination.data_source_id` only |
-| 2 (default) | Package [defaults.yml](./defaults.yml) under `node_modules` | Shared Savepoints database |
+| 1 (highest) | Consumer `.agents/savepoints-notion.yml` (optional) | `destination.data_source_id` only |
+| 2 (default) | Package [defaults.yml](./defaults.yml) | Shared Savepoints database |
 
-Default package value:
+Package default:
 
 ```yaml
 destination:
   data_source_id: "822cbc89-7c89-4863-af3a-2fe0cd8ab56e"
 ```
+
+**Misconfiguration (after resolution):** report in chat when the resolved `destination.data_source_id` is empty, missing, or invalid for the target data source. Do not treat “no consumer override file” as misconfiguration.
 
 Shared Notion database id for humans: `05e4c804-1380-4ea2-8eb6-30027aa05fe4`. Do **not** change Notion schema unless `notion-fetch` proves incompatibility.
 
@@ -51,9 +58,11 @@ Use exact property names in the `properties` map. Pass Savepoint string fields a
 
 ## MCP write and confirmation
 
-- Use the consumer’s authenticated **Notion MCP** (e.g. `notion-create-pages`).
-- Prefer synchronous create (`allow_async: false` when the tool supports it).
-- When async is unavoidable: at most **two** poll follow-ups, then return `unconfirmed` if still not terminal.
+- Use the consumer’s authenticated **Notion MCP** (`notion-create-pages`).
+- **Require synchronous create:** set `allow_async: false` on **every** `notion-create-pages` call when the tool accepts that parameter.
+- **Async fallback only:** if the tool rejects `allow_async: false` or does not support the parameter, retry **once** with the tool’s required/default async shape for the same Savepoint — not a second create. If the first call might have persisted (indeterminate write), do **not** issue another create; return `unconfirmed` and report in chat.
+- Distinguish **parameter retry** (unsupported `allow_async: false` → one async-shaped retry of the same logical write) from **write confirmation** (polling an async task). Never use a second create to “fix” an indeterminate first create.
+- When the accepted call is async: poll at most **two** follow-ups (e.g. `notion-get-async-task` or equivalent), then stop.
 - Use `notion-fetch` **only** on property mismatch or tool-required discovery — not a session preflight.
 
 Return to the router:
@@ -62,14 +71,14 @@ Return to the router:
 success | failure | unconfirmed
 ```
 
-- `success` — create confirmed (sync success or async reached succeeded).
-- `failure` — tool error, auth failure, or terminal async failure.
-- `unconfirmed` — queued or polling exhausted without confirmation.
+- `success` — persistence **confirmed** (synchronous create succeeded, or async polling reached a terminal succeeded state).
+- `failure` — tool error, auth failure, or terminal async failure with no confirmed row.
+- `unconfirmed` — async operation still unresolved after bounded polling, or the first create might have persisted and a duplicate create was refused.
 
-Never imply persistence on queue alone.
+Never imply persistence on queue alone or on an unconfirmed async task.
 
 ## Forbidden (provider)
 
 - Event detection or trigger logic (router only)
 - Modifying or deleting previous Savepoint rows
-- Retry queues or background workers
+- Retry queues, background workers, or duplicate create attempts when the first write may already exist
