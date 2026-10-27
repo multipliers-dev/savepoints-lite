@@ -25,7 +25,7 @@ should_install_husky() {
 }
 
 skip_husky() {
-  echo "Skipping husky install ($1)"
+  echo "Skipping husky install ($1)" >&2
 }
 
 install_husky() {

@@ -49,9 +49,19 @@ const expected = [
 const raw = execSync("npm pack --dry-run --json --ignore-scripts", {
   encoding: "utf8",
   stdio: ["ignore", "pipe", "pipe"],
+  env: { ...process.env, npm_config_ignore_scripts: "true" },
 });
 
-const packs = JSON.parse(raw);
+const jsonStart = raw.indexOf("[");
+if (jsonStart < 0) {
+  console.error(
+    "verify-package-contents: npm pack --json produced no JSON array on stdout",
+  );
+  console.error(raw);
+  process.exit(1);
+}
+
+const packs = JSON.parse(raw.slice(jsonStart));
 if (!Array.isArray(packs) || packs.length !== 1) {
   console.error(
     "verify-package-contents: expected exactly one pack entry from npm pack --json",
