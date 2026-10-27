@@ -1,9 +1,9 @@
 ---
 name: Savepoints Lite v1
-overview: Implement Savepoints Lite as an instruction-only skill with a provider-neutral Savepoint protocol, instruction-based storage adapters (Notion MCP in v1), thin always-on activation, skill-bundled defaults with optional consumer override, per-event fail-open append, and a slimmed bootstrap with a protocol file verifier — no custom MCP server or executable runtime.
+overview: Implement Savepoints Lite as a router skill (events + Savepoint contract + provider resolution) delegating to provider skills (savepoints-notion in v1), thin always-on activation, split router/provider defaults, per-event fail-open append, and a protocol file verifier — no custom MCP server or executable runtime.
 todos:
   - id: protocol-core
-    content: "PR 1: SKILL.md (protocol) + adapters/notion.md + defaults.yml, alwaysApply rule, AGENTS/CLAUDE/README, plugin manifests, bootstrap slim + verify-protocol-files.sh"
+    content: "PR 1: savepoints router (SKILL.md, schema.md, defaults.yml) + savepoints-notion provider skill, alwaysApply rule, AGENTS/CLAUDE/README, plugin manifests, bootstrap slim + verify-protocol-files.sh"
     status: pending
   - id: adopt-and-verify
     content: "PR 2: docs/adopt.md, README adoption link, templates/consumer/, skills/savepoints/verification.md manual checklists"
@@ -18,11 +18,11 @@ isProject: false
 
 ## Goals and non-goals
 
-**In scope:** Append-only session logging via **instruction-based storage adapters** (Notion MCP in v1), triggered by agent instructions (not lifecycle hooks), distributable as a **Cursor plugin** with canonical entry [`skills/savepoints/SKILL.md`](skills/savepoints/SKILL.md).
+**In scope:** Append-only session logging via a **router skill** that delegates to **provider skills** (Notion MCP in v1), triggered by agent instructions (not lifecycle hooks), distributable as a **Cursor plugin** with canonical entry [`skills/savepoints/SKILL.md`](skills/savepoints/SKILL.md) (router).
 
-**Out of scope:** Everything listed in the product brief (read/recovery, queues, hooks, custom MCP server, local spool, summarization, metrics). **Also deferred for v1:** PostgreSQL (or other) adapter implementation, connection management, schema migrations, storage discovery, multi-provider writes.
+**Out of scope:** Everything listed in the product brief (read/recovery, queues, hooks, custom MCP server, local spool, summarization, metrics). **Also deferred for v1:** `savepoints-postgres` (or other) provider skill, connection management, schema migrations, storage discovery, multi-provider writes.
 
-**Contrast with [`multipliers-dev/savepoints`](https://github.com/multipliers-dev/savepoints):** Full Savepoints optimizes for *durable learnings* (five-check rubric, `emit-learning`, lifecycle hooks, Postgres submit workers). Lite optimizes for *activity/session narrative* with **immediate appends** and **no lifecycle/host automation** — but it **does** define an **instruction-based storage adapter** boundary so Notion today and Postgres (or another MCP-backed store) later do not require rewriting the core protocol.
+**Contrast with [`multipliers-dev/savepoints`](https://github.com/multipliers-dev/savepoints):** Full Savepoints optimizes for *durable learnings* (five-check rubric, `emit-learning`, lifecycle hooks, Postgres submit workers). Lite optimizes for *activity/session narrative* with **immediate appends** and **no lifecycle/host automation** — with a **router → provider skill** split so *what* to record, *where* (provider selection), and *how* (MCP writes) stay separated.
 
 ---
 
@@ -39,57 +39,62 @@ flowchart TB
     Rule[".cursor/rules/savepoints-lite.mdc"]
     AgentsDoc["AGENTS.md / CLAUDE.md"]
   end
-  subgraph skillLayer [Savepoints Lite skill]
-    Skill["SKILL.md protocol"]
-    Defaults["defaults.yml"]
-    AdapterDoc["adapters/notion.md v1"]
+  subgraph router [Router skill savepoints]
+    RouterSkill["SKILL.md"]
+    Schema["schema.md"]
+    RouterDefaults["defaults.yml provider only"]
   end
-  subgraph future [Deferred v1]
-    PgAdapter["adapters/postgres.md"]
+  subgraph providersSkills [Provider skills]
+    NotionSkill["savepoints-notion SKILL.md v1"]
+    PgSkill["savepoints-postgres future"]
   end
-  subgraph providers [Provider MCP]
+  subgraph mcp [Provider MCP]
     NotionMCP["Notion MCP"]
     PgMCP["Postgres MCP future"]
   end
   Cursor --> Rule
   Claude --> AgentsDoc
   Other --> AgentsDoc
-  Rule --> Skill
-  AgentsDoc --> Skill
-  Skill --> Defaults
-  Skill --> AdapterDoc
-  AdapterDoc --> NotionMCP
-  PgAdapter -.-> PgMCP
+  Rule --> RouterSkill
+  AgentsDoc --> RouterSkill
+  RouterSkill --> Schema
+  RouterSkill --> RouterDefaults
+  RouterSkill -->|"resolve provider"| NotionSkill
+  RouterSkill -.->|"future"| PgSkill
+  NotionSkill --> NotionMCP
+  PgSkill -.-> PgMCP
   NotionMCP --> NotionDB["Notion Savepoints database"]
   PgMCP -.-> Postgres["PostgreSQL future"]
 ```
 
 | Layer | v1 responsibility |
 | --- | --- |
-| **Activation** | Triggers, “read skill + selected adapter,” fail-open |
-| **`SKILL.md`** | Provider-neutral Savepoint model, event detection, `append` contract, failure/anti-loop rules |
-| **`adapters/*.md`** | Provider-specific MCP tools, destination, mapping, write confirmation |
-| **`defaults.yml`** | `storage.adapter` + `storage.destination` (and optional override path) |
-| **Runtime** | None — agents follow instructions; no TypeScript adapter implementations |
+| **Activation** | Triggers, “read **router** skill,” fail-open |
+| **Router** [`skills/savepoints/`](skills/savepoints/) | Event detection, build Savepoint, read `storage.provider`, **load and invoke** matching provider skill, handle `success` / `failure` / `unconfirmed` — **no** Notion properties or SQL |
+| **Provider** [`skills/savepoints-notion/`](skills/savepoints-notion/) | Map Savepoint → Notion, MCP write, bounded async confirmation, return outcome — **does not** decide when to Savepoint |
+| **Future** `skills/savepoints-postgres/` | Postgres MCP mapping only (not shipped in v1) |
+| **Runtime** | None — agents follow instructions; no router code |
 
-**Design principle:** Protocol owns **semantics**; adapters own **persistence mechanics**. Activation layers stay **thin pointers** (same pattern as full Savepoints’ rule + `AGENTS.md`). Do **not** set `disable-model-invocation: true` on the skill.
+**Design principle:** Router owns **what** and **when**; provider selection is config-only; provider skills own **how** to persist. Activation points at the **router** only. Do **not** set `disable-model-invocation: true` on router or v1 provider skills.
 
-**Caveat:** Adapters are **instructions**, not executable code — separation is **conceptual**, not type-enforced. **Behavioral** verification (manual sessions + checklists) is required to confirm agents resolve `defaults.yml` to the correct adapter doc and perform `append` through that provider.
+**Provider resolution (v1):** `storage.provider: notion` → read and follow [`skills/savepoints-notion/SKILL.md`](skills/savepoints-notion/SKILL.md). Unknown provider → report misconfiguration; do not guess.
 
-| Component | Prior plan shape | This plan |
+**Caveat:** Routing is **instruction-based**, not code — **behavioral** verification must confirm agents delegate to the configured provider skill rather than inlining Notion steps in the router.
+
+| Component | Inline-adapter plan | Router + provider skills |
 | --- | --- | --- |
-| `SKILL.md` | Protocol + Notion write steps | Provider-neutral protocol only |
-| `defaults.yml` | Notion destination ids | `storage.adapter` + `storage.destination` |
-| `adapters/notion.md` | (embedded in skill) | Notion MCP mapping and confirmation |
-| PostgreSQL | Not supported | Future `adapters/postgres.md` only |
-| Runtime | None | None (unchanged) |
-| v1 user-visible behavior | Notion appends | Unchanged |
+| `skills/savepoints/SKILL.md` | Protocol + delegate to `adapters/notion.md` | Router only |
+| `skills/savepoints/schema.md` | (in SKILL) | Canonical Savepoint contract |
+| `skills/savepoints/defaults.yml` | `adapter` + destination | `storage.provider` only |
+| `skills/savepoints-notion/` | `adapters/notion.md` | Provider `SKILL.md` + destination `defaults.yml` |
+| PostgreSQL | Future markdown adapter | Future `savepoints-postgres` skill |
+| v1 behavior | Notion appends | Unchanged |
 
 ---
 
 ## Savepoint protocol (provider-neutral)
 
-Document in [`SKILL.md`](skills/savepoints/SKILL.md). Independent of Notion, Postgres, or any single MCP.
+Document in [`schema.md`](skills/savepoints/schema.md); router [`SKILL.md`](skills/savepoints/SKILL.md) references it. Independent of Notion, Postgres, or any single MCP.
 
 ### Canonical Savepoint shape
 
@@ -120,7 +125,7 @@ savepoint:
 
 ### Content sections (protocol)
 
-Map to persisted body under adapter formatting rules. Omit empty sections:
+Map to persisted body under **provider skill** formatting rules. Omit empty sections:
 
 - `what_was_done`
 - `decisions_made`
@@ -131,74 +136,104 @@ Each trigger produces **one new record** — no updates, dedupe, or batching.
 
 ### `append` contract (behavioral, not code)
 
-Single conceptual operation the agent performs after assembling a Savepoint:
+After the router assembles a Savepoint, it **delegates** to the resolved provider skill. The provider returns an outcome; the router surfaces it to the user when needed:
 
 ```text
 append(savepoint) → success | failure | unconfirmed
 ```
 
-The **selected adapter** must instruct the agent to:
+**Router:** invoke provider skill with the Savepoint; do not perform MCP calls itself.
+
+**Provider skill** must:
 
 - Create a **new** record without modifying previous records.
 - Preserve Savepoint content and metadata per provider mapping.
-- Confirm persistence when the provider supports it (`success`); otherwise report `unconfirmed` honestly.
-- On `failure`, report in chat without blocking primary work (see failure behavior below).
+- Confirm persistence when the provider supports it (`success`); otherwise return `unconfirmed`.
+- On `failure`, return `failure` so the router can report in chat without blocking primary work.
 
-**Per event, not per session:** Each trigger invokes `append` once. No session-wide latch after failure (Cloud may gain MCP mid-session). **No retry queue.**
+**Per event, not per session:** Each work trigger → one Savepoint → one provider delegation. No session-wide latch after failure. **No retry queue.**
 
 ---
 
-## Storage adapters (instruction-based)
+## Router and provider skills
 
-### Layout
+### Repository layout (v1)
 
 ```
-skills/savepoints/
-  SKILL.md                 # Protocol only — no provider-specific MCP steps
-  defaults.yml             # storage.adapter + storage.destination
-  adapters/
-    notion.md              # v1 — Notion MCP append instructions
-    postgres.md            # future — not shipped in v1
+skills/
+├── savepoints/                    # Router
+│   ├── SKILL.md
+│   ├── defaults.yml               # storage.provider only
+│   └── schema.md                  # Savepoint contract (shared reference)
+├── savepoints-notion/             # Provider (v1)
+│   ├── SKILL.md
+│   └── defaults.yml               # destination.data_source_id
+└── README.md
 ```
 
-### Configuration
+**Future:** `skills/savepoints-postgres/SKILL.md` (+ provider `defaults.yml`) — not in v1.
 
-Bundled default ([`defaults.yml`](skills/savepoints/defaults.yml)):
+Plugin [`"skills": "./skills"`](.cursor-plugin/plugin.json) discovers **both** router and provider skills.
 
-```yaml
-storage:
-  adapter: notion
-  destination: "822cbc89-7c89-4863-af3a-2fe0cd8ab56e"  # Notion data_source_id
-```
+### Router [`skills/savepoints/SKILL.md`](skills/savepoints/SKILL.md)
 
-Human reference for the shared database (not used as create parent when `destination` is set): database id `05e4c804-1380-4ea2-8eb6-30027aa05fe4`.
+Responsible for:
 
-**Resolution order:**
+1. Recognizing meaningful work events (trigger contract below).  
+2. Building a provider-neutral Savepoint per [`schema.md`](skills/savepoints/schema.md).  
+3. Reading `storage.provider` from router [`defaults.yml`](skills/savepoints/defaults.yml).  
+4. **Loading the matching provider skill** (e.g. `notion` → `savepoints-notion/SKILL.md`) and delegating persistence.  
+5. Handling the provider outcome (`success` / `failure` / `unconfirmed`) and anti-loop failure reporting.
 
-1. [`skills/savepoints/defaults.yml`](skills/savepoints/defaults.yml) — canonical for default adopters.  
-2. Optional workspace [`.agents/savepoints-lite.yml`](.agents/savepoints-lite.yml) in **consumer repos only** (override `storage.adapter` / `storage.destination`). Template documents shape; hub repo does not commit a live override file.
+The router **must not** document Notion page properties, Postgres table schemas, or MCP tool parameters.
 
-After resolving config, the agent **must read** [`adapters/<adapter>.md`](skills/savepoints/adapters/notion.md) before performing `append`. Unknown `storage.adapter` → report misconfiguration; do not guess a provider.
+### Provider [`skills/savepoints-notion/SKILL.md`](skills/savepoints-notion/SKILL.md)
 
-No env vars for v1. Auth remains with each provider’s MCP connection (Notion MCP for v1).
+Responsible for:
 
-### [`adapters/notion.md`](skills/savepoints/adapters/notion.md) (v1)
-
-Notion-specific only — keep out of `SKILL.md`:
+- Accepting a Savepoint from the router (does **not** decide when Savepoints are created).  
+- Loading provider [`defaults.yml`](skills/savepoints-notion/defaults.yml) for destination.  
+- Translating the Savepoint into Notion properties and page body.  
+- Calling Notion MCP (`notion-create-pages`, etc.).  
+- Bounded async confirmation (`allow_async: false` by default; at most **two** poll follow-ups).  
+- Returning `success` | `failure` | `unconfirmed` to the router.
 
 | Topic | Contents |
 | --- | --- |
-| Destination | `parent.data_source_id` = resolved `storage.destination` |
+| Destination | `parent.data_source_id` = `destination.data_source_id` from provider defaults |
 | Property mapping | `title` → `Name`; `repository` → `Repository`; `agent` → `Agent`; `session_id` → `Session ID` (omit when unknown) |
-| Body | Notion-flavored Markdown with `## What was done`, etc.; read markdown spec once when first composing |
-| MCP tools | e.g. `notion-create-pages`; optional `notion-fetch` **only** on property mismatch or tool-required schema discovery — not a session preflight |
-| Confirmation | `allow_async: false` by default; bounded async poll (at most **two** follow-ups); `success` / `failure` / `unconfirmed` per protocol |
+| Body | Notion-flavored Markdown sections; read markdown spec once when first composing |
+| Schema fetch | `notion-fetch` **only** on property mismatch or tool-required discovery — not a session preflight |
 
-Do **not** change the Notion database schema unless fetch proves incompatibility.
+Shared Notion database id for humans: `05e4c804-1380-4ea2-8eb6-30027aa05fe4`. Do **not** change Notion schema unless fetch proves incompatibility.
 
-### Future: `adapters/postgres.md`
+### Configuration (split)
 
-Placeholder in plan only. Would document Postgres MCP (or equivalent) insert/append steps. **Not implemented in v1** — no file required until a second provider is added; core `SKILL.md` should not need changes when it ships.
+**Router** ([`skills/savepoints/defaults.yml`](skills/savepoints/defaults.yml)):
+
+```yaml
+storage:
+  provider: notion
+```
+
+**Notion provider** ([`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml)):
+
+```yaml
+destination:
+  data_source_id: "822cbc89-7c89-4863-af3a-2fe0cd8ab56e"
+```
+
+**Resolution order:**
+
+1. Bundled router + provider defaults (above).  
+2. Optional consumer [`.agents/savepoints-lite.yml`](.agents/savepoints-lite.yml) — override `storage.provider` only (template documents shape; hub repo does not commit a live file).  
+3. Optional consumer [`.agents/savepoints-notion.yml`](.agents/savepoints-notion.yml) (or documented equivalent) — override Notion `destination` only when needed.
+
+No env vars for v1. Auth remains with each provider’s MCP (Notion MCP for v1).
+
+### Future: `savepoints-postgres`
+
+New provider skill + `defaults.yml` only; router provider map gains `postgres` → `savepoints-postgres/SKILL.md`. Router `schema.md` and event logic should not require changes.
 
 ### Trigger contract (immediate writes)
 
@@ -221,26 +256,21 @@ On create error or unconfirmed async: one-sentence user-visible report (tool nam
 
 ## Skill structure
 
-See **Storage adapters** above for the canonical tree. Summary:
+See **Router and provider skills** above. Summary:
 
-| File | Role |
+| Path | Role |
 | --- | --- |
-| [`SKILL.md`](skills/savepoints/SKILL.md) | Provider-neutral protocol |
-| [`defaults.yml`](skills/savepoints/defaults.yml) | `storage.adapter` + `storage.destination` |
-| [`adapters/notion.md`](skills/savepoints/adapters/notion.md) | Notion MCP `append` instructions (v1) |
-| [`verification.md`](skills/savepoints/verification.md) | Manual + behavioral checklists — **adopt-and-verify only** |
-| [`skills/README.md`](skills/README.md) | Index |
+| [`skills/savepoints/SKILL.md`](skills/savepoints/SKILL.md) | Router — events, Savepoint build, provider resolve, delegate |
+| [`skills/savepoints/schema.md`](skills/savepoints/schema.md) | Canonical Savepoint contract |
+| [`skills/savepoints/defaults.yml`](skills/savepoints/defaults.yml) | `storage.provider` |
+| [`skills/savepoints-notion/SKILL.md`](skills/savepoints-notion/SKILL.md) | Notion MCP persistence (v1) |
+| [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) | `destination.data_source_id` |
+| [`skills/savepoints/verification.md`](skills/savepoints/verification.md) | Manual checklists — **adopt-and-verify only** |
+| [`skills/README.md`](skills/README.md) | Index of router + providers |
 
-**[`SKILL.md`](skills/savepoints/SKILL.md) sections (suggested):**
+**Router `SKILL.md` sections (suggested):** purpose; triggers; `schema.md` reference; metadata derivation; provider resolution table; delegation steps; outcomes and anti-loop; forbidden (provider MCP details).
 
-1. Purpose and v1 boundaries  
-2. When to write (trigger list)  
-3. Savepoint shape + metadata derivation  
-4. Config resolution → load matching `adapters/<adapter>.md`  
-5. `append` contract and outcomes (`success` / `failure` / `unconfirmed`)  
-6. Failure handling and anti-loop  
-7. What **not** to do (read/update/batch/hooks; embedding Notion steps in `SKILL.md`)  
-8. In **adopt-and-verify** only: link [`verification.md`](skills/savepoints/verification.md)
+**Provider `savepoints-notion/SKILL.md` sections (suggested):** input Savepoint contract; load provider defaults; Notion mapping; MCP write + bounded confirmation; return outcome; forbidden (event detection).
 
 ---
 
@@ -250,7 +280,7 @@ See **Storage adapters** above for the canonical tree. Summary:
 
 | File | Role |
 | --- | --- |
-| [`.cursor/rules/savepoints-lite.mdc`](.cursor/rules/savepoints-lite.mdc) | `alwaysApply: true` — short contract: triggers, “read skill before write,” fail-open |
+| [`.cursor/rules/savepoints-lite.mdc`](.cursor/rules/savepoints-lite.mdc) | `alwaysApply: true` — short contract: triggers, “read **router** skill (`savepoints`) before write,” fail-open |
 | [`AGENTS.md`](AGENTS.md) | Savepoints Lite section: mandatory logging behavior, link to skill, Cloud reminder (no hooks) |
 | [`CLAUDE.md`](CLAUDE.md) | `@AGENTS.md` or equivalent one-line import for Claude Code |
 
@@ -270,16 +300,16 @@ Follow renovate’s dual manifest pattern:
 
 1. Import `https://github.com/multipliers-dev/savepoints-lite` as marketplace; install **savepoints-lite** plugin.  
 2. Copy [`templates/consumer/.cursor/rules/savepoints-lite.mdc`](templates/consumer/.cursor/rules/savepoints-lite.mdc) into the consumer repo (or merge equivalent prose).  
-3. **Only if overriding the shared database:** copy template → `.agents/savepoints-lite.yml` in the consumer repo (not required for default adopters).  
+3. **Only if overriding provider or destination:** copy templates → `.agents/savepoints-lite.yml` (router `storage.provider`) and/or `.agents/savepoints-notion.yml` (Notion destination) — not required for default adopters.  
 4. Add a short pointer in consumer `AGENTS.md` / `CLAUDE.md`.  
-5. Ensure the MCP for the configured adapter is connected (Notion MCP when `storage.adapter: notion`).
+5. Ensure the MCP for the configured provider is connected (Notion MCP when `storage.provider: notion`).
 
 **Not in v1:** Listing inside `cursor-team-marketplace` (optional follow-up PR there).
 
 ### Claude Code portability
 
-- **Same skill file** is canonical.  
-- Adoption doc: install plugin if supported, else vendor `skills/savepoints/` into the project’s Claude skills path and replicate the always-on instruction via `CLAUDE.md` + `AGENTS.md`.  
+- **Router + provider skills** ship together.  
+- Adoption doc: install plugin if supported, else vendor `skills/savepoints/` and `skills/savepoints-notion/` and replicate always-on instruction via `CLAUDE.md` + `AGENTS.md`.  
 - Verification item: one real task in Claude Code → confirm row in shared Notion DB.
 
 ---
@@ -293,7 +323,7 @@ Current [`src/index.ts`](src/index.ts) is a placeholder (`console.log("ready")`)
 | Remove / change | Rationale |
 | --- | --- |
 | Remove `src/`, `tsx`, `typescript`, `dev`/`start` scripts | No executable product code |
-| Replace with [`scripts/verify-protocol-files.sh`](scripts/verify-protocol-files.sh) | CI/pre-commit guard: `SKILL.md`, `defaults.yml`, `adapters/notion.md`, manifests parse; `storage.adapter: notion` and destination UUID present |
+| Replace with [`scripts/verify-protocol-files.sh`](scripts/verify-protocol-files.sh) | CI/pre-commit guard: router + `savepoints-notion` skill trees, manifests parse; `storage.provider: notion`; Notion `data_source_id` in provider defaults |
 | [`package.json`](package.json) scripts: `test` + `typecheck` → both run verifier (keeps Husky/CI contract without a fake TS app) | Preserves team-harness hook story with minimal churn |
 | Update [`README.md`](README.md) | Product description and Notion MCP prerequisite only — **no** link to `docs/adopt.md` until that file exists in adopt-and-verify |
 
@@ -309,7 +339,9 @@ Recommended **two implementation PRs** + docs closure. Each slice is **merge-saf
 
 **Deliverables:**
 
-- `skills/savepoints/SKILL.md`, `skills/savepoints/defaults.yml`, `skills/savepoints/adapters/notion.md`, `skills/README.md` — **not** `verification.md` or `adapters/postgres.md` (slice 2 / future)  
+- Router: `skills/savepoints/SKILL.md`, `schema.md`, `defaults.yml`  
+- Provider: `skills/savepoints-notion/SKILL.md`, `defaults.yml`  
+- `skills/README.md` — **not** `verification.md` or `savepoints-postgres` (slice 2 / future)  
 - Override template only (e.g. `.agents/savepoints-lite.template.yml` or under `templates/consumer/`) — **no** committed `.agents/savepoints-lite.yml` in this repo  
 - `.cursor/rules/savepoints-lite.mdc`  
 - `AGENTS.md`, `CLAUDE.md`, [`README.md`](README.md) — product overview and Notion MCP prerequisite; **do not** link to [`docs/adopt.md`](docs/adopt.md) (file does not exist until slice 2)  
@@ -319,7 +351,7 @@ Recommended **two implementation PRs** + docs closure. Each slice is **merge-saf
 **Acceptance:**
 
 - `npm test` and `npm run typecheck` pass (verifier only)  
-- `verify-protocol-files.sh` checks protocol-core artifacts only (`SKILL.md`, `defaults.yml`, `adapters/notion.md`, plugin manifests, rule) — **must not** require `verification.md` or `docs/adopt.md`  
+- `verify-protocol-files.sh` checks protocol-core artifacts only (router + `savepoints-notion` skills, plugin manifests, rule) — **must not** require `verification.md` or `docs/adopt.md`  
 - Root `README.md` contains **no** reference to `docs/adopt.md` (grep / verifier assertion acceptable)  
 - No new hooks beyond existing git-hook stack  
 
@@ -353,7 +385,7 @@ Recommended **two implementation PRs** + docs closure. Each slice is **merge-saf
 | --- | --- |
 | Skill + plugin artifacts exist | `scripts/verify-protocol-files.sh` (protocol-core scope; add `verification.md` in adopt-and-verify) |
 | JSON manifests parse | same script (`node -e` or `python -m json.tool`) |
-| `storage.adapter: notion` and destination UUID unchanged | grep/assert in `defaults.yml` |
+| `storage.provider: notion` in router defaults; Notion `data_source_id` in provider defaults | grep/assert in respective `defaults.yml` |
 | No accidental hook additions | script asserts `.cursor/hooks.json` has no savepoints-specific hooks |
 
 **Do not** build an “agent compliance test framework.”
@@ -374,7 +406,7 @@ Use [`skills/savepoints/verification.md`](skills/savepoints/verification.md):
 | 6c | **No Savepoint-on-failure loop** | After a failed Savepoint write, agent reports in chat only; does not immediately open another Savepoint solely to record that failure |
 | 7 | **Claude Code** | Repeat 2–5 in Claude with same DB |
 | 8 | **No hooks** | Confirm logging still works with only instructions (no new lifecycle hooks) |
-| 9 | **Adapter selection** | With default `defaults.yml`, agent follows `adapters/notion.md` (Notion MCP tools), not inline Postgres or ad-hoc API steps |
+| 9 | **Provider delegation** | With default config, router delegates to `savepoints-notion` skill (Notion MCP); router text does not inline Notion property/SQL steps |
 
 Record manual run date + Notion page URLs in PR description or verification checklist (not committed secrets).
 
@@ -388,9 +420,9 @@ Record manual run date + Notion page URLs in PR description or verification chec
 | **Plugin vs rule** | Installing the plugin alone does **not** enable continuous logging; consumers must add the rule (document loudly in `docs/adopt.md`). |
 | **Cloud Agents** | Rely on `AGENTS.md` (+ optional future `.cursor/CLOUD.md` one-pager); rules may load but must not assume hook delivery. |
 | **Session ID** | Inconsistent across hosts; optional by design. |
-| **Instruction adapters** | Boundary is behavioral; agents may drift — verify via manual checklist (row 9) and adopt doc emphasis on reading `adapters/<adapter>.md`. |
-| **Notion MCP variance** | Document in `adapters/notion.md`; tool names may differ by client — use connected Notion MCP create-page tool and documented property names unless a create error forces fetch. |
-| **PostgreSQL / multi-provider** | Deferred — no `adapters/postgres.md`, migrations, or dual-write in v1. |
+| **Router vs provider** | Instruction-only routing; verify delegation via manual checklist (row 9) and adopt doc. |
+| **Notion MCP variance** | Document in `savepoints-notion/SKILL.md`; tool names may differ by client. |
+| **PostgreSQL / multi-provider** | Deferred — `savepoints-postgres` skill only; no dual-write in v1. |
 | **Async creates** | Prefer `allow_async: false`; when async is unavoidable, **bounded** poll (no indefinite wait); then success, terminal failure, or unconfirmed — never imply persistence on queue alone. |
 | **Skill name** | **Decision:** use `savepoints` (slash `/savepoints`) vs `savepoints-lite` — recommend **`savepoints`** for ergonomics with repo name `savepoints-lite` disambiguating the product. |
 | **cursor-team-marketplace** | **Deferred:** optional third PR to add marketplace entry after v1 proven. |
@@ -421,7 +453,7 @@ Authority: Open PR only — implement and open the PR; do not merge.
 
 Topology: start from latest origin/main; branch represents only this slice; PR base must be main.
 
-Deliverables: per plan — provider-neutral SKILL.md, defaults.yml (storage.adapter/destination), adapters/notion.md, override template, alwaysApply rule, AGENTS.md/CLAUDE.md, plugin manifests, bootstrap slim, verify-protocol-files.sh, README without any docs/adopt.md link. Mark protocol-core completed in plan frontmatter in this PR.
+Deliverables: per plan — router skill (SKILL.md, schema.md, defaults.yml), savepoints-notion provider skill, override templates, alwaysApply rule → router, AGENTS.md/CLAUDE.md, plugin manifests, bootstrap slim, verify-protocol-files.sh, README without docs/adopt.md link. Mark protocol-core completed in plan frontmatter in this PR.
 
 Verification: npm test && npm run typecheck. Do not create Notion test rows unless explicitly asked.
 ```
