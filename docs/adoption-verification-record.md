@@ -22,7 +22,7 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 | 1 | Discoverability | Not run | — | |
 | 2 | Installed router | Not run | — | |
 | 3 | Provider delegation | Not run | — | |
-| 4 | Implicit logging | Not run | — | Notion URL in PR only |
+| 4 | Implicit logging | **Fail** | 2026-10-27 | See [Scenario 4 — implicit logging failures](#scenario-4--implicit-logging-failures) |
 | 5 | Metadata | Not run | — | |
 | 6 | Content | Not run | — | |
 | 7 | Multi-write | Not run | — | |
@@ -32,8 +32,49 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 | 11 | No capture hooks | Not run | — | |
 | 12 | Claude Code | Not run | — | |
 
+### Scenario 4 — implicit logging failures
+
+#### Run A — PR #8 Bugbot fixes (Cursor agent, same session as operator audit)
+
+**Confirmed facts (tool/conversation history):**
+
+- `savepoints-lite.mdc` was present via Cursor **always-applied workspace rule injection** (not opened with Read on `.cursor/rules/savepoints-lite.mdc`).
+- Meaningful work completed: doc/package/test edits for Bugbot findings, `npm ci` / `npm test` / `npm run verify` / `npm run validate:plans`, commit `5663a1a`, push, PR #8 body update.
+- Installed router `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` was read **once**, **after** implementation, commit, push, and PR update — not before finishing the work unit.
+- Installed `savepoints-notion` provider SKILL was **not** read.
+- **No** Notion MCP tools were invoked.
+- **No** Savepoint record was created.
+
+**Hypotheses (not yet proven root cause):**
+
+- Activation may be treated as background context rather than a **same-turn completion obligation** tied to commit/push/PR wrap-up.
+- “Read and follow” may be interpreted as optional file inspection rather than router → provider → persistence execution.
+- Competing instructions (user rules, skills, task completion) may outrank Savepoints at session end without an explicit completion boundary.
+
+**Notion:** not applicable — no write attempted; operator authorization not exercised.
+
+#### Run B — controlled reproduction (fresh subagent, hub root, 2026-10-27)
+
+**Setup:** Subagent on `slice/adopt-and-verify`; primary task was a one-sentence `docs/publishing.md` clarification + `npm test` + local commit; prompt did **not** mention Savepoints. Repro doc commit was **reverted** afterward so PR scope stays verification-only.
+
+**Confirmed facts (subagent audit appendix):**
+
+- Read `.cursor/rules/savepoints-lite.mdc` via Read: **no**
+- Workspace rules mentioned savepoints-lite: **yes**
+- Any path under `node_modules/@multipliers-dev/savepoints-lite/` read via Read: **none**
+- Read `savepoints-notion` provider SKILL: **no**
+- Notion MCP tools invoked: **none**
+- Savepoint record attempted: **no**
+
+**Hypotheses:**
+
+- Failure reproduces under activation injection without explicit Savepoints reminder — not a one-off omission in Run A.
+- Subagent sessions may not mirror every Cursor desktop harness behavior; desktop re-run still useful before instruction changes.
+
+**Notion:** not applicable — no write attempted.
+
 ## Slice completion gate
 
-`adopt-and-verify` plan todo stays **pending** until required manual hub scenarios are **Passed** (or operator-waived with PR rationale).
+`adopt-and-verify` plan todo stays **pending** until required manual hub scenarios are **Passed** (or operator-waived with PR rationale). Scenario **4 Fail** blocks claiming implicit logging works.
 
-**Current PR branch:** hub implementation + automated checks **Pass**; all manual scenarios **Not run**.
+**Current PR branch:** hub implementation + automated checks **Pass**; manual scenario **4 Fail** (two observed runs); other manual scenarios **Not run**.
