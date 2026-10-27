@@ -21,7 +21,7 @@ todos:
     content: "Phase 3: README/adopt/architecture/publishing/skills — v1.1.0 accuracy, privacy, reliability, maintenance"
     status: pending
   - id: phase4-release-prep
-    content: "Phase 4: Bump to 2.0.0, npm ci/test/verify/validate:plans, package implementation PR (no publish)"
+    content: "Phase 4: Hub version 2.0.0; dogfood devDep stays 1.1.0 until post-publish; split pack vs registry verification; gates pass (no publish)"
     status: pending
   - id: phase5-upgrade-prep
     content: "Phase 5: Document post-2.0.0 consumer upgrade procedure (may ship in phase4 PR); consumer pin-bump PRs only after @2.0.0 is published"
@@ -43,8 +43,8 @@ isProject: false
 | phase1-consumer-prs | Open PR only | One consumer repo per PR. Do not merge. |
 | phase1-checkpoint | Manual verification gate | Verify main branches only; no implementation PR. Stop with pass/fail report. |
 | phase2-package-config | Open PR only | savepoints-lite hub only. Do not merge or publish. |
-| phase3-docs | Open PR only | savepoints-lite hub only. May combine with phase2/phase4 in one merge-safe PR. Do not merge. |
-| phase4-release-prep | Open PR only | savepoints-lite hub only. Do not merge or publish npm. |
+| phase3-docs | Open PR only | savepoints-lite hub only. **Prerequisite:** phase1-checkpoint passed. May combine with phase2/phase4 in one merge-safe PR. Do not merge. |
+| phase4-release-prep | Open PR only | savepoints-lite hub only. **Prerequisite:** phase1-checkpoint passed. Do not merge or publish npm. |
 | phase5-upgrade-prep | Open PR only | **Docs:** upgrade procedure in hub adopt/docs (may merge with phase4 PR). **Execution:** consumer `@2.0.0` bump PRs only after operator publishes registry release — not part of this slice’s hub PR. |
 | plan-closure | Open PR only | Docs-only archive PR. Do not merge. |
 
@@ -102,7 +102,37 @@ flowchart TB
   P4 --> P5
 ```
 
-**Hard checkpoint:** Do not start phase2-package-config until every confirmed consumer has `.agents/savepoints-notion.yml` merged to `main`.
+**Hard checkpoint:** Do not start **any** hub implementation slice (`phase2-package-config`, `phase3-docs`, `phase4-release-prep`) until `phase1-checkpoint` passes — every confirmed consumer has `.agents/savepoints-notion.yml` merged to `main`. Standalone agent prompts for phases 2–4 must restate this gate.
+
+### Hub package version vs registry dogfood pin
+
+The hub [`package.json`](package.json) carries two version concepts:
+
+| Field | Role during phase 4 PR (pre-publish) | After operator publishes `@2.0.0` |
+| --- | --- | --- |
+| `"version"` | May become **`2.0.0`** (release candidate in git) | **`2.0.0`** on registry |
+| `devDependencies["@multipliers-dev/savepoints-lite"]` | Stays **`1.1.0`** (exact pin + lockfile) | Bumped to **`2.0.0`** in a **follow-up** hub PR |
+
+**Why:** `npm ci` installs the self-devDependency from the **public registry**, not the workspace tree. [`AGENTS.md`](AGENTS.md) session logging reads skills from `node_modules/@multipliers-dev/savepoints-lite/` (published artifact), not git `skills/` until dogfood pin catches up.
+
+**Verification today (must not be weakened):**
+
+| Gate | What it validates | Pre-publish expectation |
+| --- | --- | --- |
+| `npm run verify` | Workspace source + [`scripts/expected-package-paths.txt`](scripts/expected-package-paths.txt) via `npm pack --dry-run` | **2.0.0 release candidate** tarball (including new paths such as example templates) |
+| `npm test` (package invariants) | Workspace rules + **registry dogfood** install under `node_modules/` | Installed package **version** matches devDependency pin (`1.1.0`); see below |
+| `installed registry dogfood artifact matches expected publish layout` ([`test/package-invariants.test.js`](test/package-invariants.test.js)) | Lists files in `node_modules/@multipliers-dev/savepoints-lite` vs workspace `expected-package-paths.txt`; compares `installedPkg.files` to workspace `files` | **Will diverge** once workspace `expected-package-paths.txt` grows for 2.0.0 while registry dogfood remains `@1.1.0` |
+
+**Implementation requirement:** Before claiming phase 4 verification passes, the hub implementation PR must **split or extend** verification so both remain true without bypass:
+
+1. **Source / release-candidate pack** — `npm run verify` (and any pack-focused tests) assert the **workspace** `2.0.0` candidate layout.
+2. **Registry dogfood** — tests assert the **installed `@1.1.0`** artifact independently (e.g. separate allowlist or conditional expectations keyed on devDependency pin vs workspace `version`) until the follow-up PR bumps the pin to `2.0.0` after publish.
+3. **`npm ci` stays reproducible** — do not bump devDependency to `2.0.0` before the version exists on npm; do not use `file:` link for dogfood in the pre-publish PR.
+4. **No gate weakening** — do not delete dogfood layout checks or stop running `npm test` / `npm run verify` to mask the version skew.
+
+If scripts/tests cannot express the split yet, **update them in the same implementation PR** as the phase 2–4 code changes (not in this plan-only PR).
+
+**Post-publish (operator + follow-up hub PR):** publish `@2.0.0` → bump hub devDependency and lockfile to `2.0.0` → `npm ci` → dogfood layout checks align with workspace allowlist again.
 
 ---
 
@@ -202,9 +232,11 @@ flowchart TB
 
 **Recommended authority:** Open PR only
 
+**Prerequisite:** phase1-checkpoint passed (same hard gate as phase2; do not open a standalone phase3 hub PR before every consumer has explicit Notion destination on `main`).
+
 **Rationale:** Public repo accuracy for privacy, reliability, maintenance, and `@1.1.0` / `@2.0.0` messaging.
 
-**Agent instruction:** Update README, AGENTS.md, docs/, skills/ per plan; preserve [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md) historical rows.
+**Agent instruction:** Update README, AGENTS.md, docs/, skills/ per plan; preserve [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md) historical rows. If combined with phase2/phase4, still require checkpoint before starting the combined PR.
 
 **Acceptance:**
 
@@ -217,16 +249,25 @@ flowchart TB
 
 **Recommended authority:** Open PR only
 
+**Prerequisite:** phase1-checkpoint passed — confirm every consumer has `.agents/savepoints-notion.yml` on `main` before bumping hub `"version"` or removing packaged defaults.
+
 **Rationale:** Breaking configuration change → semver `2.0.0`.
 
-**Agent instruction:** Bump `package.json` / lockfile; run full hub gates; do not `npm publish`.
+**Agent instruction:**
+
+- Set hub **`"version": "2.0.0"`**; keep **`devDependencies["@multipliers-dev/savepoints-lite"]: "1.1.0"`** until after operator publishes `@2.0.0` (follow-up hub PR bumps dogfood pin).
+- Run full hub gates per **Hub package version vs registry dogfood pin** (split source pack vs registry dogfood verification if needed).
+- Do not `npm publish`.
 
 **Acceptance:**
 
-- Version `2.0.0` in package metadata
-- `npm ci && npm test && npm run verify && npm run validate:plans` pass
-- Tarball verify: no personal destination in package defaults
-- Optional in the same PR: phase5 **documentation** (post-`2.0.0` upgrade procedure in adopt/docs) — does not require registry publish first
+- `"version": "2.0.0"` in hub `package.json`; devDependency self-pin remains **`1.1.0`** until post-publish follow-up
+- `npm ci` reproducible (registry install of `@1.1.0` succeeds)
+- `npm run verify` passes for **workspace 2.0.0 release candidate** (pack dry-run vs `expected-package-paths.txt`)
+- `npm test` passes including **independent** registry dogfood checks (update tests/scripts if layout skew requires split allowlists — no weakening)
+- `npm run validate:plans` passes
+- Tarball candidate: no personal destination in package defaults
+- Optional in the same PR: phase5 **documentation** (post-`2.0.0` upgrade procedure) — docs may be written pre-publish; **consumer pin-bump PRs** still wait for registry `@2.0.0`
 
 ---
 
@@ -355,11 +396,13 @@ Implement slice phase3-docs only on multipliers-dev/savepoints-lite.
 
 Authority: Open PR only — do not merge.
 
-Topology: origin/main; may combine with phase2/phase4 in one merge-safe PR.
+Prerequisite: phase1-checkpoint passed — every confirmed consumer has .agents/savepoints-notion.yml merged to main. If not passed, stop; do not open this PR.
+
+Topology: origin/main; may combine with phase2/phase4 in one merge-safe PR only after checkpoint. Do not bypass phase2 by doing phase3 alone before checkpoint.
 
 Deliverables: README, AGENTS.md, docs/, skills/ updates per plan Phase 3.
 
-Verification: npm test && npm run verify && npm run validate:plans. Mark phase3-docs completed in frontmatter in the same PR.
+Verification: npm test && npm run verify && npm run validate:plans (if hub package layout unchanged, existing gates suffice). Mark phase3-docs completed in frontmatter in the same PR.
 ```
 
 ### phase4-release-prep
@@ -371,11 +414,13 @@ Implement slice phase4-release-prep only on multipliers-dev/savepoints-lite.
 
 Authority: Open PR only — do not merge or npm publish.
 
-Topology: origin/main; PR base main.
+Prerequisite: phase1-checkpoint passed — every confirmed consumer has .agents/savepoints-notion.yml merged to main. If not passed, stop; do not remove packaged defaults or bump version.
 
-Deliverables: package version 2.0.0; hub implementation PR for phases 2–4 as scoped; optional phase5 upgrade **documentation** in the same PR.
+Topology: origin/main; PR base main. Hub "version" may become 2.0.0; devDependencies["@multipliers-dev/savepoints-lite"] stays 1.1.0 until after registry publish (see plan section Hub package version vs registry dogfood pin).
 
-Verification: npm ci && npm test && npm run verify && npm run validate:plans. Mark phase4-release-prep completed in frontmatter in the same PR. If upgrade docs ship here, mark phase5-upgrade-prep completed too.
+Deliverables: phases 2–4 as scoped; optional phase5 upgrade documentation (pre-publish OK); split pack vs dogfood verification in tests/scripts if required.
+
+Verification: npm ci && npm test && npm run verify && npm run validate:plans — all pass without weakening gates. Mark phase4-release-prep completed in frontmatter in the same PR. If upgrade docs ship here, mark phase5-upgrade-prep completed too. Do not bump dogfood devDependency to 2.0.0 in this PR.
 ```
 
 ### phase5-upgrade-prep
