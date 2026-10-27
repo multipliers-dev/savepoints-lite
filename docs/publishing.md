@@ -65,16 +65,13 @@ After `@2.0.0` (or the released version) is on the registry:
 
 Do **not** bump the devDependency to a version that does not exist on npm (no `file:` link for dogfood).
 
-### Hub session logging after the bump
+### Hub session logging (marketplace integration)
 
 `@1.1.0` packaged defaults included a maintainer `destination.data_source_id`. **`@2.0.0` does not** — the hub does not commit `.agents/savepoints-notion.yml` or a personal destination in this repository.
 
-After the dogfood pin reaches `@2.0.0`, activated hub session logging **will not persist to Notion** until the operator supplies a valid destination through one of:
+Routine hub session logging uses the **team-harness** marketplace Savepoints wrapper with **tier-1** `destination` from global Cursor User Rules ([engineering invariants](https://github.com/multipliers-dev/cursor-team-marketplace/blob/main/docs/engineering-invariants.md)), not per-repo `AGENTS.md` activation or `node_modules` skills for instructions.
 
-- **Tier 1:** explicit integration instruction context (e.g. a future team marketplace wrapper skill — not implemented in the hub repo); or
-- **Tier 2:** optional `.agents/savepoints-notion.yml` in the hub checkout (operator-owned; use [`templates/consumer/savepoints-notion.yml.example`](../templates/consumer/savepoints-notion.yml.example) as a template only).
-
-Do not reintroduce maintainer destination ids into packaged defaults, generic docs, or templates. Configuring hub logging is an operator step separate from bumping the devDependency.
+Do not reintroduce maintainer destination ids into packaged defaults, generic docs, or templates.
 
 ## Later releases
 
