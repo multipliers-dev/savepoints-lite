@@ -1,6 +1,6 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, posix } from "node:path";
 import { describe, it, expect } from "vitest";
 import { parse as parseYaml } from "yaml";
 
@@ -8,6 +8,25 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 function readRoot(rel) {
   return readFileSync(join(root, rel), "utf8");
+}
+
+function markdownLinkTargets(markdown) {
+  const targets = [];
+  const re = /\[([^\]]*)\]\(([^)]+)\)/g;
+  let match;
+  while ((match = re.exec(markdown)) !== null) {
+    targets.push(match[2]);
+  }
+  return targets;
+}
+
+function isExternalOrAnchorLink(link) {
+  return (
+    link.startsWith("http://") ||
+    link.startsWith("https://") ||
+    link.startsWith("#") ||
+    link.startsWith("mailto:")
+  );
 }
 
 describe("package invariants", () => {
@@ -18,8 +37,17 @@ describe("package invariants", () => {
     expect(pkg.publishConfig?.access).toBe("public");
     expect(pkg.publishConfig?.provenance).toBe(true);
     expect(pkg.files).toEqual(
-      expect.arrayContaining(["skills/**", "README.md", "LICENSE", "docs/**"]),
+      expect.arrayContaining([
+        "skills/**",
+        "templates/**",
+        "README.md",
+        "LICENSE",
+        "docs/adopt.md",
+        "docs/architecture.md",
+        "docs/publishing.md",
+      ]),
     );
+    expect(pkg.files).not.toContain("docs/**");
     expect(pkg.license).toBe("MIT");
     expect(pkg.scripts.typecheck).toBeUndefined();
     expect(pkg.scripts.verify).toBeDefined();
@@ -73,6 +101,20 @@ describe("package invariants", () => {
     }
   });
 
+  it("maintainer adoption record stays out of npm files allowlist", () => {
+    const pkg = JSON.parse(readRoot("package.json"));
+    const files = pkg.files ?? [];
+    expect(files.join(" ")).not.toMatch(/adoption-verification-record/);
+    expect(existsSync(join(root, "docs/adoption-verification-record.md"))).toBe(
+      true,
+    );
+    const listed = readRoot("scripts/expected-package-paths.txt")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    expect(listed).not.toContain("docs/adoption-verification-record.md");
+  });
+
   it("notion provider documents verified property types", () => {
     const skill = readRoot("skills/savepoints-notion/SKILL.md");
     expect(skill).toMatch(/Notion type/);
@@ -92,10 +134,39 @@ describe("package invariants", () => {
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
-    expect(listed).toHaveLength(12);
+    expect(listed).toHaveLength(15);
     for (const rel of listed) {
       expect(existsSync(join(root, rel))).toBe(true);
     }
+  });
+
+  it("tarball markdown relative links resolve within npm pack file set", () => {
+    const tarballFiles = new Set(
+      readRoot("scripts/expected-package-paths.txt")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean),
+    );
+    const violations = [];
+    for (const rel of [...tarballFiles].filter((p) => p.endsWith(".md"))) {
+      const content = readRoot(rel);
+      for (const link of markdownLinkTargets(content)) {
+        if (isExternalOrAnchorLink(link)) {
+          continue;
+        }
+        const [pathPart] = link.split("#");
+        if (!pathPart) {
+          continue;
+        }
+        const resolved = posix.normalize(
+          posix.join(posix.dirname(rel), pathPart),
+        );
+        if (!tarballFiles.has(resolved)) {
+          violations.push(`${rel}: (${link}) → ${resolved} not in tarball`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
   });
 
   it("required skill files exist", () => {
@@ -116,5 +187,99 @@ describe("package invariants", () => {
     const hooks = readRoot(".cursor/hooks.json");
     expect(hooks).not.toMatch(/savepoints-lite/i);
     expect(hooks).not.toMatch(/observe\.sh/);
+  });
+
+  it("hub dogfoods published package with exact devDependency pin", () => {
+    const pkg = JSON.parse(readRoot("package.json"));
+    expect(pkg.devDependencies["@multipliers-dev/savepoints-lite"]).toBe(
+      "1.0.0",
+    );
+  });
+
+  it("hub activation uses AGENTS.md only (no Cursor savepoints rule)", () => {
+    const routerPath =
+      "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md";
+    expect(existsSync(join(root, ".cursor/rules/savepoints-lite.mdc"))).toBe(
+      false,
+    );
+    const agents = readRoot("AGENTS.md");
+    expect(agents).toContain(routerPath);
+    expect(agents).toMatch(/session log/i);
+    expect(agents).toMatch(/does not count as recording an entry/i);
+    expect(agents).not.toMatch(/savepoints-lite\.mdc/);
+    const claude = readRoot("CLAUDE.md").trim();
+    expect(claude).toBe("@AGENTS.md");
+  });
+
+  it("consumer AGENTS snippet is runtime-only (no adoption install prose)", () => {
+    const routerPath =
+      "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md";
+    const snippet = readRoot("templates/consumer/AGENTS.md.snippet");
+    expect(snippet).toContain(routerPath);
+    expect(snippet).toMatch(/session log/i);
+    expect(snippet).toMatch(/does not count as recording an entry/i);
+    expect(snippet).not.toMatch(/savepoints-lite\.mdc/);
+    expect(snippet).not.toMatch(/templates\/consumer/);
+    expect(snippet).not.toMatch(/npm ci/i);
+    expect(snippet).not.toMatch(/Pin `@multipliers-dev\/savepoints-lite`/);
+  });
+
+  it("does not ship a committed consumer fixture directory", () => {
+    expect(existsSync(join(root, "fixtures/consumer"))).toBe(false);
+  });
+
+  function listFilesRecursive(dir) {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    const files = [];
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        files.push(...listFilesRecursive(full));
+      } else {
+        files.push(full);
+      }
+    }
+    return files;
+  }
+
+  it("published registry @1.0.0 artifact matches immutable 12-file layout", () => {
+    const installRoot = join(
+      root,
+      "node_modules/@multipliers-dev/savepoints-lite",
+    );
+    const installedRouter = join(
+      installRoot,
+      "skills/savepoints/SKILL.md",
+    );
+    expect(
+      existsSync(installedRouter),
+      "hub self-adoption: run npm ci so node_modules/@multipliers-dev/savepoints-lite@1.0.0 is installed",
+    ).toBe(true);
+    const installedPkg = JSON.parse(
+      readFileSync(join(installRoot, "package.json"), "utf8"),
+    );
+    expect(installedPkg.version).toBe("1.0.0");
+    expect(installedPkg.name).toBe("@multipliers-dev/savepoints-lite");
+    expect(installedPkg.files).toEqual(
+      expect.arrayContaining(["skills/**", "docs/**"]),
+    );
+    expect(installedPkg.files).not.toContain("templates/**");
+
+    const relFiles = listFilesRecursive(installRoot)
+      .map((abs) => abs.slice(installRoot.length + 1))
+      .sort();
+    expect(relFiles).toHaveLength(12);
+    expect(relFiles).not.toContain("skills/savepoints/verification.md");
+    expect(
+      existsSync(join(installRoot, "templates/consumer")),
+    ).toBe(false);
+
+    const workspacePkg = JSON.parse(readRoot("package.json"));
+    const dogfoodVersion =
+      workspacePkg.devDependencies["@multipliers-dev/savepoints-lite"];
+    expect(installedPkg.version).toBe(dogfoodVersion);
+    expect(installedPkg.name).toBe(workspacePkg.name);
+    expect(workspacePkg.files).toContain("templates/**");
+    expect(workspacePkg.files).not.toContain("docs/**");
   });
 });

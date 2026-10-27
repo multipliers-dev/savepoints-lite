@@ -10,3 +10,6 @@ skills/savepoints-notion/SKILL.md
 skills/savepoints/defaults.yml
 skills/savepoints/schema.md
 skills/savepoints/SKILL.md
+skills/savepoints/verification.md
+templates/consumer/AGENTS.md.snippet
+templates/consumer/CLAUDE.md.snippet

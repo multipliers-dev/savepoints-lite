@@ -26,6 +26,56 @@ An agent must not assume Git hooks are active merely because `core.hooksPath` is
 
 Cloud Agents: committed `.cursor/environment.json` runs `npm ci` (triggers `prepare`) then blocking `ENSURE_HOOKS_MODE=wait ENSURE_HOOKS_WAIT_SECS=120 sh scripts/ensure-hooks.sh` on start — no `cloud-agent-*` Node wrappers (no `.nvmrc` pin). Installing the team-harness marketplace plugin does not wire this repo by itself. After merging lifecycle changes, trigger and promote a new environment Build.
 
+## Savepoints Lite (hub dogfooding)
+
+This repository **consumes** the published npm package it ships. `npm ci` installs `@multipliers-dev/savepoints-lite@1.0.0` as a devDependency (exact version in `package.json` + lockfile). Instruction-only — **no** Savepoints lifecycle hooks.
+
+### Ongoing logging authorization
+
+Installing the package or connecting Notion MCP does **not** alone authorize production Notion writes. **Opt-in** = this Savepoints Lite session-log section committed in root `AGENTS.md`. Instruction-only — **no** Savepoints lifecycle hooks.
+
+Once opted in, maintain the session log **without** asking for separate authorization before each entry, subject to host Notion MCP permissions. If activation is absent or consent is unclear, do not write to Notion; request activation or explicit consent where appropriate; otherwise fail open without claiming persistence.
+
+[`skills/savepoints/verification.md`](skills/savepoints/verification.md) **manual verification** (deliberate checklist runs, especially failure simulations) requires **explicit operator authorization for that verification session** — separate from routine session logging and **not** a reason to skip logging during ordinary work when this repo is activated.
+
+### Session log
+
+Maintain a running session log in Notion.
+
+Do not wait until the session ends. Record an entry immediately after:
+
+- Every completed piece of meaningful work.
+- Every significant decision.
+- Every task switch.
+- Every primary-task error or its resolution.
+
+Each entry should capture:
+
+- What was done (commands, files, features)
+- Decisions made (and why)
+- Open threads (unfinished work)
+- Errors (what went wrong and how it was handled)
+
+Use the installed Savepoints Lite instructions at:
+
+`node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`
+
+Complete the logging workflow before moving on to the next task or delivering the final response. Reading the instructions alone does not count as recording an entry.
+
+If logging fails, continue the primary work without retry loops.
+
+**Delegated work:** The primary agent maintains the session log, including meaningful work completed by subagents. When a subagent returns, evaluate its reported outcome and record an entry (what was done, decisions, open threads, errors) before continuing — using this checkout's installed router and Notion provider. Do not assume the subagent succeeded without supporting evidence; skip duplicate entries for the same event. Subagents do not need to install Savepoints Lite or persist Savepoints independently. Do not assume isolated worktrees contain `node_modules`, workspace activation, or Notion MCP access.
+
+- `node_modules` must exist — do **not** use this repository's `skills/` tree as the instruction source.
+- Fail open on write failure; never claim Notion persistence without confirmed write.
+
+| Host | Load mechanism |
+| --- | --- |
+| **Cursor** | Root `AGENTS.md` (including this section) |
+| **Claude Code** | [`CLAUDE.md`](CLAUDE.md) imports this file (`@AGENTS.md`) |
+
+Consumer snippet: [`templates/consumer/AGENTS.md.snippet`](templates/consumer/AGENTS.md.snippet). Verification: [`skills/savepoints/verification.md`](skills/savepoints/verification.md), [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md).
+
 ## Discipline
 
 - Pre-commit runs `npm test` and `npm run verify`; do not bypass hooks.
