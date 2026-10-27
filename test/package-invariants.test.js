@@ -18,7 +18,13 @@ describe("package invariants", () => {
     expect(pkg.publishConfig?.access).toBe("public");
     expect(pkg.publishConfig?.provenance).toBe(true);
     expect(pkg.files).toEqual(
-      expect.arrayContaining(["skills/**", "README.md", "LICENSE", "docs/**"]),
+      expect.arrayContaining([
+        "skills/**",
+        "templates/**",
+        "README.md",
+        "LICENSE",
+        "docs/**",
+      ]),
     );
     expect(pkg.license).toBe("MIT");
     expect(pkg.scripts.typecheck).toBeUndefined();
@@ -92,7 +98,7 @@ describe("package invariants", () => {
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
-    expect(listed).toHaveLength(12);
+    expect(listed).toHaveLength(17);
     for (const rel of listed) {
       expect(existsSync(join(root, rel))).toBe(true);
     }
@@ -116,5 +122,59 @@ describe("package invariants", () => {
     const hooks = readRoot(".cursor/hooks.json");
     expect(hooks).not.toMatch(/savepoints-lite/i);
     expect(hooks).not.toMatch(/observe\.sh/);
+  });
+
+  it("hub dogfoods published package with exact devDependency pin", () => {
+    const pkg = JSON.parse(readRoot("package.json"));
+    expect(pkg.devDependencies["@multipliers-dev/savepoints-lite"]).toBe(
+      "1.0.0",
+    );
+  });
+
+  it("hub activation references installed router under node_modules", () => {
+    const routerPath =
+      "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md";
+    const rule = readRoot(".cursor/rules/savepoints-lite.mdc");
+    expect(rule).toMatch(/alwaysApply:\s*true/);
+    expect(rule).toContain(routerPath);
+    expect(rule).toMatch(/not.*skills\//i);
+    const agents = readRoot("AGENTS.md");
+    expect(agents).toContain(routerPath);
+    const claude = readRoot("CLAUDE.md");
+    expect(claude).toContain(routerPath);
+  });
+
+  it("consumer fixture pins registry dependency and activation paths", () => {
+    const fixturePkg = JSON.parse(
+      readRoot("fixtures/consumer/package.json"),
+    );
+    expect(fixturePkg.devDependencies["@multipliers-dev/savepoints-lite"]).toBe(
+      "1.0.0",
+    );
+    expect(existsSync(join(root, "fixtures/consumer/package-lock.json"))).toBe(
+      true,
+    );
+    const rule = readRoot("fixtures/consumer/.cursor/rules/savepoints-lite.mdc");
+    expect(rule).toContain(
+      "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md",
+    );
+  });
+
+  it("installed hub package resolves router skill after npm ci", () => {
+    const installedRouter = join(
+      root,
+      "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md",
+    );
+    expect(existsSync(installedRouter)).toBe(true);
+    const installedPkg = JSON.parse(
+      readFileSync(
+        join(
+          root,
+          "node_modules/@multipliers-dev/savepoints-lite/package.json",
+        ),
+        "utf8",
+      ),
+    );
+    expect(installedPkg.version).toBe("1.0.0");
   });
 });

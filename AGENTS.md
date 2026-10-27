@@ -26,6 +26,20 @@ An agent must not assume Git hooks are active merely because `core.hooksPath` is
 
 Cloud Agents: committed `.cursor/environment.json` runs `npm ci` (triggers `prepare`) then blocking `ENSURE_HOOKS_MODE=wait ENSURE_HOOKS_WAIT_SECS=120 sh scripts/ensure-hooks.sh` on start — no `cloud-agent-*` Node wrappers (no `.nvmrc` pin). Installing the team-harness marketplace plugin does not wire this repo by itself. After merging lifecycle changes, trigger and promote a new environment Build.
 
+## Savepoints Lite (hub dogfooding)
+
+This repository **consumes** the published npm package it ships. `npm ci` installs `@multipliers-dev/savepoints-lite@1.0.0` as a devDependency (exact version in `package.json` + lockfile).
+
+**Activation (instruction-only — no Savepoints lifecycle hooks):**
+
+| Surface | Mechanism |
+| --- | --- |
+| **Cursor** | [`.cursor/rules/savepoints-lite.mdc`](.cursor/rules/savepoints-lite.mdc) (`alwaysApply: true`) |
+| **Claude Code** | [`CLAUDE.md`](CLAUDE.md) Savepoints section |
+| **Router skill** | `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` |
+
+When Savepoints triggers fire, agents must read the **installed** router under `node_modules`, not the hub `skills/` source tree. Consumer copy-paste templates live under [`templates/consumer/`](templates/consumer/). Manual behavioral verification: [`skills/savepoints/verification.md`](skills/savepoints/verification.md) and [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md).
+
 ## Discipline
 
 - Pre-commit runs `npm test` and `npm run verify`; do not bypass hooks.

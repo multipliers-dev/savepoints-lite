@@ -138,7 +138,7 @@ Out of scope for this package version:
 - Cursor marketplace packaging
 - Multi-provider writes or dynamic provider discovery
 
-Manual behavioral checklists for agents ship in **adopt-and-verify** (`skills/savepoints/verification.md`) — not claimed verified until that slice completes.
+Manual behavioral checklists for agents: [`skills/savepoints/verification.md`](../skills/savepoints/verification.md) and [`docs/adoption-verification-record.md`](./adoption-verification-record.md). Hub dogfooding and the standalone consumer fixture are both required before claiming adopt-and-verify complete.
 
 ## Skill index
 

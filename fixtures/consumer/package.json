@@ -1,0 +1,8 @@
+{
+  "name": "savepoints-lite-consumer-fixture",
+  "private": true,
+  "description": "Minimal consumer checkout for manual Savepoints Lite behavioral verification (not for production adoption)",
+  "devDependencies": {
+    "@multipliers-dev/savepoints-lite": "1.0.0"
+  }
+}

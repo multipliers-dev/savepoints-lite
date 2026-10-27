@@ -1,6 +1,6 @@
 # Adoption guide
 
-How to install `@multipliers-dev/savepoints-lite` in a consumer repository and what is supported in the current release.
+How to install `@multipliers-dev/savepoints-lite` in a consumer repository, activate agents, and verify behavior.
 
 ## Prerequisites
 
@@ -12,32 +12,46 @@ How to install `@multipliers-dev/savepoints-lite` in a consumer repository and w
 Add a **pinned** semver dependency and commit the lockfile. Use `npm ci` in CI and reproducible environments.
 
 ```bash
-npm install @multipliers-dev/savepoints-lite@1.0.0 --save-dev
+npm install @multipliers-dev/savepoints-lite@1.0.0 --save-dev --save-exact
 ```
 
-Example `package.json` dependency (exact version recommended for production adoption):
+Example `package.json` dependency (exact version recommended):
 
 ```json
 "@multipliers-dev/savepoints-lite": "1.0.0"
 ```
 
-npm is the single source of truth for installed skill file versions — do not vendor or copy skills from this package into your repo.
+npm is the single source of truth for installed skill file versions — **do not** vendor or copy skills from this package into your repo.
+
+### Renovate / dependency bumps
+
+Let Renovate (or equivalent) open PRs that bump the pinned version and refresh the lockfile. Activation text stays stable — agents always resolve:
+
+`node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`
+
+Re-run manual checks in [`skills/savepoints/verification.md`](../skills/savepoints/verification.md) after major upgrades if behavior changes.
 
 ## Installation does not activate Savepoints
 
-`npm install` does **not** register skills with Cursor or Claude native discovery. Agents will not use Savepoints until the consumer repo includes **activation** instructions (for example a Cursor rule, or pointers in `AGENTS.md` / `CLAUDE.md`) that tell them **when** to read the router skill and **where** it lives under `node_modules`.
+`npm install` does **not** register skills with Cursor or Claude native discovery. Consumers need **one-time activation** that tells agents **when** to read the router and **where** it lives under `node_modules`.
 
-**In `@multipliers-dev/savepoints-lite@1.0.0`:** copy-paste activation templates and step-by-step host setup are **not** included in this package yet. Behavioral verification (manual Cursor/Claude checks that delegation and Notion writes work end-to-end) is **not** complete for this release.
+Copy-paste templates ship in the package under `templates/consumer/` (also mirrored in this repository for the hub and [`fixtures/consumer/`](../fixtures/consumer/)).
+
+| Surface | Action |
+| --- | --- |
+| **Cursor** | Copy `templates/consumer/.cursor/rules/savepoints-lite.mdc` → `.cursor/rules/` (`alwaysApply: true`) |
+| **AGENTS.md** | Merge `templates/consumer/AGENTS.md.snippet` (preserve existing instructions) |
+| **CLAUDE.md** | Merge `templates/consumer/CLAUDE.md.snippet` (preserve existing content; `@AGENTS.md` pattern is fine) |
+
+Activation files must be **thin** — they reference triggers and the installed router path; they do not duplicate the full protocol in [architecture.md](./architecture.md).
 
 ## Router skill path (after install)
-
-Point activation at the installed router skill:
 
 ```text
 node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md
 ```
 
-The Notion provider skill (same package):
+Notion provider (same package):
 
 ```text
 node_modules/@multipliers-dev/savepoints-lite/skills/savepoints-notion/SKILL.md
@@ -45,9 +59,13 @@ node_modules/@multipliers-dev/savepoints-lite/skills/savepoints-notion/SKILL.md
 
 `node_modules` must exist in the agent execution environment after `npm install` or `npm ci`.
 
-## Optional configuration overrides
+**Important:** Even when developing the package from a git checkout, activated agents must read the **installed** router under `node_modules`, not the repository `skills/` source tree.
 
-Consumers may override defaults without copying packaged YAML:
+## Hub dogfooding (package repository)
+
+The `multipliers-dev/savepoints-lite` hub installs the **published** `@1.0.0` package as an exact devDependency and activates Savepoints at the repository root (Cursor rule, `AGENTS.md`, `CLAUDE.md`). This is **required** for maintainers validating adoption — see [`docs/adoption-verification-record.md`](./adoption-verification-record.md).
+
+## Optional configuration overrides
 
 | File | Overrides |
 | --- | --- |
@@ -55,6 +73,14 @@ Consumers may override defaults without copying packaged YAML:
 | `.agents/savepoints-notion.yml` | `destination.data_source_id` only |
 
 Absent override files are normal — package defaults apply.
+
+## Verification
+
+Automated: `npm ci`, lockfile pin, and path resolution (hub + [`fixtures/consumer/`](../fixtures/consumer/)).
+
+Manual: [`skills/savepoints/verification.md`](../skills/savepoints/verification.md) — real Cursor and Claude Code sessions. **Notion writes to the production Savepoints database require explicit operator authorization** for each run. Record outcomes in [`docs/adoption-verification-record.md`](./adoption-verification-record.md) and Notion URLs in the PR description.
+
+Do **not** add Savepoints lifecycle hooks or executable persistence logic for v1 — instruction + activation only.
 
 ## Learn the architecture
 
@@ -66,10 +92,11 @@ Skill index: [skills/README.md](../skills/README.md) (under the package install 
 
 ## Integration support in `@multipliers-dev/savepoints-lite@1.0.0`
 
-| Included | Not included in this version |
+| Included | Notes |
 | --- | --- |
-| Router and Notion provider skills, schema, and defaults | Copy-paste activation templates for Cursor or Claude |
-| Install prerequisites and canonical `node_modules` skill paths | Step-by-step host setup walkthroughs |
-| Optional `.agents` override files | Published end-to-end verification results for specific agent hosts |
+| Router and Notion provider skills, schema, defaults | Installed via npm |
+| `templates/consumer/` activation stubs | Copy into consumer repos |
+| `skills/savepoints/verification.md` manual checklist | Required before claiming host integration |
+| Recorded behavioral verification | See adoption verification record — hub + fixture |
 
-You are responsible for activation wording in your repository and for validating that agents read the installed router skill and persist via your Notion MCP. The package does not certify Cursor or Claude integration for this release.
+The package does not certify Cursor or Claude integration until manual verification rows are **Pass** for your host and checkout.
