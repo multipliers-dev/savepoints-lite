@@ -13,8 +13,37 @@ todos:
     status: completed
   - id: plan-closure
     content: "Docs-only PR after @2.0.0 published and verified on npm: # Shipped with registry evidence, archive plan, update references"
-    status: pending
+    status: completed
 isProject: false
+---
+
+# Shipped
+
+**Archived 2026-10-27** in `multipliers-dev/savepoints-lite` (plan-closure PR opens after this commit).
+
+| Slice | Delivered |
+| --- | --- |
+| plan-review | [PR #13](https://github.com/multipliers-dev/savepoints-lite/pull/13) — phased OSS readiness plan |
+| plan-revision-explicit-integration | [PR #14](https://github.com/multipliers-dev/savepoints-lite/pull/14) — `@2.0.0` explicit-integration contract and marketplace handoff |
+| oss-readiness-and-release-prep | [PR #15](https://github.com/multipliers-dev/savepoints-lite/pull/15) — hub implementation merged `257eca5` |
+| Post-publish hub dogfood | [PR #16](https://github.com/multipliers-dev/savepoints-lite/pull/16) — devDependency pin `2.0.0` aligned with workspace (`6c0c3be`) |
+| plan-closure | Docs-only archive (this change) |
+
+### npm publication evidence (`@2.0.0`)
+
+| Check | Result | Date (UTC) |
+| --- | --- | --- |
+| Operator publish | [Actions run #40509805580](https://github.com/multipliers-dev/savepoints-lite/actions/runs/40509805580) **success** on `main` @ `257eca5`; `npm publish` reported `@multipliers-dev/savepoints-lite@2.0.0` with provenance (16 files) | 2026-10-27 |
+| `npm view @multipliers-dev/savepoints-lite@2.0.0 version` | `2.0.0` | 2026-10-27 (verified at plan-closure) |
+| `npm view @multipliers-dev/savepoints-lite dist-tags.latest` | `2.0.0` | 2026-10-27 (verified at plan-closure) |
+
+### Post-publication verification
+
+- **Clean install (outside repo):** `npm install @multipliers-dev/savepoints-lite@2.0.0` → installed `package.json` version `2.0.0`; **16** files under `node_modules/@multipliers-dev/savepoints-lite/`; `templates/consumer/savepoints-notion.yml.example` present; packaged `skills/savepoints-notion/defaults.yml` has no usable `destination.data_source_id` key (comment-only file).
+- **Hub after [PR #16](https://github.com/multipliers-dev/savepoints-lite/pull/16):** `devDependencies["@multipliers-dev/savepoints-lite"]` matches workspace `2.0.0`; `npm test` registry dogfood layout uses `scripts/expected-package-paths-registry-dogfood-2.0.0.txt` aligned with `expected-package-paths.txt`.
+
+**Out of scope (follow-on):** [cursor-team-marketplace Savepoints distribution plan](https://github.com/multipliers-dev/cursor-team-marketplace/blob/main/.cursor/plans/2026-10-27-savepoints-marketplace-distribution.plan.md); hub operator Notion destination for session logging (tier 1 marketplace or `.agents/savepoints-notion.yml`) per [`docs/publishing.md`](../../../docs/publishing.md).
+
 ---
 
 # Savepoints Lite public OSS readiness (@2.0.0)
@@ -187,7 +216,7 @@ The hub [`package.json`](package.json) carries two version concepts during the p
 
 **Acceptance:**
 
-- [`.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md`](2026-10-27-oss-readiness-cleanup.plan.md) reflects explicit-integration contract and marketplace handoff
+- Archived plan reflects explicit-integration contract and marketplace handoff
 - `npm run validate:plans` passes
 - `plan-revision-explicit-integration` marked `completed` in frontmatter
 
@@ -245,7 +274,7 @@ The hub [`package.json`](package.json) carries two version concepts during the p
 ### oss-readiness-and-release-prep
 
 ```text
-@.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md
+@.cursor/plans/archive/2026-10-27-oss-readiness-cleanup.plan.md
 
 Implement slice oss-readiness-and-release-prep only on multipliers-dev/savepoints-lite.
 
@@ -263,7 +292,7 @@ Verification: npm ci && npm test && npm run verify && npm run validate:plans —
 ### plan-closure
 
 ```text
-@.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md
+@.cursor/plans/archive/2026-10-27-oss-readiness-cleanup.plan.md
 
 Implement slice plan-closure only.
 
