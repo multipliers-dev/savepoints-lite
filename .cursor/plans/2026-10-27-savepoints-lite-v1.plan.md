@@ -3,10 +3,10 @@ name: Savepoints Lite v1
 overview: npm-first instruction package (@multipliers-dev/savepoints-lite) shipping router + Notion provider skills; consumers install via npm, activate once (Cursor rule / CLAUDE.md / AGENTS.md), delegate to existing Notion MCP — no marketplace, no runtime, no custom MCP server.
 todos:
   - id: protocol-core
-    content: "PR 1: @multipliers-dev/savepoints-lite package (skills, defaults, schema), pack verification, minimal README — no adopt.md link, no consumer activation templates"
+    content: "PR 1: @multipliers-dev/savepoints-lite package (skills, defaults, schema), npm verify script, hub AGENTS.md/CI/pre-commit without typecheck — no adopt.md link, no Savepoints activation"
     status: pending
   - id: adopt-and-verify
-    content: "PR 2 (after operator npm publish of slice 1 version): docs/adopt.md, README link, activation templates, pinned registry dependency, manual Cursor/Claude verification"
+    content: "PR 2 (after operator npm publish): docs/adopt.md, fixtures/consumer/, templates/consumer/, activation, manual Cursor/Claude verification via pinned registry dependency"
     status: pending
   - id: plan-closure
     content: "Docs-only PR: verify vs plan, record deviations, # Shipped, archive plan"
@@ -297,9 +297,10 @@ Follow [`@multipliers-dev/plan-validator`](https://www.npmjs.com/package/@multip
 
 | Concern | Plan |
 | --- | --- |
-| **Name** | `@multipliers-dev/savepoints-lite` |
+| **Name** | `@multipliers-dev/savepoints-lite` (replace hub placeholder name; **not** `private`) |
+| **`private`** | Remove `"private": true` or set `"private": false` before first publish |
 | **Versioning** | Semantic versioning; bump on publish |
-| **`publishConfig`** | `access: public`, `provenance: true` (match plan-validator) |
+| **`publishConfig`** | `access: public`, `provenance: true` (match plan-validator scoped public package) |
 | **`files`** | Ship `skills/**`, package `README.md`, and any packaged config templates — **no** `bin`, **no** compiled runtime |
 | **`engines`** | Node `>=22` (align with plan-validator floor) |
 | **Install** | Consumer `devDependency` (or `dependency`): declare an **exact semver** in `package.json` (e.g. `"@multipliers-dev/savepoints-lite": "1.0.0"`) — not a floating range for production adoption |
@@ -322,7 +323,7 @@ protocol-core merges to main
 | --- | --- |
 | **protocol-core** | Package is publishable; `npm pack` / dry-run proves tarball contents |
 | **Between slices (optional)** | Local `npm pack` + `file:` or packed tarball install for **early smoke** only — does **not** satisfy adoption verification |
-| **adopt-and-verify** | Consumer fixture and manual agent checks use the **published registry version** pinned in `package.json` + lockfile (`npm ci`) |
+| **adopt-and-verify** | [`fixtures/consumer/`](fixtures/consumer/) and manual agent checks use the **published registry version** pinned in `package.json` + lockfile (`npm ci`) |
 
 Do **not** treat `file:` workspace links as the acceptance path for slice 2; they may help developers before the first publish, but slice 2 must confirm the real npm distribution path.
 
@@ -346,7 +347,23 @@ Establish only:
 
 Document in [`docs/adopt.md`](docs/adopt.md) (slice 2): pinned registry dependency + lockfile + `npm ci`, Renovate-friendly updates, `node_modules` requirement, Notion MCP prerequisite, optional `.agents` overrides, **no skill vendoring**, npm does not auto-register native skill discovery.
 
-**Hub repo (`savepoints-lite`):** apply the same activation pattern when dogfooding after slice 2; slice 1 does **not** add consumer activation templates or modify hub `AGENTS.md` / `CLAUDE.md` beyond preserving existing content.
+**Hub repo (`savepoints-lite`):** optional **hub dogfooding** (this repository installing the published package + activation) is separate from [`fixtures/consumer/`](fixtures/consumer/) — see **Consumer fixture**. Slice 1 updates hub **Commands / CI / pre-commit** docs in [`AGENTS.md`](AGENTS.md) (and [`CLAUDE.md`](CLAUDE.md) if present) when removing the placeholder app; slice 1 does **not** add Savepoints activation templates or Savepoints-specific `AGENTS.md` / `CLAUDE.md` sections (deferred to adopt-and-verify).
+
+### Consumer fixture (`fixtures/consumer/` — adopt-and-verify)
+
+Disposable minimal consumer checkout used **only** for manual behavioral verification (not production adoption docs):
+
+| Aspect | Plan |
+| --- | --- |
+| **Location** | [`fixtures/consumer/`](fixtures/consumer/) — minimal `package.json`, lockfile, activation copied from [`templates/consumer/`](templates/consumer/) |
+| **vs hub** | **Separate** from hub dogfooding on the package repo root; fixture simulates an external consumer |
+| **Dependency** | Pinned **published** `@multipliers-dev/savepoints-lite@<version>` from the npm registry (not `file:`) |
+| **Paths** | Manual checks confirm canonical skills under `fixtures/consumer/node_modules/@multipliers-dev/savepoints-lite/skills/` |
+| **Agents** | Manual Cursor and Claude Code sessions run **in or against** the fixture per [`verification.md`](skills/savepoints/verification.md) |
+| **Notion** | Rows in the shared production database **only** with explicit operator authorization |
+| **CI** | Optional layout checks only (e.g. fixture has lockfile + dependency pin); **no** agent behavior in CI |
+
+Keep fixture minimal — no extra services, scripts, or frameworks beyond install + activation stubs.
 
 ---
 
@@ -370,14 +387,25 @@ Current [`src/index.ts`](src/index.ts) is a placeholder (`console.log("ready")`)
 
 | Remove / change | Rationale |
 | --- | --- |
-| Remove `src/`, `tsx`, `typescript`, `dev`/`start` scripts | No executable product code |
-| Repurpose [`package.json`](package.json) as publishable `@multipliers-dev/savepoints-lite` | `files`, `publishConfig`, semver; remove placeholder app `start`/`dev` if unused |
-| [`scripts/verify-package-contents.sh`](scripts/verify-package-contents.sh) (or extend verifier) | Pre-commit/CI: skills tree, defaults, `npm pack --dry-run` expectations |
-| [`package.json`](package.json) scripts: `test` + `typecheck` → run package/skill verifier | No executable Savepoints runtime |
+| Remove `src/`, `tsx`, `typescript`, `tsconfig.json` (if unused), `dev`/`start` scripts | No executable product code; **no** `tsc` / `npm run typecheck` in planned repo state |
+| Repurpose [`package.json`](package.json) as publishable **`@multipliers-dev/savepoints-lite`** | `"name"`, remove `"private": true` (or `"private": false`), `files`, `publishConfig`, semver |
+| **`npm run verify`** | Package + skill validation: skills tree, defaults, [`npm pack --dry-run`](scripts/verify-package-contents.sh) tarball expectations (via [`scripts/verify-package-contents.sh`](scripts/verify-package-contents.sh) or equivalent) |
+| **`npm test`** | Automated checks for package/skill invariants (e.g. Vitest exercising verifier assertions) — **not** a TypeScript app compile |
+| [`.husky/pre-commit`](.husky/pre-commit) + [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Replace `npm run typecheck` with `npm run verify` (keep `npm test`); update in **protocol-core** same PR as script removal |
+| Update [`AGENTS.md`](AGENTS.md) (and [`CLAUDE.md`](CLAUDE.md) if present) | Remove obsolete `dev`/`start`/TypeScript commands; document `npm test`, `npm run verify`, `verify:git-hooks`; preserve unrelated instructions; **no** Savepoints activation section yet |
 | Update [`README.md`](README.md) (slice 1) | Minimal package purpose + Notion MCP prerequisite — **no** `docs/adopt.md` link until slice 2 |
 | **Remove** (if present after bootstrap) | `.cursor-plugin/`, root `plugin.json` — marketplace distribution out of scope |
 
-**Keep unchanged unless required:** [`.cursor/hooks.json`](.cursor/hooks.json), [`.cursor/environment.json`](.cursor/environment.json), Husky / `prepare` / pre-commit scripts — v1 does **not** add **Savepoints activity-capture** hooks (no `observe`, `stop`, `beforeSubmitPrompt`, or similar for logging). **Do not remove or slim existing repository development hooks** (e.g. Husky shims, `ensure-hooks`, team-harness bootstrap) unless a slice explicitly requires unrelated hub cleanup.
+**Planned hub scripts (post protocol-core):**
+
+| Script | Purpose |
+| --- | --- |
+| `npm test` | Automated package/skill validation tests |
+| `npm run verify` | Pack contents + skill tree verification (`npm pack --dry-run`) |
+| `npm run verify:git-hooks` | Unchanged — hook availability |
+| `prepare` | Unchanged — Husky install |
+
+**Keep unchanged unless required:** [`.cursor/hooks.json`](.cursor/hooks.json), [`.cursor/environment.json`](.cursor/environment.json), Husky / `prepare` / pre-commit **machinery** — v1 does **not** add **Savepoints activity-capture** hooks (no `observe`, `stop`, `beforeSubmitPrompt`, or similar for logging). **Do not remove** existing repository development hooks (e.g. Husky shims, `ensure-hooks`, team-harness bootstrap). **Do** update pre-commit **recipe** to match `npm test` + `npm run verify` when TypeScript is removed.
 
 ---
 
@@ -395,14 +423,16 @@ Two implementation PRs + docs closure. Each slice is **merge-safe on its own** �
 
 **Agent instruction:** Do not merge. Stop after opening the PR.
 
-**Goal:** Publishable `@multipliers-dev/savepoints-lite` package with router + Notion provider skills, provider-neutral `schema.md`, split defaults, and pack verification. Minimal hub README (no `docs/adopt.md` link). Remove plugin/marketplace manifests if present. Preserve existing hub `AGENTS.md` / `CLAUDE.md` body.
+**Goal:** Publishable `@multipliers-dev/savepoints-lite` package (`name`, public scoped `publishConfig`, semver, `files`) with router + Notion provider skills, provider-neutral `schema.md`, split defaults, `npm run verify` (`npm pack --dry-run`), and `npm test`. Remove placeholder TypeScript app and **all** `typecheck`/`tsc` usage. Update hub [`AGENTS.md`](AGENTS.md), [`.husky/pre-commit`](.husky/pre-commit), [`.github/workflows/ci.yml`](.github/workflows/ci.yml), and minimal README (no `docs/adopt.md` link). Remove plugin/marketplace manifests if present. **npm publish** remains operator-authorized after merge.
 
-**Not in this slice:** `docs/adopt.md`, `verification.md`, consumer activation templates, hub Savepoints activation edits.
+**Not in this slice:** `docs/adopt.md`, `verification.md`, `fixtures/consumer/`, consumer activation templates, Savepoints activation in hub `AGENTS.md` / `CLAUDE.md`.
 
 **Acceptance:**
 
-- `npm test` and `npm run typecheck` pass  
-- Pack verifier passes; router + Notion provider files present  
+- `npm test` and `npm run verify` pass; **no** `typecheck` script or `tsc` in repo  
+- `package.json`: `"name": "@multipliers-dev/savepoints-lite"`, not private, `publishConfig.access: public`  
+- Pack verifier / dry-run passes; router + Notion provider files present  
+- `AGENTS.md` commands match scripts; pre-commit and CI run `npm test` then `npm run verify`  
 - `README.md` has **no** `docs/adopt.md` reference (grep / verifier)  
 - Merge-safe on `main` alone  
 
@@ -418,12 +448,13 @@ Two implementation PRs + docs closure. Each slice is **merge-safe on its own** �
 
 **Agent instruction:** Do not merge. Stop after opening the PR.
 
-**Goal:** `docs/adopt.md`, README adoption link (same PR), `templates/consumer/`, `verification.md`, consumer fixture with **pinned registry dependency** + lockfile, documented manual Cursor/Claude verification (Notion writes only with authorization).
+**Goal:** `docs/adopt.md`, README adoption link (same PR), `templates/consumer/`, [`fixtures/consumer/`](fixtures/consumer/) with **pinned registry dependency** + lockfile, `verification.md`, optional hub dogfooding activation (separate from fixture), documented manual Cursor/Claude verification in the fixture (Notion writes only with authorization).
 
 **Acceptance:**
 
 - `docs/adopt.md` and README link land in **one** PR  
-- Consumer fixture uses published version (not `file:`) for manual verification; documents semver pin + `npm ci` / Renovate pattern  
+- [`fixtures/consumer/`](fixtures/consumer/) installs published version (not `file:`); documents semver pin + `npm ci` / Renovate pattern  
+- Manual verification uses fixture `node_modules` skill paths; distinct from hub dogfooding if both are documented  
 - Checklists cover provider delegation, `node_modules` paths, persistence honesty, anti-loop  
 - Fixture documented; CI may validate fixture layout only (not agent behavior)  
 
@@ -453,7 +484,8 @@ Two implementation PRs + docs closure. Each slice is **merge-safe on its own** �
 
 | Check | Mechanism |
 | --- | --- |
-| Package skills + defaults | `verify-package-contents` / `npm pack --dry-run` (protocol-core; extend in adopt-and-verify for docs) |
+| Hub package skills + defaults | `npm run verify` (`npm pack --dry-run` + skill tree; protocol-core; extend in adopt-and-verify for docs/fixture layout if needed) |
+| Hub invariants | `npm test` (protocol-core) |
 | `storage.provider: notion` in router defaults; Notion `data_source_id` in provider defaults | grep/assert in respective `defaults.yml` |
 | No Savepoints capture hooks | script asserts `.cursor/hooks.json` has no savepoints-lite / Savepoints-logging hook entries; **does not** forbid existing Husky or unrelated bootstrap hooks |
 
@@ -465,8 +497,8 @@ Use [`skills/savepoints/verification.md`](skills/savepoints/verification.md):
 
 | # | Scenario | Pass criteria |
 | --- | --- | --- |
-| 1 | **Discoverability** | Fresh Cursor chat in consumer fixture; agent follows activation + reads router from `node_modules` without user saying “use savepoints” |
-| 1b | **node_modules path** | Agent opens `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` (not vendored copy) |
+| 1 | **Discoverability** | Fresh Cursor chat in [`fixtures/consumer/`](fixtures/consumer/); agent follows activation + reads router from fixture `node_modules` without user saying “use savepoints” |
+| 1b | **node_modules path** | Agent opens `fixtures/consumer/node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` (not vendored copy) |
 | 2 | **Implicit logging** | Complete a small doc edit; **≥1** Notion row appears without user reminder |
 | 3 | **Metadata** | Row has correct `Repository`, `Agent`, sensible `Name`; `Session ID` only if host provided |
 | 4 | **Content** | Body includes appropriate sections; empty sections omitted |
@@ -524,9 +556,9 @@ Authority: Open PR only — implement and open the PR; do not merge.
 
 Topology: start from latest origin/main; branch represents only this slice; PR base must be main.
 
-Deliverables: per plan — @multipliers-dev/savepoints-lite package (skills, defaults, schema), pack verification script, minimal README without docs/adopt.md link; no activation templates; no plugin/marketplace. Mark protocol-core completed in plan frontmatter in this PR.
+Deliverables: per plan — @multipliers-dev/savepoints-lite package (name, public publishConfig, skills, defaults, schema), npm run verify + npm test, update AGENTS.md/CI/pre-commit (remove typecheck/tsc); minimal README without docs/adopt.md link; no activation templates; no plugin/marketplace. Mark protocol-core completed in plan frontmatter in this PR.
 
-Verification: npm test && npm run typecheck. Do not create Notion test rows unless explicitly asked.
+Verification: npm test && npm run verify. No typecheck. Do not publish to npm or create Notion test rows unless explicitly asked.
 ```
 
 ### adopt-and-verify
@@ -540,9 +572,9 @@ Authority: Open PR only — implement and open the PR; do not merge.
 
 Topology: start from latest origin/main; branch represents only this slice; PR base must be main.
 
-Deliverables: docs/adopt.md, README link, templates/consumer/, verification.md, consumer fixture, hub dogfooding activation; manual Cursor/Claude checks documented. Mark adopt-and-verify completed in plan frontmatter in this PR.
+Deliverables: docs/adopt.md, README link, templates/consumer/, fixtures/consumer/ (pinned published dep), verification.md, optional hub dogfooding activation; manual Cursor/Claude checks in fixture documented. Mark adopt-and-verify completed in plan frontmatter in this PR.
 
-Verification: npm test && npm run typecheck; manual checklist; no production Notion writes in CI without authorization.
+Verification: npm test && npm run verify; manual checklist in fixtures/consumer/; no production Notion writes in CI without authorization.
 ```
 
 ### plan-closure
