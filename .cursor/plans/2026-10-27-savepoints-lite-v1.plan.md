@@ -393,9 +393,9 @@ Do not implement: PostgreSQL provider; SQLite storage; custom MCP server; custom
 
 ## Repository bootstrap (hub)
 
-Current [`src/index.ts`](src/index.ts) is a placeholder (`console.log("ready")`). v1 has **no runtime**.
+**protocol-core** removed the hub placeholder app (formerly [`src/index.ts`](src/index.ts) with `console.log("ready")`). v1 has **no runtime**.
 
-**Proposed changes:**
+**Implementation (delivered by protocol-core; historical record):**
 
 | Remove / change | Rationale |
 | --- | --- |
@@ -608,7 +608,7 @@ Record manual run date + Notion page URLs in PR description or verification chec
 | **Router vs provider** | Instruction-only routing; verify delegation via manual checklist (row 9) and adopt doc. |
 | **Notion MCP variance** | Document in `savepoints-notion/SKILL.md`; tool names may differ by client. |
 | **PostgreSQL / multi-provider** | Deferred — `savepoints-postgres` skill only; no dual-write in v1. |
-| **Async creates** | Prefer `allow_async: false`; when async is unavoidable, **bounded** poll (no indefinite wait); then success, terminal failure, or unconfirmed — never imply persistence on queue alone. |
+| **Async creates** | **Require** `allow_async: false` where the Notion MCP supports it; when async is unavoidable, use **bounded** poll (no indefinite wait; at most two follow-ups per provider skill); then success, terminal failure, or unconfirmed — never imply persistence on queue alone. |
 | **Skill name** | **Decision:** use `savepoints` (slash `/savepoints`) vs `savepoints-lite` — recommend **`savepoints`** for ergonomics with repo name `savepoints-lite` disambiguating the product. |
 | **npm publish** | Operator **npm-publication** gate after **documentation** merges; publish `@1.0.0` with provenance; adopt-and-verify pins that registry version + lockfile. Optional local `npm pack` smoke does not replace registry validation. |
 
