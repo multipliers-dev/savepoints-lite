@@ -1,89 +1,56 @@
 # Publishing @multipliers-dev/savepoints-lite
 
-This document describes **operator-controlled** npm releases. The package ships instruction-only skills and docs — no `bin`, no compiled runtime.
+Operator-controlled npm releases for an instruction-only package (skills and docs; no `bin` or runtime).
 
-**Automated publish from CI is out of scope.** Every registry publish requires explicit human authorization.
+**Mechanism:** [GitHub Trusted Publishing](https://docs.npmjs.com/trusted-publishers) via [`.github/workflows/publish.yml`](../.github/workflows/publish.yml) — manual `workflow_dispatch` on **`main` only**. The workflow uses GitHub Actions OIDC (`id-token: write`) to authenticate to npm. Do not use `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or local `npm publish` for registry releases.
 
-## Prerequisites
+**Publication ≠ adoption:** A registry release makes a version installable. Consumer activation and agent behavior are separate — see [adopt.md](./adopt.md). Package design boundaries: [architecture.md](./architecture.md).
 
-- Node.js **22+** (`engines` in `package.json`)
-- npm account with permission to publish **`@multipliers-dev/savepoints-lite`** (org scope + package ACLs)
-- [npm provenance](https://docs.npmjs.com/generating-provenance-statements) compatible publish environment when `publishConfig.provenance` is `true` (configured in `package.json`)
-- Clean git checkout of the intended release commit on `main`
+## Before you release
 
-## Supported commands (hub / release checkout)
+- Merge the intended release to **`main`** and bump **`package.json`** semver ([immutable versions](https://docs.npmjs.com/about-semantic-versioning#specify-version-ranges-using-semantic-versioning-specifiers-comparators) — never republish an existing version).
+- Confirm npm **Trusted Publisher** for this repo: GitHub Actions, `multipliers-dev` / `savepoints-lite`, workflow file **`publish.yml`**, no environment.
+- `publishConfig.provenance` is `true`; the workflow publishes with `--provenance`.
+- On a clean checkout of that commit, run:
 
-| Command | Purpose |
-| --- | --- |
-| `npm ci` | Reproducible install (lockfile) |
-| `npm test` | Vitest package and skill invariant tests |
-| `npm run verify` | Required files on disk + `npm pack --dry-run` path allowlist |
-| `npm pack --dry-run` | Inspect tarball file list without writing `.tgz` |
-| `npm publish` | **Operator only**, after authorization below |
+  ```bash
+  npm ci
+  npm test
+  npm run verify
+  ```
 
-## Prepublication verification
+  `npm run verify` is the source of truth for tarball contents (`npm pack --dry-run` path allowlist).
+- Preflight the registry: `npm view @multipliers-dev/savepoints-lite@<version> version` must **404** for the new version. (The workflow repeats this check and fails if the version already exists or the registry response is ambiguous.)
 
-Before any publish:
+## Publish (GitHub Actions)
 
-1. Confirm the release commit on `main` includes the intended public README, `LICENSE`, and `docs/**` files that should ship in the tarball.
-2. On a clean checkout: `npm ci`, `npm test`, `npm run verify`.
-3. Run `npm pack --dry-run` and confirm the packed artifact includes at minimum:
-   - `README.md`
-   - `LICENSE`
-   - `docs/adopt.md`
-   - `docs/architecture.md`
-   - `docs/publishing.md`
-   - Router skill, Notion provider skill, `schema.md`, and both `defaults.yml` files
-4. Confirm version in `package.json` matches the intended release (semver).
-5. Operator confirms npm authentication and publication permissions.
+1. **Actions** → **Publish savepoints-lite (manual)** → **Run workflow**.
+2. Branch: **`main`**.
+3. **confirm_version:** exact semver from `package.json` (whitespace trimmed; must match or the run fails).
+4. Wait for success. The workflow runs on **Node 24**, reinstalls a current npm CLI for OIDC, then `npm ci`, `npm test`, `npm run verify`, asserts a clean working tree, registry preflight, and `npm publish --provenance --access public --ignore-scripts`. No push/tag/schedule triggers.
 
-If provenance cannot be established for the chosen publish method, **stop** and document the blocker — do not silently disable `publishConfig.provenance`.
+## After publish
 
-## Initial release checklist
+**Registry**
 
-Use this for the first public version (for example `1.0.0`) and as a baseline for later majors:
+```bash
+npm view @multipliers-dev/savepoints-lite@<version> version --prefer-online
+npm view @multipliers-dev/savepoints-lite dist-tags --json --prefer-online
+```
 
-1. **Package ready** — skills, defaults, consumer README, `LICENSE`, and `docs/**` pass `npm test` and `npm run verify` on the release commit.
-2. **Version set** — `package.json` version matches the intended first public semver; changelog or release notes prepared if you use them.
-3. **Authorize** — operator confirms npm auth, org permissions, and explicit approval to publish.
-4. **Publish** — `npm publish` with a provenance-compatible method when `publishConfig.provenance` is enabled.
-5. **Registry smoke** — clean-directory install from the registry only; confirm skill paths and shipped docs in `node_modules`.
-6. **Record evidence** — note version, date, commit, and install-check outcome for maintainers.
-7. **Adoption validation** — separately verify consumer activation and agent behavior against the **published** version (lockfile + `npm ci`); local `npm pack` or `file:` installs do not replace registry validation.
+**Clean consumer install** (outside any repo checkout):
 
-When this guide documents a future capability (for example packaged activation templates), add it here after it actually ships in a release — do not publish ahead of the tarball contents.
+```bash
+npm init -y
+npm install "@multipliers-dev/savepoints-lite@<version>" --prefer-online
+```
 
-## Publish authorization
+Confirm the installed package version matches the release and expected skills/docs are present under `node_modules/@multipliers-dev/savepoints-lite/` (router and Notion provider entry points, defaults, shipped documentation).
 
-Required before `npm publish`:
+**Provenance:** On npmjs.com, open the version page and confirm the provenance / build attestation links to `multipliers-dev/savepoints-lite` and the workflow run. Do not disable `publishConfig.provenance` to work around publish failures — fix Trusted Publishing or the workflow instead.
 
-- Intended version and commit hash agreed
-- All prepublication checks green
-- **Explicit operator approval** to publish to the public registry
+Record version, date, commit, and install-check summary for maintainers (e.g. release PR or internal log).
 
-Do not publish from an implementation PR unless the operator has granted publication authority for that run.
+## Later releases
 
-## Postpublish checks
-
-After a successful publish:
-
-1. Confirm the version appears on the public npm registry.
-2. In a **clean temporary directory**, install only from the registry (e.g. `npm init -y`, add exact dependency `"@multipliers-dev/savepoints-lite": "<version>"`, `npm ci` or `npm install`).
-3. Verify canonical skill paths under `node_modules/@multipliers-dev/savepoints-lite/skills/`.
-4. Verify README and `docs/*.md` are present in the installed package.
-5. Record evidence (version, date, install check summary) in the durable place agreed for the release (e.g. adoption PR, plan closure note, maintainer log).
-
-## Subsequent releases
-
-- Follow [semantic versioning](https://semver.org/): bump `package.json` version for every registry publish.
-- **Immutable versions:** do not republish or overwrite an existing version; publish a new patch/minor/major as appropriate.
-- Consumers should pin an **exact** semver in `package.json` and commit a lockfile; use Renovate or equivalent for bump PRs.
-- Activation text can stay stable — installed paths under `node_modules` do not change across patch releases.
-
-## What this package does not ship
-
-- Installation CLI or bootstrap script
-- Executable Savepoints runtime or custom MCP server
-- Consumer activation templates until a release explicitly ships them under `templates/` or equivalent packaged paths
-
-For architecture and adoption boundaries, see [architecture.md](./architecture.md) and the package [README](../README.md).
+Bump semver on `main` for every publish. Consumers should pin an **exact** version and commit a lockfile; use Renovate or equivalent for updates. Patch releases do not change installed paths under `node_modules`.

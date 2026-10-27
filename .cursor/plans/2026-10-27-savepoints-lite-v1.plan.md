@@ -9,8 +9,8 @@ todos:
     content: "Documentation-only PR: README landing page, docs/architecture.md, docs/publishing.md, initial docs/adopt.md stub, package files allowlist + verify/tests for tarball docs — no npm publish, no activation templates or fixtures"
     status: completed
   - id: npm-publication
-    content: "Operator release gate (no publish-only PR): after documentation merges — verify, authorize, publish @multipliers-dev/savepoints-lite@1.0.0 with provenance, registry + clean-consumer install checks, record evidence"
-    status: pending
+    content: "Operator release gate: @1.0.0 on registry (manual, no provenance); Trusted Publisher + publish.yml; clean install verified; evidence in plan + docs/publishing.md"
+    status: completed
   - id: adopt-and-verify
     content: "After successful npm publication: expand docs/adopt.md, fixtures/consumer/, templates/consumer/, activation, manual Cursor/Claude verification via pinned registry dependency"
     status: pending
@@ -512,6 +512,19 @@ Three implementation PRs (**protocol-core**, **documentation**, **adopt-and-veri
 - Confirm canonical installed skill paths and documentation contents in that install  
 - Record publication evidence and exact released version  
 - If provenance cannot be established: **stop** and document blocker — do **not** silently disable provenance  
+
+### npm-publication — recorded evidence (2026-10-27)
+
+| Item | Record |
+| --- | --- |
+| Published version | `@multipliers-dev/savepoints-lite@1.0.0` |
+| Registry / `latest` | `npm view … version` → `1.0.0`; `dist-tags.latest` → `1.0.0` |
+| Tarball SHA-1 | `9735948f3bf01cc300b9781cdcb9d28368fde3ad` (matches hub `npm pack` on release commit) |
+| Hub verification | `npm ci`, `npm test` (12), `npm run verify` (12 tarball paths) |
+| Clean registry install | Temp dir `npm install @…/savepoints-lite@1.0.0` — version `1.0.0`, 12 files, router + Notion skills, both `defaults.yml`, docs + LICENSE |
+| Provenance | **Exception:** `1.0.0` published manually with `--provenance=false` (Trusted Publishing not configured yet). Do not republish `1.0.0`. |
+| Trusted Publisher | npmjs: GitHub Actions, `multipliers-dev/savepoints-lite`, workflow `publish.yml`, no environment |
+| Workflow | `.github/workflows/publish.yml` added on `main` via implementation PR — **not yet exercised** for a real release; first OIDC+provenance publish is the next semver after `1.0.0` |
 
 ## Slice — adopt-and-verify
 
