@@ -15,7 +15,7 @@ todos:
     content: "Hub PR: npm ci/test/verify/validate:plans; split workspace pack vs registry dogfood tests; operator publish checklist; no publish in agent slice"
     status: pending
   - id: plan-closure
-    content: "Docs-only PR after publish evidence: # Shipped, archive plan, update references"
+    content: "Docs-only PR after @2.0.0 published and verified on npm: # Shipped with registry evidence, archive plan, update references"
     status: pending
 isProject: false
 ---
@@ -30,7 +30,7 @@ isProject: false
 | plan-revision-explicit-integration | Plan-only PR | Revise plan only; do not implement slices. Stop after opening the plan-only PR. |
 | oss-readiness-contract | Open PR only | savepoints-lite hub only. Do not edit cursor-team-marketplace. Do not merge or publish npm. |
 | release-verification | Open PR only | savepoints-lite hub only. May combine with oss-readiness-contract in one merge-safe PR. Do not merge or publish npm. |
-| plan-closure | Open PR only | Docs-only archive PR after operator publish evidence. Do not merge. |
+| plan-closure | Open PR only | Docs-only archive PR after `@2.0.0` published and verified on npm (not after implementation merge alone). Do not merge. |
 
 Repo default: **Open PR only** (plan-only slices for plan artifacts only).
 
@@ -50,7 +50,7 @@ Multi-slice plans stack execution order, not Git branches. Integration branch is
 
 ## Background
 
-**End state:** Published **`@multipliers-dev/savepoints-lite@2.0.0`** is a verified, publicly usable instruction-only npm package with accurate docs, no maintainer Notion destination in the tarball, and a three-tier **`destination.data_source_id`** resolution contract (explicit integration → optional consumer `.agents` → optional packaged defaults).
+**End state:** Published **`@multipliers-dev/savepoints-lite@2.0.0`** is a verified, publicly usable instruction-only npm package with accurate docs, no maintainer Notion destination in the tarball, and a **`destination.data_source_id`** resolution contract (explicit integration instruction context → optional consumer `.agents`; packaged [`defaults.yml`](skills/savepoints-notion/defaults.yml) retained but without `destination.data_source_id`).
 
 **Published today:** `@multipliers-dev/savepoints-lite@1.1.0` — package [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) still includes maintainer `data_source_id` `822cbc89-7c89-4863-af3a-2fe0cd8ab56e` (not a credential). No `.env` support.
 
@@ -78,7 +78,9 @@ flowchart LR
 
 **Out of scope here:** marketplace `vendor/` sync, team-harness wrapper skills, engineering invariants / User Rules, removing per-repo npm deps or `AGENTS.md` activation.
 
-**Coordination:** Cursor Team Marketplace treats the published Savepoints Lite `2.0.0` release as an external prerequisite. All OSS readiness and configuration-contract implementation is owned by this repository.
+**Coordination:**
+
+> Cursor Team Marketplace treats the published Savepoints Lite 2.0.0 release as an external prerequisite. All OSS readiness and configuration-contract implementation is owned by this repository.
 
 ### Execution flow
 
@@ -95,7 +97,7 @@ flowchart TB
   pub --> close
 ```
 
-`release-verification` may land in the **same** hub PR as `oss-readiness-contract`. `plan-closure` runs **after** operator publish evidence is recorded (registry version + install check per [`docs/publishing.md`](docs/publishing.md)).
+`release-verification` may land in the **same** hub PR as `oss-readiness-contract`. **`plan-closure` runs only after `@2.0.0` is published and verified on npm** — merged implementation is not sufficient (see **Plan closure** under Decisions).
 
 ---
 
@@ -107,33 +109,47 @@ Instruction-only; no environment variables, hooks, background processes, or new 
 
 | Tier | Source | When it applies |
 | --- | --- | --- |
-| 1 (highest) | Explicit destination from the **calling integration**, carried in **instruction/delegation context** (router → Notion provider handoff) | Integration supplied a destination for this Savepoint delegation |
+| 1 (highest) | Labelled YAML in the calling integration’s **instruction/delegation context** (router → Notion provider handoff) | Integration supplied a `destination` block for this Savepoint delegation |
 | 2 | Consumer [`.agents/savepoints-notion.yml`](.agents/savepoints-notion.yml) | Tier 1 **absent** for this delegation |
-| 3 | Packaged [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) | Tier 1 absent and tier 2 absent or unset; only if defaults configure a non-empty id |
+| 3 | Packaged [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) (file retained; **`destination.data_source_id` omitted**) | Never supplies an id in `@2.0.0`; absent key = unconfigured |
 
-**Preserve existing behavior for tiers 2–3:** consumer `.agents` **overrides** packaged defaults (unchanged relative to v1.1.0, aside from removing the maintainer UUID from the package).
+**Tier 2 unchanged:** optional consumer `.agents` **overrides** any packaged defaults when tier 1 is absent (same shape as today: `destination.data_source_id` only).
 
 ### Resolution and failure semantics
 
-- **Router** ([`skills/savepoints/SKILL.md`](skills/savepoints/SKILL.md)): on delegation to the Notion provider, **carry** any explicit `destination.data_source_id` from the integration in instruction context. Router does not call Notion MCP or read host User Rules.
-- **Provider** ([`skills/savepoints-notion/SKILL.md`](skills/savepoints-notion/SKILL.md)): resolve tiers 1 → 2 → 3; **must not** depend on discovering Cursor User Rules or other host-specific rule stores.
-- **Missing resolved destination** (empty after applicable tiers): **fail open** — no Notion MCP write; continue primary work; preserve `success` / `failure` / `unconfirmed` outcome semantics.
+- **Router** ([`skills/savepoints/SKILL.md`](skills/savepoints/SKILL.md)): when the integration delegates, **carry the explicit `destination` block unchanged** into the Notion provider’s instruction context. Router does not call Notion MCP or read host User Rules.
+- **Provider** ([`skills/savepoints-notion/SKILL.md`](skills/savepoints-notion/SKILL.md)): resolve tier 1 → tier 2 → tier 3; treat tier 1 as highest priority; **must not** depend on discovering Cursor User Rules or other host-specific rule stores.
+- **Missing resolved destination** (no valid id after applicable tiers): **fail open** — no Notion MCP write; continue primary work; preserve `success` / `failure` / `unconfirmed` outcome semantics.
 - **Tier 1 present but invalid** (empty, malformed UUID, or otherwise unusable): **fail open without fallback** to tier 2 or tier 3 — do not silently use `.agents` or packaged defaults.
-- **External integrations:** document provider-neutral handoff (e.g. wrapper skill states `destination.data_source_id` in delegation prose before invoking the router). Public package stays host-agnostic — no Cursor-specific APIs.
+- **External integrations:** document provider-neutral handoff using the tier-1 YAML block below. Public package stays host-agnostic — instruction-context convention only, not a programmatic API.
 
 ### Package hygiene
 
-- Remove maintainer `822cbc89-7c89-4863-af3a-2fe0cd8ab56e` from shipped [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml), generic examples in provider SKILL, and tarball grep policy.
+- Retain [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) for relative references; **omit `destination.data_source_id` entirely** (no empty string, placeholder UUID, or maintainer id).
+- Remove maintainer `822cbc89-7c89-4863-af3a-2fe0cd8ab56e` from generic examples in provider SKILL and tarball grep policy.
 - Add [`templates/consumer/savepoints-notion.yml.example`](templates/consumer/savepoints-notion.yml.example) with `YOUR_NOTION_DATA_SOURCE_ID`.
 - Router/provider separation unchanged; provider owns Notion mapping and MCP write + bounded confirmation.
 
-### Implementation decisions (non-blocking)
+### Decisions (final)
 
-Resolve during `oss-readiness-contract` / `release-verification`; none block merging this plan or starting hub implementation.
+#### Explicit integration destination (tier 1)
 
-1. **Instruction-context field name** for tier 1 (e.g. `integration.destination.data_source_id` vs a labeled delegation block) — pick one; enforce via skill markdown + tests.
-2. **Packaged `defaults.yml` shape** when tier 3 is optional: empty string vs omitted key vs placeholder only in the example template (must not ship maintainer UUID).
-3. **Plan closure timing:** archive after publish evidence on registry (recommended) — record version, date, and clean install check in closure PR or `# Shipped` note.
+The calling integration supplies this labelled block in instruction/delegation context when delegating to the Savepoints router (reuse existing configuration shape; no `integration.*` namespace):
+
+```yaml
+destination:
+  data_source_id: "<NOTION_DATA_SOURCE_ID>"
+```
+
+The router carries it **unchanged** into the Notion provider’s instruction context. The provider treats it as the highest-priority source. Explicit but invalid → fail open without falling back to repository or packaged configuration.
+
+#### Packaged defaults (tier 3)
+
+Ship [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) **without** a `destination` key (or without `destination.data_source_id`). Optional [`.agents/savepoints-notion.yml`](.agents/savepoints-notion.yml) remains supported. When no source supplies a valid destination, fail open without a Notion write. Tests must assert shipped defaults do not contain a usable `destination.data_source_id`.
+
+#### Plan closure
+
+Archive this plan **only after** `@multipliers-dev/savepoints-lite@2.0.0` is **published and verified on npm**. Merged implementation PRs are not sufficient. Closure requires registry evidence (`npm view …@2.0.0`), successful post-publication install/package verification per [`docs/publishing.md`](docs/publishing.md), and publication evidence recorded in `# Shipped` before moving to [`.cursor/plans/archive/`](archive/). Operator `npm publish` stays outside agent implementation authority.
 
 ---
 
@@ -195,11 +211,11 @@ The hub [`package.json`](package.json) carries two version concepts during the p
 
 **Acceptance:**
 
-- **Skills / config:** three-tier `destination.data_source_id` precedence; router carries explicit destination in delegation context; provider does not read User Rules; tier-1-invalid no fallback; missing destination fail-open without MCP write
-- [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml): no maintainer `data_source_id`; decide tier-3 defaults shape during implementation (see non-blocking decisions above)
+- **Skills / config:** tier-1 labelled `destination.data_source_id` YAML block in integration instruction context (unchanged into provider); tier 2 optional `.agents`; tier 3 packaged defaults file retained with **`destination.data_source_id` omitted**; provider does not read User Rules; tier-1-invalid no fallback; missing valid destination fail-open without MCP write
+- [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml): omit `destination.data_source_id` entirely (no empty string, placeholder, or maintainer id)
 - [`templates/consumer/savepoints-notion.yml.example`](templates/consumer/savepoints-notion.yml.example) with `YOUR_NOTION_DATA_SOURCE_ID`
 - [`scripts/expected-package-paths.txt`](scripts/expected-package-paths.txt) updated if new template paths ship
-- Tests updated (including no maintainer UUID in shipped paths; precedence / fail-open invariants as practical)
+- Tests updated: no usable `destination.data_source_id` in shipped defaults; no maintainer UUID in tarball paths; precedence / fail-open / tier-1-invalid-no-fallback invariants as practical
 - **Documentation:** README, [`AGENTS.md`](AGENTS.md), [`docs/adopt.md`](docs/adopt.md), [`docs/architecture.md`](docs/architecture.md), [`docs/publishing.md`](docs/publishing.md), [`skills/README.md`](skills/README.md) — `@2.0.0` messaging, installation, explicit-integration precedence, provider-neutral external integration example
 - **Privacy:** what session Savepoints write to Notion; host-owned Notion MCP auth; no credentials or personal destination IDs in the package
 - **Reliability:** best-effort fail-open, no retry queue, instruction-only, bounded async confirmation
@@ -226,7 +242,7 @@ The hub [`package.json`](package.json) carries two version concepts during the p
 - `npm test` passes including **split** workspace 2.0.0 pack vs registry `@1.1.0` dogfood checks (no weakening)
 - `npm run verify` passes for workspace **2.0.0** candidate vs `expected-package-paths.txt`
 - `npm run validate:plans` passes
-- Tarball candidate: no personal destination in package defaults (grep / invariant tests)
+- Tarball candidate: shipped [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) has no `destination.data_source_id` (grep / invariant tests)
 - [`docs/publishing.md`](docs/publishing.md) (or release PR body) reflects operator preflight: `npm view @multipliers-dev/savepoints-lite@2.0.0 version` must 404 before publish; post-publish install check documented
 - Post-publish hub dogfood bump to `2.0.0` documented as follow-up PR (not executed in agent slice)
 - Mark `release-verification` completed when merged with passing gates
@@ -239,11 +255,13 @@ The hub [`package.json`](package.json) carries two version concepts during the p
 
 **Rationale:** Archive completed plan per repository convention after shipped release.
 
-**Agent instruction:** Docs-only; move plan to [`.cursor/plans/archive/`](archive/). **Prerequisite:** operator publish evidence for `@2.0.0` on npm.
+**Agent instruction:** Docs-only; move plan to [`.cursor/plans/archive/`](archive/). **Prerequisite:** `@multipliers-dev/savepoints-lite@2.0.0` **published and verified on npm** — implementation merged alone is insufficient. Operator publish per [`docs/publishing.md`](docs/publishing.md); agents do not `npm publish`.
 
 **Acceptance:**
 
-- `# Shipped` note with PR links, publish date, registry version evidence
+- Registry evidence that `@2.0.0` exists (`npm view @multipliers-dev/savepoints-lite@2.0.0 version` or equivalent)
+- Successful post-publication clean install / package verification recorded (per publishing runbook)
+- `# Shipped` note with implementation PR links, publish date, registry version, and verification summary **before** archive
 - Plan moved to `.cursor/plans/archive/2026-10-27-oss-readiness-cleanup.plan.md`
 - `plan-closure` todo completed; agent prompt references updated to archived path
 - `npm run validate:plans` passes
@@ -263,7 +281,7 @@ Authority: Open PR only — do not merge, npm publish, or edit cursor-team-marke
 
 Topology: git fetch; branch from latest origin/main; PR base main; hub repo only — no consumer-repository PRs.
 
-Deliverables: @2.0.0 explicit-integration destination.data_source_id contract (tier 1 integration context → tier 2 .agents/savepoints-notion.yml → tier 3 packaged defaults); router carries explicit destination in delegation context; provider must not read User Rules; tier-1-invalid fail open without fallback to tiers 2–3; remove maintainer UUID from shipped defaults and skill examples; templates/consumer/savepoints-notion.yml.example; tests and expected-package-paths.txt if needed; README, AGENTS.md, docs/, skills/ README for privacy, reliability, maintenance, and provider-neutral external integration handoff (docs/architecture.md, docs/adopt.md). Hub package.json version 2.0.0; devDependencies self-pin stays 1.1.0 until post-publish follow-up.
+Deliverables: @2.0.0 contract per plan Decisions — tier 1 labelled destination/data_source_id YAML block in integration instruction context (router passes unchanged to provider; no integration.* namespace); tier 2 optional .agents/savepoints-notion.yml; tier 3 skills/savepoints-notion/defaults.yml retained with destination.data_source_id omitted entirely; tier-1-invalid fail open without fallback; tests assert no usable destination.data_source_id in shipped defaults; templates/consumer/savepoints-notion.yml.example; expected-package-paths.txt if needed; README, AGENTS.md, docs/, skills/README (privacy, reliability, maintenance, provider-neutral handoff in architecture/adopt). Hub package.json version 2.0.0; devDependencies self-pin stays 1.1.0 until post-publish follow-up.
 
 Do not: marketplace vendoring, wrapper skills, User Rules, consumer cleanup, or per-repo migration PRs.
 
@@ -297,11 +315,11 @@ Implement slice plan-closure only.
 
 Authority: Open PR only — docs-only archive PR; do not merge.
 
-Prerequisites: oss-readiness-contract and release-verification merged; operator published @multipliers-dev/savepoints-lite@2.0.0 to npm (registry evidence recorded).
+Prerequisites: oss-readiness-contract and release-verification merged; operator published and verified @multipliers-dev/savepoints-lite@2.0.0 on npm (registry + post-publish install check — merged implementation alone is insufficient). Do not npm publish in this slice.
 
 Topology: savepoints-lite hub; branch from origin/main; PR base main.
 
-Deliverables: # Shipped note with PR links and publish evidence; move plan to .cursor/plans/archive/2026-10-27-oss-readiness-cleanup.plan.md; mark plan-closure completed; update references to archived path.
+Deliverables: # Shipped with implementation PR links, publish date, npm view evidence, and post-publication verification summary; then move plan to .cursor/plans/archive/2026-10-27-oss-readiness-cleanup.plan.md; mark plan-closure completed; update references to archived path.
 
 Verification: npm run validate:plans.
 ```
