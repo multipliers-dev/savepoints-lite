@@ -20,9 +20,9 @@ Full skill index: [skills/README.md](./skills/README.md).
 npm install @multipliers-dev/savepoints-lite --save-dev
 ```
 
-Requires **Node.js 22+**. Use a committed lockfile and `npm ci` in CI for reproducible skill versions.
+Use a committed lockfile and `npm ci` in CI for reproducible skill versions.
 
-**npm install does not activate Savepoints.** Skills are not auto-registered with Cursor or Claude. Consumer activation (rules, `AGENTS.md` / `CLAUDE.md` pointing at the installed router path) ships in a **future adoption release** after the package is published to npm. This repository is publication-ready for docs and tarball layout; **Cursor/Claude behavioral integration is not verified yet.**
+Installing the package does **not** automatically activate Savepoints. See the [adoption guide](./docs/adopt.md) for setup requirements and current integration support.
 
 ## Prerequisites
 
@@ -40,8 +40,9 @@ node_modules/@multipliers-dev/savepoints-lite/skills/savepoints-notion/SKILL.md
 
 Agents must read skills from this install root. **Do not** vendor or copy skill files into the consumer repo.
 
-## Architecture and releases
+## Documentation
 
+- [docs/adopt.md](./docs/adopt.md) — installation and adoption (prerequisites, pinned install, activation status)
 - [docs/architecture.md](./docs/architecture.md) — router vs provider boundaries, Savepoint protocol, configuration precedence, append outcomes, v1 exclusions
 - [docs/publishing.md](./docs/publishing.md) — operator release process, verify steps, provenance, postpublish checks
 

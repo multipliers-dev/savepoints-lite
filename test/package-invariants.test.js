@@ -36,13 +36,9 @@ describe("package invariants", () => {
     );
   });
 
-  it("README does not link docs/adopt.md", () => {
+  it("README links adoption, architecture, and publishing docs", () => {
     const readme = readRoot("README.md");
-    expect(readme).not.toMatch(/docs\/adopt\.md/);
-  });
-
-  it("README links architecture and publishing docs", () => {
-    const readme = readRoot("README.md");
+    expect(readme).toMatch(/docs\/adopt\.md/);
     expect(readme).toMatch(/docs\/architecture\.md/);
     expect(readme).toMatch(/docs\/publishing\.md/);
   });
@@ -54,7 +50,11 @@ describe("package invariants", () => {
   });
 
   it("documentation files exist for tarball", () => {
-    for (const rel of ["docs/architecture.md", "docs/publishing.md"]) {
+    for (const rel of [
+      "docs/adopt.md",
+      "docs/architecture.md",
+      "docs/publishing.md",
+    ]) {
       expect(existsSync(join(root, rel))).toBe(true);
     }
   });
@@ -78,7 +78,7 @@ describe("package invariants", () => {
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
-    expect(listed).toHaveLength(10);
+    expect(listed).toHaveLength(11);
     for (const rel of listed) {
       expect(existsSync(join(root, rel))).toBe(true);
     }

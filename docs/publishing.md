@@ -29,6 +29,7 @@ Before any publish:
 2. On a clean checkout: `npm ci`, `npm test`, `npm run verify`.
 3. Run `npm pack --dry-run` and confirm the packed artifact includes at minimum:
    - `README.md`
+   - `docs/adopt.md`
    - `docs/architecture.md`
    - `docs/publishing.md`
    - Router skill, Notion provider skill, `schema.md`, and both `defaults.yml` files

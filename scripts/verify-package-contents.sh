@@ -19,8 +19,8 @@ while IFS= read -r rel || [ -n "$rel" ]; do
   fi
 done < "$EXPECTED_PATHS_FILE"
 
-if grep -q 'docs/adopt.md' README.md 2>/dev/null; then
-  echo "verify-package-contents: README.md must not reference docs/adopt.md (slice 2)" >&2
+if ! grep -q 'docs/adopt.md' README.md 2>/dev/null; then
+  echo "verify-package-contents: README.md must link to docs/adopt.md" >&2
   exit 1
 fi
 

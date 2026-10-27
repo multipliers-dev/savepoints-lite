@@ -8,7 +8,7 @@ Contrast with [multipliers-dev/savepoints](https://github.com/multipliers-dev/sa
 
 | Layer | Responsibility |
 | --- | --- |
-| **Consumer activation** | Thin rules in the consumer repo (Cursor rule, `CLAUDE.md`, `AGENTS.md`) that tell agents **when** to read the installed router skill and **where** it lives under `node_modules`. Templates ship in a later adoption release — **not** part of the publication-ready package alone. |
+| **Consumer activation** | Thin rules in the consumer repo (Cursor rule, `CLAUDE.md`, `AGENTS.md`) that tell agents **when** to read the installed router skill and **where** it lives under `node_modules`. [`docs/adopt.md`](./adopt.md) documents install prerequisites and current support; copy-paste activation templates ship in a later adoption slice. |
 | **Router** [`skills/savepoints/SKILL.md`](../skills/savepoints/SKILL.md) | Event detection, Savepoint assembly, read `storage.provider`, load matching provider skill from the **same** npm install, handle `success` / `failure` / `unconfirmed`. **No** Notion properties, SQL, or MCP calls. |
 | **Provider** [`skills/savepoints-notion/SKILL.md`](../skills/savepoints-notion/SKILL.md) (v1) | Map Savepoint → Notion, Notion MCP write, bounded async confirmation, return outcome. **Does not** decide when to Savepoint. |
 | **Distribution** | npm package only — consumers must not vendor or copy skills. |

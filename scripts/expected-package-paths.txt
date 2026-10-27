@@ -1,4 +1,5 @@
 README.md
+docs/adopt.md
 docs/architecture.md
 docs/publishing.md
 package.json
