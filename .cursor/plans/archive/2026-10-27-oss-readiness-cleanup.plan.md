@@ -19,7 +19,7 @@ isProject: false
 
 # Shipped
 
-**Archived 2026-10-27** in `multipliers-dev/savepoints-lite` (plan-closure PR opens after this commit).
+**Archived 2026-10-27** in `multipliers-dev/savepoints-lite`.
 
 | Slice | Delivered |
 | --- | --- |
@@ -27,7 +27,7 @@ isProject: false
 | plan-revision-explicit-integration | [PR #14](https://github.com/multipliers-dev/savepoints-lite/pull/14) — `@2.0.0` explicit-integration contract and marketplace handoff |
 | oss-readiness-and-release-prep | [PR #15](https://github.com/multipliers-dev/savepoints-lite/pull/15) — hub implementation merged `257eca5` |
 | Post-publish hub dogfood | [PR #16](https://github.com/multipliers-dev/savepoints-lite/pull/16) — devDependency pin `2.0.0` aligned with workspace (`6c0c3be`) |
-| plan-closure | Docs-only archive (this change) |
+| plan-closure | [PR #17](https://github.com/multipliers-dev/savepoints-lite/pull/17) — this archive |
 
 ### npm publication evidence (`@2.0.0`)
 
