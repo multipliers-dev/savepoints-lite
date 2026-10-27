@@ -47,4 +47,4 @@ Agents must read skills from this install root. **Do not** vendor or copy skill 
 
 ## License
 
-MIT — see [package.json](./package.json).
+MIT — see [LICENSE](./LICENSE).

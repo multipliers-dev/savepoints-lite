@@ -25,10 +25,11 @@ This document describes **operator-controlled** npm releases. The package ships 
 
 Before any publish:
 
-1. Merge the **documentation** slice (README, `docs/architecture.md`, `docs/publishing.md` in tarball).
+1. Confirm the release commit on `main` includes the intended public README, `LICENSE`, and `docs/**` files that should ship in the tarball.
 2. On a clean checkout: `npm ci`, `npm test`, `npm run verify`.
 3. Run `npm pack --dry-run` and confirm the packed artifact includes at minimum:
    - `README.md`
+   - `LICENSE`
    - `docs/adopt.md`
    - `docs/architecture.md`
    - `docs/publishing.md`
@@ -38,16 +39,19 @@ Before any publish:
 
 If provenance cannot be established for the chosen publish method, **stop** and document the blocker — do not silently disable `publishConfig.provenance`.
 
-## Initial release (v1.0.0)
+## Initial release checklist
 
-Sequence (see implementation plan):
+Use this for the first public version (for example `1.0.0`) and as a baseline for later majors:
 
-1. **protocol-core** merged — publishable package skeleton and skills.
-2. **documentation** merged — public landing README and docs in tarball.
-3. **npm-publication** (operator gate) — authorize, publish `@multipliers-dev/savepoints-lite@1.0.0`, record evidence.
-4. **adopt-and-verify** — consumer adoption docs and manual agent verification against the **registry** version.
+1. **Package ready** — skills, defaults, consumer README, `LICENSE`, and `docs/**` pass `npm test` and `npm run verify` on the release commit.
+2. **Version set** — `package.json` version matches the intended first public semver; changelog or release notes prepared if you use them.
+3. **Authorize** — operator confirms npm auth, org permissions, and explicit approval to publish.
+4. **Publish** — `npm publish` with a provenance-compatible method when `publishConfig.provenance` is enabled.
+5. **Registry smoke** — clean-directory install from the registry only; confirm skill paths and shipped docs in `node_modules`.
+6. **Record evidence** — note version, date, commit, and install-check outcome for maintainers.
+7. **Adoption validation** — separately verify consumer activation and agent behavior against the **published** version (lockfile + `npm ci`); local `npm pack` or `file:` installs do not replace registry validation.
 
-Local `npm pack` + `file:` install may help early smoke tests; it does **not** replace registry validation for adoption.
+When this guide documents a future capability (for example packaged activation templates), add it here after it actually ships in a release — do not publish ahead of the tarball contents.
 
 ## Publish authorization
 
@@ -80,6 +84,6 @@ After a successful publish:
 
 - Installation CLI or bootstrap script
 - Executable Savepoints runtime or custom MCP server
-- Consumer activation templates (`templates/consumer/`) — **adopt-and-verify** slice
+- Consumer activation templates until a release explicitly ships them under `templates/` or equivalent packaged paths
 
 For architecture and adoption boundaries, see [architecture.md](./architecture.md) and the package [README](../README.md).

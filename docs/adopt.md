@@ -64,6 +64,12 @@ Protocol, router vs provider boundaries, append outcomes, and v1 exclusions:
 
 Skill index: [skills/README.md](../skills/README.md) (under the package install root).
 
-## What a later release will add
+## Integration support in `@multipliers-dev/savepoints-lite@1.0.0`
 
-A follow-on adoption slice will expand this guide with **activation templates**, a **consumer fixture**, manual verification checklists, and documented results for Cursor and Claude. Until then, treat integration as **documented but not yet verified** in those hosts.
+| Included | Not included in this version |
+| --- | --- |
+| Router and Notion provider skills, schema, and defaults | Copy-paste activation templates for Cursor or Claude |
+| Install prerequisites and canonical `node_modules` skill paths | Step-by-step host setup walkthroughs |
+| Optional `.agents` override files | Published end-to-end verification results for specific agent hosts |
+
+You are responsible for activation wording in your repository and for validating that agents read the installed router skill and persist via your Notion MCP. The package does not certify Cursor or Claude integration for this release.
