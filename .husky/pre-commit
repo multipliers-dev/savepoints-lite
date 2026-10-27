@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 set -e
 npm test
-npm run typecheck
+npm run verify
 echo "[repo-bootstrap] pre-commit verify"
