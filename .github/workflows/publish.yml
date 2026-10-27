@@ -1,0 +1,127 @@
+name: Publish savepoints-lite (manual)
+
+# Trusted Publishing via GitHub Actions OIDC — workflow filename must match npm
+# Trusted Publisher configuration (publish.yml on main).
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_version:
+        description: Must match package.json version (e.g. 1.0.1)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-savepoints-lite
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Preflight — release branch
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "Publish must run from main; got ${GITHUB_REF}" >&2
+            exit 1
+          fi
+
+      - name: Read package manifest
+        id: manifest
+        run: |
+          set -euo pipefail
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$(node -p "require('./package.json').private || false")" = "true" ]; then
+            echo "package.json must not be private for publish" >&2
+            exit 1
+          fi
+          echo "package_name=${PACKAGE_NAME}" >> "$GITHUB_OUTPUT"
+          echo "package_version=${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify dispatch confirmation
+        env:
+          CONFIRM: ${{ github.event.inputs.confirm_version }}
+          PACKAGE_VERSION: ${{ steps.manifest.outputs.package_version }}
+        run: |
+          set -euo pipefail
+          confirm="$(printf '%s' "$CONFIRM" | tr -d '[:space:]')"
+          if [ "$confirm" != "$PACKAGE_VERSION" ]; then
+            echo "confirm_version ($confirm) must match package.json ($PACKAGE_VERSION)" >&2
+            exit 1
+          fi
+          echo "ok version $PACKAGE_VERSION"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          # Do not set registry-url without NODE_AUTH_TOKEN — empty _authToken blocks OIDC.
+
+      - name: Install npm CLI with OIDC trusted publishing support
+        run: |
+          set -euo pipefail
+          npm install -g npm@11.21.0
+          npm --version
+
+      - name: Verify package
+        run: |
+          set -euo pipefail
+          npm ci
+          npm test
+          npm run verify
+
+      - name: Verify clean working tree
+        run: |
+          set -euo pipefail
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Working tree is not clean after verification:" >&2
+            git status --porcelain >&2
+            exit 1
+          fi
+
+      - name: Preflight — npm version not yet published
+        env:
+          PACKAGE_NAME: ${{ steps.manifest.outputs.package_name }}
+          PACKAGE_VERSION: ${{ steps.manifest.outputs.package_version }}
+        run: |
+          set -euo pipefail
+          set +e
+          VIEW_OUTPUT="$(npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version 2>&1)"
+          VIEW_EXIT=$?
+          set -e
+
+          if [ "$VIEW_EXIT" -eq 0 ]; then
+            echo "npm registry already has ${PACKAGE_NAME}@${PACKAGE_VERSION} (reported: ${VIEW_OUTPUT})" >&2
+            exit 1
+          fi
+
+          if echo "$VIEW_OUTPUT" | grep -qE 'E404|404 Not Found|404.*[Nn]o match found|No match found for version'; then
+            echo "npm version ${PACKAGE_VERSION} is not published yet"
+            exit 0
+          fi
+
+          echo "npm view failed unexpectedly (exit ${VIEW_EXIT}); cannot confirm version absence:" >&2
+          printf '%s\n' "$VIEW_OUTPUT" >&2
+          exit 1
+
+      - name: Publish to npm (Trusted Publishing + provenance)
+        env:
+          PACKAGE_VERSION: ${{ steps.manifest.outputs.package_version }}
+        run: |
+          set -euo pipefail
+          npm publish --provenance --access public --ignore-scripts
+          echo "Published @multipliers-dev/savepoints-lite@${PACKAGE_VERSION}"

@@ -2,14 +2,21 @@
 
 This document describes **operator-controlled** npm releases. The package ships instruction-only skills and docs — no `bin`, no compiled runtime.
 
-**Automated publish from CI is out of scope.** Every registry publish requires explicit human authorization.
+**Standard mechanism:** [GitHub Trusted Publishing](https://docs.npmjs.com/trusted-publishers) via the manual workflow [`.github/workflows/publish.yml`](../.github/workflows/publish.yml) (`workflow_dispatch` on `main` only). The workflow authenticates with npm using GitHub Actions OIDC (`id-token: write`) — **no** `NPM_TOKEN` or `NODE_AUTH_TOKEN` secrets.
+
+**Publication ≠ adoption:** Publishing puts a version on the public registry. Consumer activation, agent behavior, and Notion MCP writes are validated separately (see [adopt.md](./adopt.md) and the delivery plan **adopt-and-verify** slice).
 
 ## Prerequisites
 
-- Node.js **22+** (`engines` in `package.json`)
-- npm account with permission to publish **`@multipliers-dev/savepoints-lite`** (org scope + package ACLs)
-- [npm provenance](https://docs.npmjs.com/generating-provenance-statements) compatible publish environment when `publishConfig.provenance` is `true` (configured in `package.json`)
-- Clean git checkout of the intended release commit on `main`
+- Node.js **22+** locally (`engines` in `package.json`); the publish workflow uses **Node 24**
+- npm Trusted Publisher configured on npmjs.com for:
+  - **Publisher:** GitHub Actions
+  - **Organization:** `multipliers-dev`
+  - **Repository:** `savepoints-lite`
+  - **Workflow filename:** `publish.yml`
+  - **Environment:** none
+- Release commit merged to `main` with bumped `package.json` version (semver; immutable versions — never republish an existing version)
+- `publishConfig.provenance` is `true` in `package.json`; the Trusted Publishing workflow publishes with `--provenance`
 
 ## Supported commands (hub / release checkout)
 
@@ -19,11 +26,13 @@ This document describes **operator-controlled** npm releases. The package ships 
 | `npm test` | Vitest package and skill invariant tests |
 | `npm run verify` | Required files on disk + `npm pack --dry-run` path allowlist |
 | `npm pack --dry-run` | Inspect tarball file list without writing `.tgz` |
-| `npm publish` | **Operator only**, after authorization below |
+| **Publish workflow** | **Operator only** — see below |
 
-## Prepublication verification
+Local `npm publish` is not the supported path when provenance is required; use the GitHub Actions workflow after Trusted Publishing is configured.
 
-Before any publish:
+## Prepublication verification (every release)
+
+Before dispatching the publish workflow:
 
 1. Confirm the release commit on `main` includes the intended public README, `LICENSE`, and `docs/**` files that should ship in the tarball.
 2. On a clean checkout: `npm ci`, `npm test`, `npm run verify`.
@@ -34,44 +43,62 @@ Before any publish:
    - `docs/architecture.md`
    - `docs/publishing.md`
    - Router skill, Notion provider skill, `schema.md`, and both `defaults.yml` files
-4. Confirm version in `package.json` matches the intended release (semver).
-5. Operator confirms npm authentication and publication permissions.
+4. Confirm `package.json` version matches the intended release semver and is **not** already on the registry (`npm view @multipliers-dev/savepoints-lite@<version> version` should 404).
 
-If provenance cannot be established for the chosen publish method, **stop** and document the blocker — do not silently disable `publishConfig.provenance`.
+The publish workflow repeats `npm ci`, `npm test`, `npm run verify`, asserts a clean working tree, and refuses to publish if the target version already exists on npm.
 
-## Initial release checklist
+## Triggering a release (GitHub Actions)
 
-Use this for the first public version (for example `1.0.0`) and as a baseline for later majors:
+1. Merge the version bump and release contents to `main`.
+2. In GitHub: **Actions** → **Publish savepoints-lite (manual)** → **Run workflow**.
+3. Select branch **`main`**.
+4. Set **confirm_version** to the exact semver in `package.json` (e.g. `1.0.1`).
+5. Run the workflow and wait for success.
 
-1. **Package ready** — skills, defaults, consumer README, `LICENSE`, and `docs/**` pass `npm test` and `npm run verify` on the release commit.
-2. **Version set** — `package.json` version matches the intended first public semver; changelog or release notes prepared if you use them.
-3. **Authorize** — operator confirms npm auth, org permissions, and explicit approval to publish.
-4. **Publish** — `npm publish` with a provenance-compatible method when `publishConfig.provenance` is enabled.
-5. **Registry smoke** — clean-directory install from the registry only; confirm skill paths and shipped docs in `node_modules`.
-6. **Record evidence** — note version, date, commit, and install-check outcome for maintainers.
-7. **Adoption validation** — separately verify consumer activation and agent behavior against the **published** version (lockfile + `npm ci`); local `npm pack` or `file:` installs do not replace registry validation.
+The workflow will **not** run on push, tag, or schedule — only `workflow_dispatch`.
 
-When this guide documents a future capability (for example packaged activation templates), add it here after it actually ships in a release — do not publish ahead of the tarball contents.
-
-## Publish authorization
-
-Required before `npm publish`:
-
-- Intended version and commit hash agreed
-- All prepublication checks green
-- **Explicit operator approval** to publish to the public registry
-
-Do not publish from an implementation PR unless the operator has granted publication authority for that run.
+**First workflow exercise:** As of the **npm-publication** slice closure, Trusted Publishing is configured and `publish.yml` exists on `main`, but **no release has been published through this workflow yet**. The next registry publish after `1.0.0` should be the first provenance-attested release via OIDC.
 
 ## Postpublish checks
 
-After a successful publish:
+After a successful workflow publish:
 
-1. Confirm the version appears on the public npm registry.
-2. In a **clean temporary directory**, install only from the registry (e.g. `npm init -y`, add exact dependency `"@multipliers-dev/savepoints-lite": "<version>"`, `npm ci` or `npm install`).
-3. Verify canonical skill paths under `node_modules/@multipliers-dev/savepoints-lite/skills/`.
-4. Verify README and `docs/*.md` are present in the installed package.
-5. Record evidence (version, date, install check summary) in the durable place agreed for the release (e.g. adoption PR, plan closure note, maintainer log).
+1. Confirm the version on the registry:
+   - `npm view @multipliers-dev/savepoints-lite@<version> version --prefer-online`
+   - `npm view @multipliers-dev/savepoints-lite dist-tags --json --prefer-online`
+2. In a **clean temporary directory** outside any consumer repo, install only from the registry:
+
+   ```bash
+   npm init -y
+   npm install "@multipliers-dev/savepoints-lite@<version>" --prefer-online
+   ```
+
+3. Verify canonical skill paths:
+   - `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`
+   - `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints-notion/SKILL.md`
+4. Verify router and provider defaults, `LICENSE`, README, and `docs/*.md` under the installed package.
+5. Confirm installed `package.json` version matches the release and the package contains the expected **12** shipped files (see `scripts/expected-package-paths.txt`).
+6. Record evidence (version, date, commit, install summary) for maintainers (e.g. adoption PR or plan closure note).
+
+## Provenance
+
+- **Subsequent releases (workflow):** `publish.yml` runs `npm publish --provenance --access public`. On npmjs.com, open the package version page and confirm provenance / build attestation links to this repository and the workflow run.
+- **Initial `1.0.0` exception:** `1.0.0` was published manually with `npm publish --access public --provenance=false` because Trusted Publishing was not yet configured. That version has **no** npm provenance attestation; do not republish or overwrite `1.0.0`. Registry SHA-1 for the published tarball: `9735948f3bf01cc300b9781cdcb9d28368fde3ad` (matches local `npm pack` verification on the release commit).
+
+Do not silently disable `publishConfig.provenance` for future releases; use the Trusted Publishing workflow instead.
+
+## Initial release (`1.0.0`) — completed
+
+Evidence recorded at **npm-publication** slice closure (2026-10-27):
+
+| Check | Result |
+| --- | --- |
+| Registry version | `@multipliers-dev/savepoints-lite@1.0.0` |
+| `dist-tags.latest` | `1.0.0` |
+| Tarball SHA-1 | `9735948f3bf01cc300b9781cdcb9d28368fde3ad` |
+| Hub `npm test` / `npm run verify` | 12 tests; 12 tarball paths |
+| Clean registry install | 12 files; skills, defaults, docs, LICENSE present |
+| Provenance | Omitted for `1.0.0` only (manual publish); workflow not yet exercised |
 
 ## Subsequent releases
 
