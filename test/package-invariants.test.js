@@ -18,6 +18,19 @@ function readPathsList(rel) {
     .filter(Boolean);
 }
 
+function registryDogfoodManifestRel(version) {
+  return `scripts/expected-package-paths-registry-dogfood-${version}.txt`;
+}
+
+function readRegistryDogfoodManifest(version) {
+  const rel = registryDogfoodManifestRel(version);
+  expect(
+    existsSync(join(root, rel)),
+    `missing registry dogfood manifest for @${version}: ${rel}`,
+  ).toBe(true);
+  return readPathsList(rel);
+}
+
 function markdownLinkTargets(markdown) {
   const targets = [];
   const re = /\[([^\]]*)\]\(([^)]+)\)/g;
@@ -141,6 +154,17 @@ describe("package invariants", () => {
     expect(skill).not.toContain(MAINTAINER_DATA_SOURCE_ID);
   });
 
+  it("notion provider returns failure when configuration blocks persistence", () => {
+    const skill = readRoot("skills/savepoints-notion/SKILL.md");
+    expect(skill).toMatch(/Return \*\*`failure`\*\* to the router/i);
+    expect(skill).toMatch(
+      /configuration prevented persistence.*no MCP write attempted/i,
+    );
+    expect(skill).toMatch(
+      /`unconfirmed`.*a write was attempted but confirmation remains uncertain/i,
+    );
+  });
+
   it("router carries integration destination unchanged to provider", () => {
     const skill = readRoot("skills/savepoints/SKILL.md");
     expect(skill).toMatch(/carry this `destination` block unchanged/i);
@@ -169,17 +193,19 @@ describe("package invariants", () => {
     }
   });
 
-  it("expected registry dogfood paths file documents @1.1.0 layout", () => {
-    const listed = readPathsList(
-      "scripts/expected-package-paths-registry-dogfood.txt",
-    );
-    expect(listed).toHaveLength(15);
-    expect(listed).not.toContain(
+  it("registry dogfood manifests exist per published pin version", () => {
+    const v11 = readRegistryDogfoodManifest("1.1.0");
+    expect(v11).toHaveLength(15);
+    expect(v11).not.toContain(
       "templates/consumer/savepoints-notion.yml.example",
     );
-    for (const rel of listed) {
-      expect(existsSync(join(root, rel))).toBe(true);
-    }
+
+    const v20 = readRegistryDogfoodManifest("2.0.0");
+    expect(v20).toHaveLength(16);
+    expect(v20).toContain("templates/consumer/savepoints-notion.yml.example");
+    expect([...v20].sort()).toEqual(
+      readPathsList("scripts/expected-package-paths.txt").sort(),
+    );
   });
 
   it("tarball markdown relative links resolve within npm pack file set", () => {
@@ -228,12 +254,14 @@ describe("package invariants", () => {
     expect(hooks).not.toMatch(/observe\.sh/);
   });
 
-  it("hub dogfoods published package with exact devDependency pin 1.1.0 pre-publish", () => {
+  it("hub dogfoods published package with exact devDependency pin (pre-publish @1.1.0)", () => {
     const pkg = JSON.parse(readRoot("package.json"));
     const dogfoodVersion =
       pkg.devDependencies["@multipliers-dev/savepoints-lite"];
+    expect(dogfoodVersion).toMatch(/^\d+\.\d+\.\d+$/);
     expect(dogfoodVersion).toBe("1.1.0");
     expect(pkg.version).toBe("2.0.0");
+    readRegistryDogfoodManifest(dogfoodVersion);
   });
 
   it("hub activation uses AGENTS.md only (no Cursor savepoints rule)", () => {
@@ -303,39 +331,33 @@ describe("package invariants", () => {
     );
     expect(installedPkg.name).toBe("@multipliers-dev/savepoints-lite");
     expect(installedPkg.version).toBe(dogfoodVersion);
-    expect(installedPkg.files).toEqual(workspacePkg.files);
 
-    const expectedRelFiles = readPathsList(
-      "scripts/expected-package-paths-registry-dogfood.txt",
-    ).sort();
+    const expectedRelFiles =
+      readRegistryDogfoodManifest(dogfoodVersion).sort();
     const relFiles = listFilesRecursive(installRoot)
       .map((abs) => abs.slice(installRoot.length + 1))
       .sort();
     expect(relFiles).toEqual(expectedRelFiles);
 
-    expect(
-      existsSync(join(installRoot, "skills/savepoints/verification.md")),
-    ).toBe(true);
-    expect(
-      existsSync(join(installRoot, "templates/consumer/AGENTS.md.snippet")),
-    ).toBe(true);
-    expect(
-      existsSync(join(installRoot, "templates/consumer/CLAUDE.md.snippet")),
-    ).toBe(true);
-    expect(
-      existsSync(join(installRoot, "skills/savepoints-notion/SKILL.md")),
-    ).toBe(true);
+    for (const rel of expectedRelFiles) {
+      expect(existsSync(join(installRoot, rel))).toBe(true);
+    }
+    const unexpected = relFiles.filter((p) => !expectedRelFiles.includes(p));
+    expect(unexpected).toEqual([]);
+
     expect(
       existsSync(join(installRoot, "docs/adoption-verification-record.md")),
     ).toBe(false);
     expect(
       existsSync(join(installRoot, ".cursor/rules/savepoints-lite.mdc")),
     ).toBe(false);
-    expect(
-      existsSync(
-        join(installRoot, "templates/consumer/savepoints-notion.yml.example"),
-      ),
-    ).toBe(false);
+
+    if (dogfoodVersion === workspacePkg.version) {
+      expect(installedPkg.files).toEqual(workspacePkg.files);
+      expect(expectedRelFiles).toEqual(
+        readPathsList("scripts/expected-package-paths.txt").sort(),
+      );
+    }
 
     const lock = readRoot("package-lock.json");
     expect(lock).toMatch(

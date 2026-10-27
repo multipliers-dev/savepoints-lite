@@ -41,11 +41,11 @@ Example consumer file: [`templates/consumer/savepoints-notion.yml.example`](../.
 
 **Resolution order:** tier 1 → tier 2 → tier 3. Only the **resolved** value after applicable tiers is authoritative.
 
-**Missing valid destination** (no usable `data_source_id` after applicable tiers): **fail open** — do **not** call Notion MCP; return without implying persistence; continue primary work per router outcome semantics.
+**Missing valid destination** (no usable `data_source_id` after applicable tiers): do **not** call Notion MCP. Return **`failure`** to the router (configuration prevented persistence — not a confirmed write). The router reports briefly if useful and **continues primary work** (fail open).
 
-**Tier 1 present but invalid** (empty, malformed UUID, or otherwise unusable): **fail open without fallback** to tier 2 or tier 3 — do not silently use `.agents` or packaged defaults.
+**Tier 1 present but invalid** (empty, malformed UUID, or otherwise unusable): **fail open without fallback** to tier 2 or tier 3 — do not silently use `.agents` or packaged defaults. Return **`failure`** without Notion MCP.
 
-**Misconfiguration (after resolution):** when a Savepoint was requested for persistence but cannot be written because configuration is invalid — resolved `destination.data_source_id` empty, missing, or unusable for the target data source, or tier 1 invalid with no fallback — report briefly in chat, then fail open without Notion MCP.
+**Misconfiguration (after resolution):** when a Savepoint was requested for persistence but cannot be written because configuration is invalid — resolved `destination.data_source_id` empty, missing, or unusable for the target data source, or tier 1 invalid with no fallback — report briefly in chat, return **`failure`**, do not call Notion MCP.
 
 ## Notion mapping
 
@@ -82,9 +82,9 @@ Return to the router:
 success | failure | unconfirmed
 ```
 
-- `success` — persistence **confirmed** (synchronous create succeeded, or async polling reached a terminal succeeded state).
-- `failure` — tool error, auth failure, or terminal async failure with no confirmed row.
-- `unconfirmed` — async operation still unresolved after bounded polling, or the first create might have persisted and a duplicate create was refused.
+- `success` — persistence **confirmed** only after a write was attempted and succeeded (synchronous create succeeded, or async polling reached a terminal succeeded state).
+- `failure` — configuration prevented persistence (missing or invalid destination; no MCP write attempted), or a write was attempted and failed terminally (tool error, auth failure, terminal async failure with no confirmed row).
+- `unconfirmed` — a write was attempted but confirmation remains uncertain (async still unresolved after bounded polling, or the first create might have persisted and a duplicate create was refused).
 
 Never imply persistence on queue alone or on an unconfirmed async task.
 

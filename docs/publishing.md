@@ -61,9 +61,20 @@ After `@2.0.0` (or the released version) is on the registry:
 1. Open a **separate** hub PR on `multipliers-dev/savepoints-lite`.
 2. Bump `devDependencies["@multipliers-dev/savepoints-lite"]` to the new exact version and refresh `package-lock.json`.
 3. Run `npm ci`, `npm test`, `npm run verify`, `npm run validate:plans`.
-4. When the pin matches the workspace version, registry dogfood layout tests and workspace pack allowlist align again.
+4. `npm test` selects the registry dogfood file manifest for the pinned version (`scripts/expected-package-paths-registry-dogfood-<version>.txt`). When the pin matches workspace `2.0.0`, that manifest matches `expected-package-paths.txt`.
 
 Do **not** bump the devDependency to a version that does not exist on npm (no `file:` link for dogfood).
+
+### Hub session logging after the bump
+
+`@1.1.0` packaged defaults included a maintainer `destination.data_source_id`. **`@2.0.0` does not** — the hub does not commit `.agents/savepoints-notion.yml` or a personal destination in this repository.
+
+After the dogfood pin reaches `@2.0.0`, activated hub session logging **will not persist to Notion** until the operator supplies a valid destination through one of:
+
+- **Tier 1:** explicit integration instruction context (e.g. a future team marketplace wrapper skill — not implemented in the hub repo); or
+- **Tier 2:** optional `.agents/savepoints-notion.yml` in the hub checkout (operator-owned; use [`templates/consumer/savepoints-notion.yml.example`](../templates/consumer/savepoints-notion.yml.example) as a template only).
+
+Do not reintroduce maintainer destination ids into packaged defaults, generic docs, or templates. Configuring hub logging is an operator step separate from bumping the devDependency.
 
 ## Later releases
 
