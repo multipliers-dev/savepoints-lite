@@ -41,9 +41,18 @@ Copy-paste templates ship in the package under `templates/consumer/` (also prese
 | --- | --- |
 | **Cursor** | Copy `templates/consumer/.cursor/rules/savepoints-lite.mdc` → `.cursor/rules/` (`alwaysApply: true`) |
 | **AGENTS.md** | Merge `templates/consumer/AGENTS.md.snippet` (preserve existing instructions) |
-| **CLAUDE.md** | Use `@AGENTS.md` import only (`templates/consumer/CLAUDE.md.snippet`) — do not duplicate Savepoints prose |
+| **CLAUDE.md** | Add `@AGENTS.md` so Claude imports shared activation — do not duplicate Savepoints prose (see below) |
 
 Activation files must be **thin** — they reference triggers and the installed router path; they do not duplicate the full protocol in [architecture.md](./architecture.md).
+
+### Claude Code and an existing `CLAUDE.md`
+
+Many repositories already have a root `CLAUDE.md` with Claude-specific instructions. **Do not replace that file** with the template snippet alone.
+
+- **New repo / no `CLAUDE.md` yet:** create `CLAUDE.md` containing only `@AGENTS.md` (same as [`templates/consumer/CLAUDE.md.snippet`](../templates/consumer/CLAUDE.md.snippet)).
+- **Existing `CLAUDE.md`:** **merge** — keep your current content and add a line `@AGENTS.md` (typically near the top) so Claude loads the shared Savepoints section from `AGENTS.md`. Remove any duplicate Savepoints paragraphs from `CLAUDE.md` after merge.
+
+Savepoints activation prose lives in `AGENTS.md` only; `CLAUDE.md` is the import hook.
 
 ## Router skill path (after install)
 
