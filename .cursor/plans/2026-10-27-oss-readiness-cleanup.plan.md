@@ -42,7 +42,7 @@ isProject: false
 | phase1-inventory | Open PR only | Report inventory; optional plan table update in a PR if operator requests. Do not merge. |
 | phase1-consumer-prs | Open PR only | One consumer repo per PR. Do not merge. |
 | phase1-checkpoint | Manual verification gate | Verify main branches only; no implementation PR. Stop with pass/fail report. |
-| phase2-package-config | Open PR only | savepoints-lite hub only. Do not merge or publish. |
+| phase2-package-config | Open PR only | savepoints-lite hub only. **Prerequisite:** phase1-checkpoint passed. Do not merge or publish. |
 | phase3-docs | Open PR only | savepoints-lite hub only. **Prerequisite:** phase1-checkpoint passed. May combine with phase2/phase4 in one merge-safe PR. Do not merge. |
 | phase4-release-prep | Open PR only | savepoints-lite hub only. **Prerequisite:** phase1-checkpoint passed. Do not merge or publish npm. |
 | phase5-upgrade-prep | Open PR only | **Docs:** upgrade procedure in hub adopt/docs (may merge with phase4 PR). **Execution:** consumer `@2.0.0` bump PRs only after operator publishes registry release — not part of this slice’s hub PR. |
@@ -380,7 +380,9 @@ Implement slice phase2-package-config only on multipliers-dev/savepoints-lite.
 
 Authority: Open PR only — do not merge or publish.
 
-Topology: origin/main; PR base main; prerequisite phase1-checkpoint passed.
+Prerequisite: phase1-checkpoint passed — every confirmed consumer has .agents/savepoints-notion.yml merged to main. If not passed, stop; do not remove packaged defaults or change provider destination resolution.
+
+Topology: origin/main; PR base main.
 
 Deliverables: remove packaged Notion destination; mandatory .agents/savepoints-notion.yml in provider skill; example template; tests.
 
