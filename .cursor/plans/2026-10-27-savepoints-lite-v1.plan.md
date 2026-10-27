@@ -97,8 +97,8 @@ For page body Markdown, read `notion://docs/notion-flavored-markdown-spec` once 
    - `pages[0].properties`: map using the established property contract above (and fetch output **only** if a prior create failed with a property/schema error)
    - `pages[0].content`: Notion-flavored Markdown per the four body sections
    - **`allow_async`: `false` by default** when the tool accepts it — wait for a synchronous success result (page id / URL in the response) before treating persistence as done
-2. **If the tool rejects sync create or returns an async task:** follow with `notion-get-async-task` (or equivalent) until `succeeded` or a terminal failure **before** telling the user the Savepoint was saved; if the turn must end while still pending, report **queued / unconfirmed** — do not claim success
-3. **On failure (unavailable MCP, auth error, create error):** one-sentence report for **this event**, **no retry queue**, continue primary work; **later events still attempt writes**
+2. **If the tool rejects sync create or returns an async task:** poll with `notion-get-async-task` (or equivalent) only within a **bounded** window — e.g. at most **two** follow-up polls or until a terminal state (`succeeded` / failed), whichever comes first. **Do not poll indefinitely**; Savepoint confirmation must not block completion of the user’s primary work. If still pending after the bound, report **queued / unconfirmed** and continue — do not claim success
+3. **On failure (unavailable MCP, auth error, create error):** one-sentence **in-chat** report for **this event**, **no retry queue**, continue primary work; **later independent work events** may attempt writes again
 
 ### Metadata rules
 
@@ -127,13 +127,15 @@ The skill must require a Savepoint **in the same turn** when any of these occur:
 - A coherent unit of work completes (feature slice, fix, doc pass, verification run).  
 - A significant decision is made (architecture, scope, tradeoff).  
 - The agent switches tasks or user changes direction.  
-- An error is hit or resolved (including MCP/tool failure — log under **Errors**, then continue).
+- An error is hit or resolved **in the primary task** (tooling, build, test, user-visible failure) — record under **Errors** in the Savepoint for that work event.
 
 **Explicit anti-patterns:** session-end only, “remember to savepoint at the end,” debouncing, consolidating multiple events into one page.
 
 ### Failure behavior
 
 On create error or unconfirmed async: one-sentence user-visible report (tool name + error summary, or “queued — not confirmed”), **no retry queue**, resume primary task. **Do not** disable subsequent Savepoint attempts in the same session.
+
+**Anti-loop (failed Savepoint writes):** A **failed Savepoint write** (Notion MCP unavailable, auth error, create error, or unconfirmed async) is **not** an error event that triggers another Savepoint. Report the persistence failure in chat and continue the primary task. Do **not** chain “write failed → new Savepoint to log the failure → write failed again.” Only a **later, independent** work trigger (completed task, decision, task switch, or primary-task error) may attempt another Savepoint.
 
 ---
 
@@ -143,7 +145,7 @@ On create error or unconfirmed async: one-sentence user-visible report (tool nam
 skills/savepoints/
   SKILL.md              # Canonical protocol (frontmatter name: savepoints or savepoints-lite — pick one, use consistently in slash + docs)
   defaults.yml          # Bundled notion.data_source_id (+ database_id for humans)
-  verification.md         # Manual + automatable checks
+  verification.md       # Manual checklists — introduced in adopt-and-verify slice only (not protocol-core)
 skills/README.md        # Index (short; mirror editorial-workflow/skills/README.md tone)
 ```
 
@@ -155,8 +157,8 @@ skills/README.md        # Index (short; mirror editorial-workflow/skills/README.
 4. Metadata derivation  
 5. Notion MCP steps (per-event create, optional fetch on mismatch, sync confirmation) with example payload shape (properties + content template)  
 6. Failure handling  
-7. What **not** to do (read/update/batch/hooks)  
-8. Link to [`verification.md`](skills/savepoints/verification.md)
+7. What **not** to do (read/update/batch/hooks; **no Savepoint-on-Savepoint-failure loop**)  
+8. In **adopt-and-verify** only: add link to [`verification.md`](skills/savepoints/verification.md) (do not link from `SKILL.md` in protocol-core — file does not exist yet)
 
 Optional small companion [`skills/savepoints/notion-payload.md`](skills/savepoints/notion-payload.md) only if `SKILL.md` grows unwieldy — prefer keeping v1 in one file.
 
@@ -227,7 +229,7 @@ Recommended **two implementation PRs** + docs closure (skill + wiring is self-co
 
 **Deliverables:**
 
-- `skills/savepoints/*` (including `defaults.yml`), `skills/README.md`  
+- `skills/savepoints/SKILL.md`, `skills/savepoints/defaults.yml`, `skills/README.md` — **not** `verification.md` (slice 2)  
 - Override template only (e.g. `.agents/savepoints-lite.template.yml` or under `templates/consumer/`) — **no** committed `.agents/savepoints-lite.yml` in this repo  
 - `.cursor/rules/savepoints-lite.mdc`  
 - `AGENTS.md`, `CLAUDE.md`, `README.md`  
@@ -237,7 +239,7 @@ Recommended **two implementation PRs** + docs closure (skill + wiring is self-co
 **Acceptance:**
 
 - `npm test` and `npm run typecheck` pass (verifier only)  
-- All protocol files present per verifier  
+- `verify-protocol-files.sh` checks protocol-core artifacts only (`SKILL.md`, `defaults.yml`, plugin manifests, rule) — **must not** require `verification.md`  
 - No new hooks beyond existing git-hook stack  
 
 ### Slice `adopt-and-verify` (Open PR only)
@@ -246,12 +248,13 @@ Recommended **two implementation PRs** + docs closure (skill + wiring is self-co
 
 - [`docs/adopt.md`](docs/adopt.md)  
 - [`templates/consumer/`](templates/consumer/) (rule snippet + optional AGENTS.md fragment)  
-- [`skills/savepoints/verification.md`](skills/savepoints/verification.md) completed with checklists  
+- [`skills/savepoints/verification.md`](skills/savepoints/verification.md) **created here** (first appearance in repo) with checklists; update `SKILL.md` to link it  
 
 **Acceptance:**
 
 - Adopt doc describes Cursor + Claude paths  
 - Manual verification section clearly labeled  
+- Extend `verify-protocol-files.sh` to require `verification.md` in this slice (optional tightening)  
 
 ### `plan-closure` (docs-only, after slices merge)
 
@@ -265,7 +268,7 @@ Recommended **two implementation PRs** + docs closure (skill + wiring is self-co
 
 | Check | Mechanism |
 | --- | --- |
-| Skill + plugin artifacts exist | `scripts/verify-protocol-files.sh` |
+| Skill + plugin artifacts exist | `scripts/verify-protocol-files.sh` (protocol-core scope; add `verification.md` in adopt-and-verify) |
 | JSON manifests parse | same script (`node -e` or `python -m json.tool`) |
 | Default data source id unchanged | grep/assert in script |
 | No accidental hook additions | script asserts `.cursor/hooks.json` has no savepoints-specific hooks |
@@ -284,7 +287,8 @@ Use [`skills/savepoints/verification.md`](skills/savepoints/verification.md):
 | 4 | **Content** | Body includes appropriate sections; empty sections omitted |
 | 5 | **Multi-write** | Same session: decision + completed task → **≥2** rows |
 | 6 | **Fail-open per event** | With MCP unavailable, agent finishes task and reports write failure; after MCP is available again in the **same session**, a later trigger still produces a row |
-| 6b | **Persistence honesty** | Agent does not claim “saved to Notion” unless sync create succeeded or async task reached `succeeded` |
+| 6b | **Persistence honesty** | Agent does not claim “saved to Notion” unless sync create succeeded or bounded async poll reached `succeeded` |
+| 6c | **No Savepoint-on-failure loop** | After a failed Savepoint write, agent reports in chat only; does not immediately open another Savepoint solely to record that failure |
 | 7 | **Claude Code** | Repeat 2–5 in Claude with same DB |
 | 8 | **No hooks** | Confirm logging still works with only instructions (no new lifecycle hooks) |
 
@@ -301,7 +305,7 @@ Record manual run date + Notion page URLs in PR description or verification chec
 | **Cloud Agents** | Rely on `AGENTS.md` (+ optional future `.cursor/CLOUD.md` one-pager); rules may load but must not assume hook delivery. |
 | **Session ID** | Inconsistent across hosts; optional by design. |
 | **Notion MCP variance** | Tool names may differ by client (`CallDynamicTool` vs `notion-create-pages`); skill should say “use the connected Notion MCP create-page tool” and use documented property names unless a create error forces fetch. |
-| **Async creates** | Prefer `allow_async: false`; when async is unavoidable, poll until success/failure or report unconfirmed — never imply persistence on queue alone. |
+| **Async creates** | Prefer `allow_async: false`; when async is unavoidable, **bounded** poll (no indefinite wait); then success, terminal failure, or unconfirmed — never imply persistence on queue alone. |
 | **Skill name** | **Decision:** use `savepoints` (slash `/savepoints`) vs `savepoints-lite` — recommend **`savepoints`** for ergonomics with repo name `savepoints-lite` disambiguating the product. |
 | **cursor-team-marketplace** | **Deferred:** optional third PR to add marketplace entry after v1 proven. |
 
