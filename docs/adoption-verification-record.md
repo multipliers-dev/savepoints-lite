@@ -15,24 +15,25 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 
 ## Manual hub dogfooding (§ B in verification.md)
 
-**Operator authorization required** for scenarios 4–10 and Notion portions of 12.
+**Operator authorization required** for scenarios 4–11 and Notion portions of 13.
 
 | # | Scenario | Status | Date | Evidence |
 | --- | --- | --- | --- | --- |
 | 1 | Discoverability | Not run | — | |
 | 2 | Installed router | Not run | — | |
 | 3 | Provider delegation | Not run | — | |
-| 4 | Implicit logging | **Fail** | 2026-10-27 | See [Scenario 4 — implicit logging failures](#scenario-4--implicit-logging-failures) |
-| 5 | Metadata | Not run | — | |
-| 6 | Content | Not run | — | |
-| 7 | Multi-write | Not run | — | |
-| 8 | Fail-open | Not run | — | |
-| 9 | Persistence honesty | Not run | — | |
-| 10 | Anti-loop | Not run | — | |
-| 11 | No capture hooks | Not run | — | |
-| 12 | Claude Code | Not run | — | |
+| 4 | Primary-agent implicit logging | **Fail** | 2026-10-27 | See [Scenario 4 — primary-agent implicit logging (Run A)](#scenario-4--primary-agent-implicit-logging-run-a) |
+| 5 | Delegated-work logging | Not run | — | Parent-owned model not yet verified; [Runs B–C](#runs-b-c--historical-subagent-local-logging-attempts) tested subagent-local logging only |
+| 6 | Metadata | Not run | — | |
+| 7 | Content | Not run | — | |
+| 8 | Multi-write | Not run | — | |
+| 9 | Fail-open | Not run | — | |
+| 10 | Persistence honesty | Not run | — | |
+| 11 | Anti-loop | Not run | — | |
+| 12 | No capture hooks | Not run | — | |
+| 13 | Claude Code | Not run | — | |
 
-### Scenario 4 — implicit logging failures
+### Scenario 4 — primary-agent implicit logging (Run A)
 
 #### Run A — PR #8 Bugbot fixes (Cursor agent, same session as operator audit)
 
@@ -53,9 +54,13 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 
 **Notion:** not applicable — no write attempted; operator authorization not exercised.
 
+### Runs B–C — historical subagent-local logging attempts
+
+These runs assumed the **subagent** would implicitly log. Activation now assigns session logging to the **parent** when subagents return (scenario **5**). Subagent-local Savepoint absence in B–C is **not** evidence that parent-owned delegated logging fails.
+
 #### Run B — controlled reproduction (fresh subagent, hub root, 2026-10-27)
 
-**Setup:** Subagent on `slice/adopt-and-verify`; primary task was a one-sentence `docs/publishing.md` clarification + `npm test` + local commit; prompt did **not** mention Savepoints. Repro doc commit was **reverted** afterward so PR scope stays verification-only.
+**Setup:** Subagent on `slice/adopt-and-verify`; primary task was a one-sentence `docs/publishing.md` clarification + `npm test` + local commit; prompt did **not** mention Savepoints. Repro doc commit was **reverted** afterward so PR scope stays verification-only. **Parent did not record** the subagent outcome afterward (pre–parent-owned activation).
 
 **Confirmed facts (subagent audit appendix):**
 
@@ -64,18 +69,13 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 - Any path under `node_modules/@multipliers-dev/savepoints-lite/` read via Read: **none**
 - Read `savepoints-notion` provider SKILL: **no**
 - Notion MCP tools invoked: **none**
-- Savepoint record attempted: **no**
-
-**Hypotheses:**
-
-- Failure reproduces under activation injection without explicit Savepoints reminder — not a one-off omission in Run A.
-- Subagent sessions may not mirror every Cursor desktop harness behavior; desktop re-run still useful before instruction changes.
+- Savepoint record attempted: **no** (subagent)
 
 **Notion:** not applicable — no write attempted.
 
 #### Run C — after session-log activation rewrite (fresh subagent, hub root, 2026-10-27)
 
-**Setup:** Commit `2738fc8` on `slice/adopt-and-verify` (session-log–focused `AGENTS.md`, `.cursor/rules/savepoints-lite.mdc`, consumer templates). Subagent task: one-sentence `docs/publishing.md` clarification + `npm test`; prompt did **not** mention Savepoints. Repro edit **reverted** afterward so PR scope stays verification-only.
+**Setup:** Commit `2738fc8` on `slice/adopt-and-verify` (session-log–focused `AGENTS.md`, `.cursor/rules/savepoints-lite.mdc`, consumer templates). Subagent task: one-sentence `docs/publishing.md` clarification + `npm test`; prompt did **not** mention Savepoints. Repro edit **reverted** afterward so PR scope stays verification-only. **Parent did not record** the subagent outcome afterward (pre–parent-owned activation).
 
 **Confirmed facts (subagent audit appendix):**
 
@@ -83,17 +83,12 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 - Any path under `node_modules/@multipliers-dev/savepoints-lite/` read via Read: **none**
 - Read `savepoints-notion` provider SKILL: **no**
 - Notion MCP tools invoked: **none**
-- Savepoint record attempted: **no**
-
-**Hypotheses:**
-
-- Stronger activation wording alone does not close scenario 4 — agents still finish the primary task without loading the installed workflow.
-- Subagent harness may not mirror desktop always-applied rule injection; a **desktop** implicit-logging re-run after `2738fc8` remains the authoritative next check.
+- Savepoint record attempted: **no** (subagent)
 
 **Notion:** not applicable — no write attempted; operator authorization not exercised.
 
 ## Slice completion gate
 
-`adopt-and-verify` plan todo stays **pending** until required manual hub scenarios are **Passed** (or operator-waived with PR rationale). Scenario **4 Fail** blocks claiming implicit logging works.
+`adopt-and-verify` plan todo stays **pending** until required manual hub scenarios are **Passed** (or operator-waived with PR rationale). Scenarios **4** and **5** remain open — do not mark **Passed** without an observed successful run (operator-authorized Notion write when applicable).
 
-**Current PR branch:** hub implementation + automated checks **Pass**; manual scenario **4 Fail** (three observed runs, including post–activation-rewrite Run C); other manual scenarios **Not run**.
+**Current PR branch:** hub implementation + automated checks **Pass**; scenario **4 Fail** (Run A — parent work without logging); scenario **5 Not run** (parent-owned delegated logging); Runs B–C retained as historical subagent-local attempts only; other manual scenarios **Not run**.

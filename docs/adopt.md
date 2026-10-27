@@ -62,6 +62,8 @@ After upgrading past `1.0.0`, re-run manual checks from the installed checklist 
 
 Activation files must be **thin** — they describe the session-log triggers and point at the installed router skill path; they do not duplicate router/provider protocol in [architecture.md](./architecture.md).
 
+The **primary agent** owns the session log for the whole session, including work done by subagents. Subagents in isolated worktrees are not required to install the package or write Savepoints; when delegated work returns, the parent records it using its own `node_modules` router and Notion MCP.
+
 ### Claude Code and an existing `CLAUDE.md`
 
 Many repositories already have a root `CLAUDE.md` with Claude-specific instructions. **Do not replace that file** with the template snippet alone.

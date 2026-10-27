@@ -34,14 +34,15 @@ Run at the **Savepoints Lite hub repository root** (`multipliers-dev/savepoints-
 | 1 | **Discoverability** | Fresh Cursor chat; agent follows activation without an explicit “use savepoints” reminder |
 | 2 | **Installed router** | Agent reads `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` — **not** git `skills/` as the consumer router |
 | 3 | **Provider delegation** | Router delegates to installed `savepoints-notion` skill (Notion MCP); router does not inline Notion property steps |
-| 4 | **Implicit logging** | Completing meaningful work creates a Notion record (operator authorized) |
-| 5 | **Metadata** | Row has correct `Repository`, `Agent`, sensible `Name`; `Session ID` only if host provided |
-| 6 | **Content** | Body includes appropriate sections; empty sections omitted |
-| 7 | **Multi-write** | Separate meaningful events → separate records (≥2 in one session when applicable) |
-| 8 | **Fail-open** | Notion MCP failure does not block primary work; later independent event can still produce a record after recovery |
-| 9 | **Persistence honesty** | Agent does not report success on `unconfirmed` writes |
-| 10 | **Anti-loop** | Failed write does not recursively trigger more Savepoints |
-| 11 | **No capture hooks** | Logging via instructions + activation only; [`.cursor/hooks.json`](../../.cursor/hooks.json) unchanged for Savepoints capture |
-| 12 | **Claude Code** | Repeat applicable scenarios (2–10) in Claude Code at hub root (operator authorized for Notion) |
+| 4 | **Primary-agent implicit logging** | Parent completes meaningful work **without** an explicit Savepoints reminder → parent reads installed router, delegates to provider, attempts a Notion record (operator authorized) |
+| 5 | **Delegated-work logging** | Subagent in an **isolated worktree** completes ordinary development work (prompt does **not** mention Savepoints) → when results return to the **parent**, parent records the subagent's reported outcome (same router/provider path; entry reflects delegated work). **Do not** treat subagent-local Savepoint absence as pass/fail — only parent behavior after handoff counts |
+| 6 | **Metadata** | Row has correct `Repository`, `Agent`, sensible `Name`; `Session ID` only if host provided |
+| 7 | **Content** | Body includes appropriate sections; empty sections omitted |
+| 8 | **Multi-write** | Separate meaningful events → separate records (≥2 in one session when applicable) |
+| 9 | **Fail-open** | Notion MCP failure does not block primary work; later independent event can still produce a record after recovery |
+| 10 | **Persistence honesty** | Agent does not report success on `unconfirmed` writes |
+| 11 | **Anti-loop** | Failed write does not recursively trigger more Savepoints |
+| 12 | **No capture hooks** | Logging via instructions + activation only; [`.cursor/hooks.json`](../../.cursor/hooks.json) unchanged for Savepoints capture |
+| 13 | **Claude Code** | Repeat applicable scenarios (2–11) in Claude Code at hub root (operator authorized for Notion) |
 
 **Do not** claim `npm test` or CI proves this table.

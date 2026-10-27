@@ -23,6 +23,8 @@ Complete the logging workflow before moving on to the next task or delivering th
 
 If logging fails, continue the primary work without retry loops.
 
+**Delegated work:** The primary agent maintains the session log, including meaningful work completed by subagents. When a subagent returns, evaluate its reported outcome and record an entry before continuing — using this checkout's installed router and Notion provider. Do not assume the subagent succeeded without supporting evidence; skip duplicate entries for the same event. Subagents do not need to install Savepoints Lite or persist Savepoints independently. Do not assume isolated worktrees contain `node_modules`, workspace activation, or Notion MCP access.
+
 - `node_modules` must exist — do not use vendored `skills/` copies.
 - Fail open on write failure; never claim Notion persistence without confirmed write.
 
