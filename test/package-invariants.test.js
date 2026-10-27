@@ -17,7 +17,9 @@ describe("package invariants", () => {
     expect(pkg.private).not.toBe(true);
     expect(pkg.publishConfig?.access).toBe("public");
     expect(pkg.publishConfig?.provenance).toBe(true);
-    expect(pkg.files).toEqual(expect.arrayContaining(["skills/**", "README.md"]));
+    expect(pkg.files).toEqual(
+      expect.arrayContaining(["skills/**", "README.md", "docs/**"]),
+    );
     expect(pkg.scripts.typecheck).toBeUndefined();
     expect(pkg.scripts.verify).toBeDefined();
   });
@@ -39,6 +41,24 @@ describe("package invariants", () => {
     expect(readme).not.toMatch(/docs\/adopt\.md/);
   });
 
+  it("README links architecture and publishing docs", () => {
+    const readme = readRoot("README.md");
+    expect(readme).toMatch(/docs\/architecture\.md/);
+    expect(readme).toMatch(/docs\/publishing\.md/);
+  });
+
+  it("README does not claim Cursor or Claude integration verified", () => {
+    const readme = readRoot("README.md");
+    expect(readme).not.toMatch(/integration (has been |is )verified/i);
+    expect(readme).not.toMatch(/verified (in|on|with) (Cursor|Claude)/i);
+  });
+
+  it("documentation files exist for tarball", () => {
+    for (const rel of ["docs/architecture.md", "docs/publishing.md"]) {
+      expect(existsSync(join(root, rel))).toBe(true);
+    }
+  });
+
   it("notion provider documents verified property types", () => {
     const skill = readRoot("skills/savepoints-notion/SKILL.md");
     expect(skill).toMatch(/Notion type/);
@@ -58,7 +78,7 @@ describe("package invariants", () => {
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
-    expect(listed).toHaveLength(8);
+    expect(listed).toHaveLength(10);
     for (const rel of listed) {
       expect(existsSync(join(root, rel))).toBe(true);
     }

@@ -1,4 +1,6 @@
 README.md
+docs/architecture.md
+docs/publishing.md
 package.json
 skills/README.md
 skills/savepoints-notion/defaults.yml

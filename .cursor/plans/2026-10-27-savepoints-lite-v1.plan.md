@@ -7,7 +7,7 @@ todos:
     status: completed
   - id: documentation
     content: "Documentation-only PR: README landing page, docs/architecture.md, docs/publishing.md, package files allowlist + verify/tests for tarball docs — no npm publish, no consumer activation templates"
-    status: pending
+    status: completed
   - id: npm-publication
     content: "Operator release gate (no publish-only PR): after documentation merges — verify, authorize, publish @multipliers-dev/savepoints-lite@1.0.0 with provenance, registry + clean-consumer install checks, record evidence"
     status: pending
