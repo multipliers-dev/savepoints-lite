@@ -254,13 +254,12 @@ describe("package invariants", () => {
     expect(hooks).not.toMatch(/observe\.sh/);
   });
 
-  it("hub dogfoods published package with exact devDependency pin (pre-publish @1.1.0)", () => {
+  it("hub dogfoods published package with exact devDependency pin matching workspace", () => {
     const pkg = JSON.parse(readRoot("package.json"));
     const dogfoodVersion =
       pkg.devDependencies["@multipliers-dev/savepoints-lite"];
     expect(dogfoodVersion).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(dogfoodVersion).toBe("1.1.0");
-    expect(pkg.version).toBe("2.0.0");
+    expect(dogfoodVersion).toBe(pkg.version);
     readRegistryDogfoodManifest(dogfoodVersion);
   });
 
