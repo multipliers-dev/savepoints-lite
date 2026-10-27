@@ -28,17 +28,20 @@ Cloud Agents: committed `.cursor/environment.json` runs `npm ci` (triggers `prep
 
 ## Savepoints Lite (hub dogfooding)
 
-This repository **consumes** the published npm package it ships. `npm ci` installs `@multipliers-dev/savepoints-lite@1.0.0` as a devDependency (exact version in `package.json` + lockfile).
+This repository **consumes** the published npm package it ships. `npm ci` installs `@multipliers-dev/savepoints-lite@1.0.0` as a devDependency (exact version in `package.json` + lockfile). Instruction-only — **no** Savepoints lifecycle hooks.
 
-**Activation (instruction-only — no Savepoints lifecycle hooks):**
+**When to load the router (same turn):** After completing meaningful work, making a significant decision, switching tasks, or encountering or resolving a primary-task error, read and follow the **installed** Savepoints router:
+
+`node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`
+
+Do **not** use this repository's `skills/` tree as the router source — `node_modules` is authoritative. Delegate persistence through the router to the installed provider skill in the same package (`savepoints-notion` for v1). Fail open on write failure; never claim Notion persistence without provider confirmation.
 
 | Surface | Mechanism |
 | --- | --- |
-| **Cursor** | [`.cursor/rules/savepoints-lite.mdc`](.cursor/rules/savepoints-lite.mdc) (`alwaysApply: true`) |
-| **Claude Code** | [`CLAUDE.md`](CLAUDE.md) Savepoints section |
-| **Router skill** | `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` |
+| **Cursor** | [`.cursor/rules/savepoints-lite.mdc`](.cursor/rules/savepoints-lite.mdc) (`alwaysApply: true`) — same trigger contract |
+| **Claude Code** | [`CLAUDE.md`](CLAUDE.md) imports this file (`@AGENTS.md`) |
 
-When Savepoints triggers fire, agents must read the **installed** router under `node_modules`, not the hub `skills/` source tree. Consumer copy-paste templates live under [`templates/consumer/`](templates/consumer/). Manual behavioral verification: [`skills/savepoints/verification.md`](skills/savepoints/verification.md) and [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md).
+Consumer copy-paste templates: [`templates/consumer/`](templates/consumer/). Verification: [`skills/savepoints/verification.md`](skills/savepoints/verification.md), [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md).
 
 ## Discipline
 

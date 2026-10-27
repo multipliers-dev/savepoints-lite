@@ -41,7 +41,7 @@ Copy-paste templates ship in the package under `templates/consumer/` (also prese
 | --- | --- |
 | **Cursor** | Copy `templates/consumer/.cursor/rules/savepoints-lite.mdc` → `.cursor/rules/` (`alwaysApply: true`) |
 | **AGENTS.md** | Merge `templates/consumer/AGENTS.md.snippet` (preserve existing instructions) |
-| **CLAUDE.md** | Merge `templates/consumer/CLAUDE.md.snippet` (preserve existing content; `@AGENTS.md` pattern is fine) |
+| **CLAUDE.md** | Use `@AGENTS.md` import only (`templates/consumer/CLAUDE.md.snippet`) — do not duplicate Savepoints prose |
 
 Activation files must be **thin** — they reference triggers and the installed router path; they do not duplicate the full protocol in [architecture.md](./architecture.md).
 

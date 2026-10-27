@@ -3,7 +3,9 @@ description: Append-only session Savepoints via the installed npm router skill (
 alwaysApply: true
 ---
 
-Savepoints Lite is **instruction-only**. When a meaningful work event occurs in this turn (completed slice, significant decision, task switch, or primary-task error/resolution), read and follow the **installed** router skill:
+Savepoints Lite is **instruction-only** (no lifecycle hooks).
+
+**When (same turn):** After completing meaningful work, making a significant decision, switching tasks, or encountering or resolving a primary-task error, read and follow the **installed** router skill:
 
 `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`
 
@@ -14,4 +16,4 @@ Requirements:
 - Delegate persistence through the router to the provider skill in the same package install (`savepoints-notion` for v1).
 - Fail open on write failure; never claim Notion persistence without provider confirmation; do not open a follow-up Savepoint solely to record a failed write.
 
-Do not add Savepoints lifecycle hooks or executable persistence logic — activation is this rule plus `AGENTS.md` / `CLAUDE.md` pointers only.
+Activation complements `AGENTS.md` (and `CLAUDE.md` with `@AGENTS.md` if used).

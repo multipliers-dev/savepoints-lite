@@ -140,8 +140,9 @@ describe("package invariants", () => {
     expect(rule).toMatch(/not.*skills\//i);
     const agents = readRoot("AGENTS.md");
     expect(agents).toContain(routerPath);
-    const claude = readRoot("CLAUDE.md");
-    expect(claude).toContain(routerPath);
+    expect(agents).toMatch(/completing meaningful work/i);
+    const claude = readRoot("CLAUDE.md").trim();
+    expect(claude).toBe("@AGENTS.md");
   });
 
   it("consumer activation templates reference installed router path", () => {

@@ -1,9 +1,9 @@
 ## Savepoints Lite (session logging)
 
-This repository uses `@multipliers-dev/savepoints-lite` for append-only session Savepoints via Notion MCP.
+Pin `@multipliers-dev/savepoints-lite` (exact version) and run `npm ci`. Instruction-only — no Savepoints lifecycle hooks.
 
-After `npm ci`, agents must read the **installed** router skill (not vendored `skills/` copies):
+**When to load the router (same turn):** After completing meaningful work, making a significant decision, switching tasks, or encountering or resolving a primary-task error, read and follow the **installed** Savepoints router:
 
 `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`
 
-Follow the router each turn when work events match its triggers. Cursor loads `.cursor/rules/savepoints-lite.mdc` (`alwaysApply: true`) for the same contract.
+Do not use vendored `skills/` copies. Cursor: copy `templates/consumer/.cursor/rules/savepoints-lite.mdc` to `.cursor/rules/` (`alwaysApply: true`). Claude Code: `CLAUDE.md` with `@AGENTS.md` only.
