@@ -36,11 +36,12 @@ describe("package invariants", () => {
     );
   });
 
-  it("README links adoption, architecture, and publishing docs", () => {
+  it("README links consumer adoption and architecture docs", () => {
     const readme = readRoot("README.md");
     expect(readme).toMatch(/docs\/adopt\.md/);
     expect(readme).toMatch(/docs\/architecture\.md/);
-    expect(readme).toMatch(/docs\/publishing\.md/);
+    expect(readme).not.toMatch(/docs\/publishing\.md/);
+    expect(readme).not.toMatch(/npm run verify/);
   });
 
   it("README does not claim Cursor or Claude integration verified", () => {

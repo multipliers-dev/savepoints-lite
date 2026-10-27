@@ -44,15 +44,6 @@ Agents must read skills from this install root. **Do not** vendor or copy skill 
 
 - [docs/adopt.md](./docs/adopt.md) — installation and adoption (prerequisites, pinned install, activation status)
 - [docs/architecture.md](./docs/architecture.md) — router vs provider boundaries, Savepoint protocol, configuration precedence, append outcomes, v1 exclusions
-- [docs/publishing.md](./docs/publishing.md) — operator release process, verify steps, provenance, postpublish checks
-
-## Hub development (this repository)
-
-| Command | Purpose |
-| --- | --- |
-| `npm test` | Package and skill invariant tests |
-| `npm run verify` | Skill tree + `npm pack --dry-run` tarball checks |
-| `npm run verify:git-hooks` | Confirm Husky shims are runnable in this checkout |
 
 ## License
 
