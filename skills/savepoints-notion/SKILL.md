@@ -45,7 +45,7 @@ Example consumer file: [`templates/consumer/savepoints-notion.yml.example`](../.
 
 **Tier 1 present but invalid** (empty, malformed UUID, or otherwise unusable): **fail open without fallback** to tier 2 or tier 3 — do not silently use `.agents` or packaged defaults.
 
-**Misconfiguration (after resolution):** when a write was attempted, report in chat if the resolved `destination.data_source_id` is empty, missing, or invalid for the target data source.
+**Misconfiguration (after resolution):** when a Savepoint was requested for persistence but cannot be written because configuration is invalid — resolved `destination.data_source_id` empty, missing, or unusable for the target data source, or tier 1 invalid with no fallback — report briefly in chat, then fail open without Notion MCP.
 
 ## Notion mapping
 
