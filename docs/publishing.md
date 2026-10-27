@@ -2,7 +2,7 @@
 
 Operator-controlled npm releases for an instruction-only package (skills and docs; no `bin` or runtime).
 
-**Mechanism:** [GitHub Trusted Publishing](https://docs.npmjs.com/trusted-publishers) via [`.github/workflows/publish.yml`](../.github/workflows/publish.yml) — manual `workflow_dispatch` on **`main` only**. The workflow uses GitHub Actions OIDC (`id-token: write`) to authenticate to npm. Do not use `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or local `npm publish` for registry releases.
+**Mechanism:** [GitHub Trusted Publishing](https://docs.npmjs.com/trusted-publishers) via the repository [publish workflow](https://github.com/multipliers-dev/savepoints-lite/blob/main/.github/workflows/publish.yml) — manual `workflow_dispatch` on **`main` only**. The workflow uses GitHub Actions OIDC (`id-token: write`) to authenticate to npm. Do not use `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or local `npm publish` for registry releases.
 
 **Publication ≠ adoption:** A registry release makes a version installable. Consumer activation and agent behavior are separate — see [adopt.md](./adopt.md). Package design boundaries: [architecture.md](./architecture.md).
 

@@ -4,7 +4,7 @@ Pin `@multipliers-dev/savepoints-lite` (exact version) and run `npm ci`. Instruc
 
 ### Ongoing logging authorization
 
-Installing the package or connecting Notion MCP does **not** alone authorize production Notion writes. **Opt-in** is completing Savepoints **activation** in your repo: copy `savepoints-lite.mdc` (`alwaysApply: true`) and merge this snippet into `AGENTS.md`. Once activated, maintain the session log **without** separate authorization before each entry, subject to host Notion MCP permissions. If activation is incomplete or consent is unclear, do not write; fail open without claiming persistence. Manual behavioral verification per the package checklist requires operator authorization for that verification session only — not per routine log entry.
+Installing the package or connecting Notion MCP does **not** alone authorize production Notion writes. **Opt-in (Claude Code)** is merging this snippet into `AGENTS.md` and loading it from `CLAUDE.md` (`@AGENTS.md`). **Cursor** activates separately via `savepoints-lite.mdc` (`alwaysApply: true`); Claude-only repos do not need that rule. Once activated **for your host**, maintain the session log **without** separate authorization before each entry, subject to host Notion MCP permissions. If activation is incomplete or consent is unclear for that host, do not write; fail open without claiming persistence. Manual behavioral verification per the package checklist requires operator authorization for that verification session only — not per routine log entry.
 
 ### Session log
 

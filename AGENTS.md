@@ -32,7 +32,7 @@ This repository **consumes** the published npm package it ships. `npm ci` instal
 
 ### Ongoing logging authorization
 
-Installing the package or connecting Notion MCP does **not** alone authorize production Notion writes. **Opt-in** is Savepoints **activation** in the repo: this hub has committed `.cursor/rules/savepoints-lite.mdc` (`alwaysApply: true`) plus the session-log section below — that is ongoing logging authorization for agents at the hub root.
+Installing the package or connecting Notion MCP does **not** alone authorize production Notion writes. **Opt-in is per host:** **Cursor** — `.cursor/rules/savepoints-lite.mdc` (`alwaysApply: true`); **Claude Code** — the session-log section below via [`CLAUDE.md`](CLAUDE.md) (`@AGENTS.md`). This hub commits both surfaces for dogfooding; a host needs only its own files — missing Cursor config does not block Claude, and missing `CLAUDE.md` does not block Cursor.
 
 Once opted in, maintain the session log **without** asking for separate authorization before each entry, subject to host Notion MCP permissions. If activation is absent or consent is unclear, do not write to Notion; request activation or explicit consent where appropriate; otherwise fail open without claiming persistence.
 

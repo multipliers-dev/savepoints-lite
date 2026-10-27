@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, posix } from "node:path";
 import { describe, it, expect } from "vitest";
 import { parse as parseYaml } from "yaml";
 
@@ -8,6 +8,25 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 function readRoot(rel) {
   return readFileSync(join(root, rel), "utf8");
+}
+
+function markdownLinkTargets(markdown) {
+  const targets = [];
+  const re = /\[([^\]]*)\]\(([^)]+)\)/g;
+  let match;
+  while ((match = re.exec(markdown)) !== null) {
+    targets.push(match[2]);
+  }
+  return targets;
+}
+
+function isExternalOrAnchorLink(link) {
+  return (
+    link.startsWith("http://") ||
+    link.startsWith("https://") ||
+    link.startsWith("#") ||
+    link.startsWith("mailto:")
+  );
 }
 
 describe("package invariants", () => {
@@ -121,6 +140,35 @@ describe("package invariants", () => {
     }
   });
 
+  it("tarball markdown relative links resolve within npm pack file set", () => {
+    const tarballFiles = new Set(
+      readRoot("scripts/expected-package-paths.txt")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean),
+    );
+    const violations = [];
+    for (const rel of [...tarballFiles].filter((p) => p.endsWith(".md"))) {
+      const content = readRoot(rel);
+      for (const link of markdownLinkTargets(content)) {
+        if (isExternalOrAnchorLink(link)) {
+          continue;
+        }
+        const [pathPart] = link.split("#");
+        if (!pathPart) {
+          continue;
+        }
+        const resolved = posix.normalize(
+          posix.join(posix.dirname(rel), pathPart),
+        );
+        if (!tarballFiles.has(resolved)) {
+          violations.push(`${rel}: (${link}) → ${resolved} not in tarball`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
   it("required skill files exist", () => {
     const paths = [
       "skills/savepoints/SKILL.md",
@@ -199,9 +247,10 @@ describe("package invariants", () => {
       installRoot,
       "skills/savepoints/SKILL.md",
     );
-    if (!existsSync(installedRouter)) {
-      return;
-    }
+    expect(
+      existsSync(installedRouter),
+      "hub self-adoption: run npm ci so node_modules/@multipliers-dev/savepoints-lite@1.0.0 is installed",
+    ).toBe(true);
     const installedPkg = JSON.parse(
       readFileSync(join(installRoot, "package.json"), "utf8"),
     );
