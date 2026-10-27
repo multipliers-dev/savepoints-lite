@@ -1,17 +1,31 @@
 ---
-description: Append-only session Savepoints via the installed npm router skill (not hub source skills/).
+description: Maintain a running Notion session log via the installed Savepoints Lite skill (not hub source skills/).
 alwaysApply: true
 ---
 
 Savepoints Lite is **instruction-only** (no lifecycle hooks).
 
-**When (same turn):** After completing meaningful work, making a significant decision, switching tasks, or encountering or resolving a primary-task error, read and follow the **installed** router skill:
+## Session log
+
+Maintain a running session log in Notion. Do not wait until the session ends.
+
+Record an entry **in the same turn**, immediately after:
+
+- Every completed piece of meaningful work.
+- Every significant decision.
+- Every task switch.
+- Every primary-task error or its resolution.
+
+Each entry should capture what was done, decisions (and why), open threads, and errors (what happened and how they were handled).
+
+Use the installed Savepoints Lite instructions at:
 
 `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`
 
-Requirements:
+Complete the full logging workflow in those instructions **before** the next task or your final response. Reading the skill file alone does not count as recording an entry.
 
-- `node_modules` must exist (`npm ci` installs the pinned published `@multipliers-dev/savepoints-lite@1.0.0`).
-- Do **not** use this repository's `skills/` tree as the router source — the published package under `node_modules` is authoritative.
-- Delegate persistence through the router to the provider skill in the same package install (`savepoints-notion` for v1).
-- Fail open on write failure; never claim Notion persistence without provider confirmation; do not open a follow-up Savepoint solely to record a failed write.
+If logging fails, continue primary work without retry loops.
+
+- `node_modules` must exist (`npm ci` installs the pinned `@multipliers-dev/savepoints-lite@1.0.0`).
+- Do **not** use this repository's `skills/` tree — the published package under `node_modules` is authoritative.
+- Fail open on write failure; never claim Notion persistence without confirmed write.

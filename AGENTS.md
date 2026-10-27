@@ -30,15 +30,38 @@ Cloud Agents: committed `.cursor/environment.json` runs `npm ci` (triggers `prep
 
 This repository **consumes** the published npm package it ships. `npm ci` installs `@multipliers-dev/savepoints-lite@1.0.0` as a devDependency (exact version in `package.json` + lockfile). Instruction-only — **no** Savepoints lifecycle hooks.
 
-**When to load the router (same turn):** After completing meaningful work, making a significant decision, switching tasks, or encountering or resolving a primary-task error, read and follow the **installed** Savepoints router:
+### Session log
+
+Maintain a running session log in Notion.
+
+Do not wait until the session ends. Record an entry immediately after:
+
+- Every completed piece of meaningful work.
+- Every significant decision.
+- Every task switch.
+- Every primary-task error or its resolution.
+
+Each entry should capture:
+
+- What was done (commands, files, features)
+- Decisions made (and why)
+- Open threads (unfinished work)
+- Errors (what went wrong and how it was handled)
+
+Use the installed Savepoints Lite instructions at:
 
 `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`
 
-Do **not** use this repository's `skills/` tree as the router source — `node_modules` is authoritative. Delegate persistence through the router to the installed provider skill in the same package (`savepoints-notion` for v1). Fail open on write failure; never claim Notion persistence without provider confirmation.
+Complete the logging workflow before moving on to the next task or delivering the final response. Reading the instructions alone does not count as recording an entry.
+
+If logging fails, continue the primary work without retry loops.
+
+- `node_modules` must exist — do **not** use this repository's `skills/` tree as the instruction source.
+- Fail open on write failure; never claim Notion persistence without confirmed write.
 
 | Surface | Mechanism |
 | --- | --- |
-| **Cursor** | [`.cursor/rules/savepoints-lite.mdc`](.cursor/rules/savepoints-lite.mdc) (`alwaysApply: true`) — same trigger contract |
+| **Cursor** | [`.cursor/rules/savepoints-lite.mdc`](.cursor/rules/savepoints-lite.mdc) (`alwaysApply: true`) — same session-log contract |
 | **Claude Code** | [`CLAUDE.md`](CLAUDE.md) imports this file (`@AGENTS.md`) |
 
 Consumer copy-paste templates: [`templates/consumer/`](templates/consumer/). Verification: [`skills/savepoints/verification.md`](skills/savepoints/verification.md), [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md).

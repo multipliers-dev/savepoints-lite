@@ -157,7 +157,8 @@ describe("package invariants", () => {
     expect(rule).toMatch(/not.*skills\//i);
     const agents = readRoot("AGENTS.md");
     expect(agents).toContain(routerPath);
-    expect(agents).toMatch(/completing meaningful work/i);
+    expect(agents).toMatch(/session log/i);
+    expect(agents).toMatch(/does not count as recording an entry/i);
     const claude = readRoot("CLAUDE.md").trim();
     expect(claude).toBe("@AGENTS.md");
   });

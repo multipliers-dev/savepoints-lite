@@ -45,7 +45,7 @@ After upgrading past `1.0.0`, re-run manual checks from the installed checklist 
 
 ## Installation does not activate Savepoints
 
-`npm install` does **not** register skills with Cursor or Claude native discovery. Consumers need **one-time activation** that tells agents **when** to read the router and **where** it lives under `node_modules`.
+`npm install` does **not** register skills with Cursor or Claude native discovery. Consumers need **one-time activation** that makes **session logging** an immediate obligation — **when** to record, **what** each entry should capture, and **where** the installed logging workflow lives under `node_modules` (not the full protocol — that stays in the router skill).
 
 ### Where to get activation templates
 
@@ -60,7 +60,7 @@ After upgrading past `1.0.0`, re-run manual checks from the installed checklist 
 | **AGENTS.md** | Merge the `AGENTS.md.snippet` content (preserve your existing instructions) |
 | **CLAUDE.md** | Add `@AGENTS.md` so Claude imports shared activation — do not duplicate Savepoints prose (see below) |
 
-Activation files must be **thin** — they reference triggers and the installed router path; they do not duplicate the full protocol in [architecture.md](./architecture.md).
+Activation files must be **thin** — they describe the session-log triggers and point at the installed router skill path; they do not duplicate router/provider protocol in [architecture.md](./architecture.md).
 
 ### Claude Code and an existing `CLAUDE.md`
 
