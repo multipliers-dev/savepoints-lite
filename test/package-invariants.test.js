@@ -39,6 +39,14 @@ describe("package invariants", () => {
     expect(readme).not.toMatch(/docs\/adopt\.md/);
   });
 
+  it("notion provider documents verified property types", () => {
+    const skill = readRoot("skills/savepoints-notion/SKILL.md");
+    expect(skill).toMatch(/Notion type/);
+    expect(skill).toMatch(/`title`/);
+    expect(skill).toMatch(/`created_time`/);
+    expect(skill).toMatch(/Plain string/);
+  });
+
   it("required skill files exist", () => {
     const paths = [
       "skills/savepoints/SKILL.md",

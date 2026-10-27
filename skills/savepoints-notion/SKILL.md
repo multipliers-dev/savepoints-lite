@@ -33,16 +33,21 @@ Shared Notion database id for humans: `05e4c804-1380-4ea2-8eb6-30027aa05fe4`. Do
 
 ## Notion mapping
 
-| Savepoint field | Notion property |
-| --- | --- |
-| `title` | `Name` |
-| `repository` | `Repository` |
-| `agent` | `Agent` |
-| `session_id` | `Session ID` (omit property when unknown) |
+Verified against the shared Savepoints data source (`collection://822cbc89-7c89-4863-af3a-2fe0cd8ab56e`) via `notion-fetch` on database `05e4c804-1380-4ea2-8eb6-30027aa05fe4`. Property names are case-sensitive.
 
-**Body:** Notion-flavored Markdown sections for non-empty `content` keys (`what_was_done`, `decisions_made`, `open_threads`, `errors`). Read the Notion markdown spec once when first composing page body.
+| Savepoint field | Notion property | Notion type | Set on create? | `notion-create-pages` `properties` value |
+| --- | --- | --- | --- | --- |
+| `title` | `Name` | `title` | yes | Plain string (SQLite `TEXT` for this data source) |
+| `repository` | `Repository` | `text` | yes | Plain string |
+| `agent` | `Agent` | `text` | yes | Plain string |
+| `session_id` | `Session ID` | `text` | when known | Plain string; **omit** this key when `session_id` is unknown |
+| — | `Created` | `created_time` | no | System-managed (`readOnly`); **do not** set |
 
-**Parent:** `parent.data_source_id` = resolved `destination.data_source_id`.
+Use exact property names in the `properties` map. Pass Savepoint string fields as JavaScript strings (not arrays or rich-text objects) unless `notion-create-pages` or a create error explicitly requires another shape for this data source.
+
+**Body:** Notion-flavored Markdown sections for non-empty `content` keys (`what_was_done`, `decisions_made`, `open_threads`, `errors`). Read the Notion markdown spec once when first composing page body. Do not duplicate `title` in page `content` — the title lives in `Name`.
+
+**Parent:** `parent`: `{ "type": "data_source_id", "data_source_id": "<resolved destination.data_source_id>" }` (UUID with or without dashes).
 
 ## MCP write and confirmation
 

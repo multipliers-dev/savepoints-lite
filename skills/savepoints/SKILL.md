@@ -28,21 +28,26 @@ Follow [schema.md](./schema.md) for field semantics and metadata derivation. Omi
 
 ## Configuration resolution
 
-Read `storage.provider` with this precedence (static; no dynamic discovery):
+Resolve `storage.provider` in two steps (static; no dynamic discovery):
+
+1. Start from package [defaults.yml](./defaults.yml) next to this skill under `node_modules`.
+2. If consumer `.agents/savepoints-lite.yml` exists and sets `storage.provider`, that value **overrides** the package default.
+
+An absent `.agents/savepoints-lite.yml` is normal — use the packaged default. Only the **resolved** value after step 2 is authoritative.
 
 | Precedence | Location | Overrides |
 | --- | --- | --- |
-| 1 (highest) | Consumer `.agents/savepoints-lite.yml` | `storage.provider` only |
-| 2 (default) | Package [defaults.yml](./defaults.yml) next to this skill under `node_modules` | `notion` for v1 |
+| 1 (highest) | Consumer `.agents/savepoints-lite.yml` (optional) | `storage.provider` only |
+| 2 (default) | Package [defaults.yml](./defaults.yml) | `notion` for v1 |
 
-If `storage.provider` is missing or not supported in v1 (`notion` only), report misconfiguration in chat; do not guess or fall back to another provider.
-
-Default package value:
+Package default:
 
 ```yaml
 storage:
   provider: notion
 ```
+
+**Misconfiguration (after resolution):** report in chat when the resolved `storage.provider` is empty/missing, or not supported in v1 (`notion` only). Do not treat “no consumer override file” as misconfiguration. Do not guess or fall back to another provider.
 
 ## Provider resolution (v1)
 

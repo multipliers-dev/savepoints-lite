@@ -32,23 +32,53 @@ if grep -qE 'savepoints-lite|savepoints.*logging|observe\.sh' .cursor/hooks.json
   exit 1
 fi
 
-pack_list="$(npm pack --dry-run 2>&1)"
-echo "$pack_list"
+node --input-type=module <<'NODE'
+import { execSync } from "node:child_process";
 
-for tarball_path in \
-  skills/savepoints/SKILL.md \
-  skills/savepoints/schema.md \
-  skills/savepoints/defaults.yml \
-  skills/savepoints-notion/SKILL.md \
-  skills/savepoints-notion/defaults.yml \
-  skills/README.md \
-  README.md \
-  package.json
-do
-  if ! echo "$pack_list" | grep -q "$tarball_path"; then
-    echo "verify-package-contents: npm pack --dry-run missing: $tarball_path" >&2
-    exit 1
-  fi
-done
+const expected = [
+  "README.md",
+  "package.json",
+  "skills/README.md",
+  "skills/savepoints-notion/defaults.yml",
+  "skills/savepoints-notion/SKILL.md",
+  "skills/savepoints/defaults.yml",
+  "skills/savepoints/schema.md",
+  "skills/savepoints/SKILL.md",
+].sort();
+
+const raw = execSync("npm pack --dry-run --json --ignore-scripts", {
+  encoding: "utf8",
+  stdio: ["ignore", "pipe", "pipe"],
+});
+
+const packs = JSON.parse(raw);
+if (!Array.isArray(packs) || packs.length !== 1) {
+  console.error(
+    "verify-package-contents: expected exactly one pack entry from npm pack --json",
+  );
+  process.exit(1);
+}
+
+const actual = (packs[0].files ?? []).map((f) => f.path).sort();
+
+const missing = expected.filter((p) => !actual.includes(p));
+const extra = actual.filter((p) => !expected.includes(p));
+
+if (missing.length > 0 || extra.length > 0) {
+  if (missing.length > 0) {
+    console.error("verify-package-contents: tarball missing paths:");
+    for (const p of missing) console.error(`  - ${p}`);
+  }
+  if (extra.length > 0) {
+    console.error("verify-package-contents: unexpected tarball paths:");
+    for (const p of extra) console.error(`  + ${p}`);
+  }
+  process.exit(1);
+}
+
+console.log(
+  `verify-package-contents: npm pack paths ok (${actual.length} files, ${packs[0].filename})`,
+);
+NODE
 
 echo "verify-package-contents: ok"
