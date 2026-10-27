@@ -37,7 +37,7 @@
     "verify:git-hooks": "sh scripts/verify-git-hooks.sh"
   },
   "devDependencies": {
-    "@multipliers-dev/savepoints-lite": "1.0.0",
+    "@multipliers-dev/savepoints-lite": "1.1.0",
     "@multipliers-dev/plan-validator": "0.1.0",
     "husky": "^9.1.7",
     "vitest": "^3.2.4",

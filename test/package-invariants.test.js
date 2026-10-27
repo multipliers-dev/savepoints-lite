@@ -191,9 +191,10 @@ describe("package invariants", () => {
 
   it("hub dogfoods published package with exact devDependency pin", () => {
     const pkg = JSON.parse(readRoot("package.json"));
-    expect(pkg.devDependencies["@multipliers-dev/savepoints-lite"]).toBe(
-      "1.0.0",
-    );
+    const dogfoodVersion =
+      pkg.devDependencies["@multipliers-dev/savepoints-lite"];
+    expect(dogfoodVersion).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(dogfoodVersion).toBe(pkg.version);
   });
 
   it("hub activation uses AGENTS.md only (no Cursor savepoints rule)", () => {
@@ -242,7 +243,10 @@ describe("package invariants", () => {
     return files;
   }
 
-  it("published registry @1.0.0 artifact matches immutable 12-file layout", () => {
+  it("installed registry dogfood artifact matches expected publish layout", () => {
+    const workspacePkg = JSON.parse(readRoot("package.json"));
+    const dogfoodVersion =
+      workspacePkg.devDependencies["@multipliers-dev/savepoints-lite"];
     const installRoot = join(
       root,
       "node_modules/@multipliers-dev/savepoints-lite",
@@ -253,33 +257,51 @@ describe("package invariants", () => {
     );
     expect(
       existsSync(installedRouter),
-      "hub self-adoption: run npm ci so node_modules/@multipliers-dev/savepoints-lite@1.0.0 is installed",
+      `hub self-adoption: run npm ci so node_modules/@multipliers-dev/savepoints-lite@${dogfoodVersion} is installed`,
     ).toBe(true);
     const installedPkg = JSON.parse(
       readFileSync(join(installRoot, "package.json"), "utf8"),
     );
-    expect(installedPkg.version).toBe("1.0.0");
     expect(installedPkg.name).toBe("@multipliers-dev/savepoints-lite");
-    expect(installedPkg.files).toEqual(
-      expect.arrayContaining(["skills/**", "docs/**"]),
+    expect(installedPkg.version).toBe(dogfoodVersion);
+    expect(installedPkg.files).toEqual(workspacePkg.files);
+    expect(installedPkg.files.join(" ")).not.toMatch(
+      /adoption-verification-record/,
     );
-    expect(installedPkg.files).not.toContain("templates/**");
 
+    const expectedRelFiles = readRoot("scripts/expected-package-paths.txt")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .sort();
     const relFiles = listFilesRecursive(installRoot)
       .map((abs) => abs.slice(installRoot.length + 1))
       .sort();
-    expect(relFiles).toHaveLength(12);
-    expect(relFiles).not.toContain("skills/savepoints/verification.md");
+    expect(relFiles).toEqual(expectedRelFiles);
+
     expect(
-      existsSync(join(installRoot, "templates/consumer")),
+      existsSync(join(installRoot, "skills/savepoints/verification.md")),
+    ).toBe(true);
+    expect(
+      existsSync(join(installRoot, "templates/consumer/AGENTS.md.snippet")),
+    ).toBe(true);
+    expect(
+      existsSync(join(installRoot, "templates/consumer/CLAUDE.md.snippet")),
+    ).toBe(true);
+    expect(
+      existsSync(join(installRoot, "skills/savepoints-notion/SKILL.md")),
+    ).toBe(true);
+    expect(
+      existsSync(join(installRoot, "docs/adoption-verification-record.md")),
+    ).toBe(false);
+    expect(
+      existsSync(join(installRoot, ".cursor/rules/savepoints-lite.mdc")),
     ).toBe(false);
 
-    const workspacePkg = JSON.parse(readRoot("package.json"));
-    const dogfoodVersion =
-      workspacePkg.devDependencies["@multipliers-dev/savepoints-lite"];
-    expect(installedPkg.version).toBe(dogfoodVersion);
-    expect(installedPkg.name).toBe(workspacePkg.name);
-    expect(workspacePkg.files).toContain("templates/**");
-    expect(workspacePkg.files).not.toContain("docs/**");
+    const lock = readRoot("package-lock.json");
+    expect(lock).toMatch(
+      `"node_modules/@multipliers-dev/savepoints-lite":`,
+    );
+    expect(lock).not.toMatch(/"link":\s*true/);
   });
 });
