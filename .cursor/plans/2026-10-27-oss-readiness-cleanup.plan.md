@@ -1,293 +1,233 @@
 ---
 name: OSS readiness cleanup
-overview: Migrate all `@1.1.0` consumers to committed `.agents/savepoints-notion.yml` (maintainer destination ID), then remove the packaged default in savepoints-lite `@2.0.0` with docs/tests—gated by a merge checkpoint; no npm publish or merges without operator authorization.
+overview: Self-contained @2.0.0 OSS readiness and explicit-integration destination.data_source_id contract in savepoints-lite; verified public npm release without per-repo consumer migration. Cursor Team Marketplace consumes the package only after operator publish (separate plan in cursor-team-marketplace).
 todos:
   - id: plan-review
     content: "Plan-only PR — commit phased OSS readiness plan; do not implement slices"
     status: completed
-  - id: phase1-inventory
-    content: "Phase 1a: Re-scan package.json for @multipliers-dev/savepoints-lite; confirm consumer inventory and adoption status"
+  - id: plan-revision-explicit-integration
+    content: "Plan-only PR — revise OSS plan for 2.0.0 contract and marketplace handoff; do not implement slices"
+    status: completed
+  - id: oss-readiness-contract
+    content: "Hub PR: explicit-integration config, remove maintainer destination from package, docs (privacy/reliability/maintenance), tests, example template, version 2.0.0 in package.json; no publish"
     status: pending
-  - id: phase1-consumer-prs
-    content: "Phase 1b: One PR per confirmed consumer — .agents/savepoints-notion.yml (822cbc89…), pin stays 1.1.0, repo validation, open PR only"
-    status: pending
-  - id: phase1-checkpoint
-    content: "Phase 1 gate: All consumer destination PRs merged to main before Phase 2 (operator verifies; agent stops if not)"
-    status: pending
-  - id: phase2-package-config
-    content: "Phase 2: Remove packaged destination; mandatory consumer yml in provider skill; fail-open; example YOUR_NOTION_DATA_SOURCE_ID; tests"
-    status: pending
-  - id: phase3-docs
-    content: "Phase 3: README/adopt/architecture/publishing/skills — v1.1.0 accuracy, privacy, reliability, maintenance"
-    status: pending
-  - id: phase4-release-prep
-    content: "Phase 4: Hub version 2.0.0; dogfood devDep stays 1.1.0 until post-publish; split pack vs registry verification; gates pass (no publish)"
-    status: pending
-  - id: phase5-upgrade-prep
-    content: "Phase 5: Document post-2.0.0 consumer upgrade procedure (may ship in phase4 PR); consumer pin-bump PRs only after @2.0.0 is published"
+  - id: release-verification
+    content: "Hub PR: npm ci/test/verify/validate:plans; split workspace pack vs registry dogfood tests; operator publish checklist; no publish in agent slice"
     status: pending
   - id: plan-closure
-    content: "Docs-only PR after last implementation slice: # Shipped, archive plan, update references"
+    content: "Docs-only PR after publish evidence: # Shipped, archive plan, update references"
     status: pending
 isProject: false
 ---
 
-# Savepoints Lite public-repository cleanup (phased)
+# Savepoints Lite public OSS readiness (@2.0.0)
 
 ## Recommended execution authority
 
 | Slice | Recommended authority | Agent instruction |
 | --- | --- | --- |
-| plan-review | Plan-only PR | Do not implement slices. Stop after opening the plan-only PR. |
-| phase1-inventory | Open PR only | Report inventory; optional plan table update in a PR if operator requests. Do not merge. |
-| phase1-consumer-prs | Open PR only | One consumer repo per PR. Do not merge. |
-| phase1-checkpoint | Manual verification gate | Verify main branches only; no implementation PR. Stop with pass/fail report. |
-| phase2-package-config | Open PR only | savepoints-lite hub only. **Prerequisite:** phase1-checkpoint passed. Do not merge or publish. |
-| phase3-docs | Open PR only | savepoints-lite hub only. **Prerequisite:** phase1-checkpoint passed. May combine with phase2/phase4 in one merge-safe PR. Do not merge. |
-| phase4-release-prep | Open PR only | savepoints-lite hub only. **Prerequisite:** phase1-checkpoint passed. Do not merge or publish npm. |
-| phase5-upgrade-prep | Open PR only | **Docs:** upgrade procedure in hub adopt/docs (may merge with phase4 PR). **Execution:** consumer `@2.0.0` bump PRs only after operator publishes registry release — not part of this slice’s hub PR. |
-| plan-closure | Open PR only | Docs-only archive PR. Do not merge. |
+| plan-review | Plan-only PR | Completed via [PR #13](https://github.com/multipliers-dev/savepoints-lite/pull/13). |
+| plan-revision-explicit-integration | Plan-only PR | Revise plan only; do not implement slices. Stop after opening the plan-only PR. |
+| oss-readiness-contract | Open PR only | savepoints-lite hub only. Do not edit cursor-team-marketplace. Do not merge or publish npm. |
+| release-verification | Open PR only | savepoints-lite hub only. May combine with oss-readiness-contract in one merge-safe PR. Do not merge or publish npm. |
+| plan-closure | Open PR only | Docs-only archive PR after operator publish evidence. Do not merge. |
 
-Repo default: **Open PR only** (plan-review for plan artifact only).
+Repo default: **Open PR only** (plan-only slices for plan artifacts only).
 
 ## Repository topology
 
-Multi-slice plans stack execution order, not Git branches. Integration branch is `main` for every repository.
+Multi-slice plans stack execution order, not Git branches. Integration branch is `main` for **multipliers-dev/savepoints-lite** only.
 
-**Before implementation:** `git fetch` and branch from latest `origin/main` in the target repo.
+**Before implementation:** `git fetch` and branch from latest `origin/main` in savepoints-lite.
 
 **Before opening the PR:** branch contains only the current slice.
 
 **After opening the PR:** GitHub base is `main`; diff excludes prior-slice work except through merged `main`.
 
-**Cross-repo:** Phase 1 opens PRs in each consumer repository. Phases 2–4 target `multipliers-dev/savepoints-lite` (one merge-safe hub implementation PR is typical).
-
-**Phase 5 sequencing:** Distinguish **documenting** the post-`2.0.0` upgrade procedure from **executing** consumer upgrades. Upgrade **documentation** may ship in the same hub PR as phase4 (before npm publish). **Consumer version-bump PRs** wait until `@2.0.0` exists on the registry (operator publish after phase4 merge) — those are separate per-repo PRs, not phase5 hub deliverables.
+**Cross-repo:** This plan does **not** authorize edits in consumer repositories or in `cursor-team-marketplace`. Personal distribution and consumer cleanup are tracked in [`cursor-team-marketplace` Savepoints marketplace distribution plan](https://github.com/multipliers-dev/cursor-team-marketplace/blob/main/.cursor/plans/2026-10-27-savepoints-marketplace-distribution.plan.md) (PR #70) — reference only; do not modify that plan from savepoints-lite PRs.
 
 ---
 
 ## Background
 
-**End state:** Every confirmed consumer commits `.agents/savepoints-notion.yml` with `destination.data_source_id`. Published **`@2.0.0`** ships no personal Notion destination in [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml).
+**End state:** Published **`@multipliers-dev/savepoints-lite@2.0.0`** is a verified, publicly usable instruction-only npm package with accurate docs, no maintainer Notion destination in the tarball, and a three-tier **`destination.data_source_id`** resolution contract (explicit integration → optional consumer `.agents` → optional packaged defaults).
 
-**Published today:** `@multipliers-dev/savepoints-lite@1.1.0` — package [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) includes maintainer `data_source_id` `822cbc89-7c89-4863-af3a-2fe0cd8ab56e` (not a credential; OK in consumer repos). No `.env` support.
+**Published today:** `@multipliers-dev/savepoints-lite@1.1.0` — package [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) still includes maintainer `data_source_id` `822cbc89-7c89-4863-af3a-2fe0cd8ab56e` (not a credential). No `.env` support.
 
-**Workspace inventory (re-verify in phase1-inventory):**
+**Supersession (PR #13 consumer migration withdrawn):** The original plan required seven consumer repositories to commit `.agents/savepoints-notion.yml` before hub work. That approach is **no longer** the intended personal distribution path. Team-harness + marketplace (separate repository plan) will vend skills and supply the explicit-integration tier after **`@2.0.0` exists on npm**. This plan does **not** include consumer-repository migration, cleanup, or pin-bump PRs.
 
-| Repository | Pin | Savepoints `AGENTS.md` | `.agents/savepoints-notion.yml` |
-| --- | --- | --- | --- |
-| `multipliers-dev/savepoints-lite` | 1.1.0 | Yes | None |
-| `multipliers-dev/cursor-team-marketplace` | 1.1.0 | Yes | None |
-| `multipliers-dev/editorial-workflow` | 1.1.0 | Yes | None |
-| `multipliers-dev/renovate-workflow` | 1.1.0 | Yes | None |
-| `mastermichaelt/resumes` | 1.1.0 | Yes | None |
-| `mastermichaelt/portfolio` | 1.1.0 | Yes | None |
-| `multipliers-dev/codenames-ai-guesser` | 1.1.0 | Yes | None |
+**Standalone npm consumers:** Repositories installing the package directly may still use optional [`.agents/savepoints-notion.yml`](.agents/savepoints-notion.yml) (tier 2). Document in [`docs/adopt.md`](docs/adopt.md) and [`docs/architecture.md`](docs/architecture.md); do not require it for marketplace-backed installs.
 
-Not a consumer: `multipliers-dev/savepoints` (no `savepoints-lite` dependency).
+### Handoff boundary
+
+```mermaid
+flowchart LR
+  hub[savepoints_lite_2_0_0]
+  publish[Operator_npm_publish]
+  mkt[cursor_team_marketplace]
+  hub --> publish --> mkt
+```
+
+| Responsibility | Owner | Notes |
+| --- | --- | --- |
+| Configuration contract + OSS docs/tests | savepoints-lite (`oss-readiness-contract`, `release-verification`) | Delivers merge-ready `2.0.0` source; agent does not `npm publish` |
+| Registry publish | Operator (`gate-publish` in marketplace plan) | [`docs/publishing.md`](docs/publishing.md) workflow |
+| Marketplace vendoring, wrapper skill, User Rules, consumer cleanup | cursor-team-marketplace | **After** publish only |
+
+**Final deliverable from this repository:** operator-published, verified `@multipliers-dev/savepoints-lite@2.0.0` on the public npm registry.
+
+**Out of scope here:** marketplace `vendor/` sync, team-harness wrapper skills, engineering invariants / User Rules, removing per-repo npm deps or `AGENTS.md` activation.
+
+**Coordination:** Marketplace slice `sl-phase1-contract` implements against the contract defined here; progress on that initiative is recorded only in the marketplace plan (plan-status PRs there).
+
+### Execution flow
 
 ```mermaid
 flowchart TB
-  P1[Phase 1 consumer PRs]
-  CP{All merged to main?}
-  P2[Phase 2 remove package default]
-  P3[Phase 3 docs]
-  P4[Phase 4 package 2.0.0 PR]
-  P5[Phase 5 upgrade docs plus post-publish consumer bumps]
-  P1 --> CP
-  CP -->|no| STOP[Stop report remaining]
-  CP -->|yes| P2
-  P2 --> P3
-  P3 --> P4
-  P4 --> P5
+  impl[oss_readiness_contract]
+  verify[release_verification]
+  pub[Operator_publish_2_0_0]
+  close[plan_closure]
+  mkt[Marketplace_after_publish]
+  impl --> verify
+  verify --> pub
+  pub --> mkt
+  pub --> close
 ```
 
-**Hard checkpoint:** Do not start **any** hub implementation slice (`phase2-package-config`, `phase3-docs`, `phase4-release-prep`) until `phase1-checkpoint` passes — every confirmed consumer has `.agents/savepoints-notion.yml` merged to `main`. Standalone agent prompts for phases 2–4 must restate this gate.
+`release-verification` may land in the **same** hub PR as `oss-readiness-contract`. `plan-closure` runs **after** operator publish evidence is recorded (registry version + install check per [`docs/publishing.md`](docs/publishing.md)).
 
-### Hub package version vs registry dogfood pin
+---
 
-The hub [`package.json`](package.json) carries two version concepts:
+## Configuration contract (`@2.0.0`)
 
-| Field | Role during phase 4 PR (pre-publish) | After operator publishes `@2.0.0` |
+Instruction-only; no environment variables, hooks, background processes, or new runtime dependencies.
+
+### `destination.data_source_id` precedence
+
+| Tier | Source | When it applies |
 | --- | --- | --- |
-| `"version"` | May become **`2.0.0`** (release candidate in git) | **`2.0.0`** on registry |
+| 1 (highest) | Explicit destination from the **calling integration**, carried in **instruction/delegation context** (router → Notion provider handoff) | Integration supplied a destination for this Savepoint delegation |
+| 2 | Consumer [`.agents/savepoints-notion.yml`](.agents/savepoints-notion.yml) | Tier 1 **absent** for this delegation |
+| 3 | Packaged [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) | Tier 1 absent and tier 2 absent or unset; only if defaults configure a non-empty id |
+
+**Preserve existing behavior for tiers 2–3:** consumer `.agents` **overrides** packaged defaults (unchanged relative to v1.1.0, aside from removing the maintainer UUID from the package).
+
+### Resolution and failure semantics
+
+- **Router** ([`skills/savepoints/SKILL.md`](skills/savepoints/SKILL.md)): on delegation to the Notion provider, **carry** any explicit `destination.data_source_id` from the integration in instruction context. Router does not call Notion MCP or read host User Rules.
+- **Provider** ([`skills/savepoints-notion/SKILL.md`](skills/savepoints-notion/SKILL.md)): resolve tiers 1 → 2 → 3; **must not** depend on discovering Cursor User Rules or other host-specific rule stores.
+- **Missing resolved destination** (empty after applicable tiers): **fail open** — no Notion MCP write; continue primary work; preserve `success` / `failure` / `unconfirmed` outcome semantics.
+- **Tier 1 present but invalid** (empty, malformed UUID, or otherwise unusable): **fail open without fallback** to tier 2 or tier 3 — do not silently use `.agents` or packaged defaults.
+- **External integrations:** document provider-neutral handoff (e.g. wrapper skill states `destination.data_source_id` in delegation prose before invoking the router). Public package stays host-agnostic — no Cursor-specific APIs.
+
+### Package hygiene
+
+- Remove maintainer `822cbc89-7c89-4863-af3a-2fe0cd8ab56e` from shipped [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml), generic examples in provider SKILL, and tarball grep policy.
+- Add [`templates/consumer/savepoints-notion.yml.example`](templates/consumer/savepoints-notion.yml.example) with `YOUR_NOTION_DATA_SOURCE_ID`.
+- Router/provider separation unchanged; provider owns Notion mapping and MCP write + bounded confirmation.
+
+### Open questions (resolve in `oss-readiness-contract` implementation PR)
+
+1. **Instruction-context field name** for tier 1 (e.g. `integration.destination.data_source_id` vs a labeled delegation block) — pick one; enforce via skill markdown + tests.
+2. **Packaged `defaults.yml` shape** when tier 3 is optional: empty string vs omitted key vs placeholder only in the example template (must not ship maintainer UUID).
+3. **Plan closure timing:** archive after publish evidence on registry (recommended, aligns with marketplace `gate-publish`) — record version, date, and clean install check in closure PR or `# Shipped` note.
+
+---
+
+## Hub package version vs registry dogfood pin
+
+The hub [`package.json`](package.json) carries two version concepts during the pre-publish implementation PR:
+
+| Field | Role during implementation PR (pre-publish) | After operator publishes `@2.0.0` |
+| --- | --- | --- |
+| `"version"` | **`2.0.0`** (release candidate in git) | **`2.0.0`** on registry |
 | `devDependencies["@multipliers-dev/savepoints-lite"]` | Stays **`1.1.0`** (exact pin + lockfile) | Bumped to **`2.0.0`** in a **follow-up** hub PR |
 
-**Why:** `npm ci` installs the self-devDependency from the **public registry**, not the workspace tree. [`AGENTS.md`](AGENTS.md) session logging reads skills from `node_modules/@multipliers-dev/savepoints-lite/` (published artifact), not git `skills/` until dogfood pin catches up.
+**Why:** `npm ci` installs the self-devDependency from the **public registry**, not the workspace tree. [`AGENTS.md`](AGENTS.md) session logging reads skills from `node_modules/@multipliers-dev/savepoints-lite/` (published artifact), not git `skills/` until the dogfood pin catches up.
 
-**Verification today (must not be weakened):**
+**Verification (must not be weakened):**
 
 | Gate | What it validates | Pre-publish expectation |
 | --- | --- | --- |
-| `npm run verify` | Workspace source + [`scripts/expected-package-paths.txt`](scripts/expected-package-paths.txt) via `npm pack --dry-run` | **2.0.0 release candidate** tarball (including new paths such as example templates) |
-| `npm test` (package invariants) | Workspace rules + **registry dogfood** install under `node_modules/` | Installed package **version** matches devDependency pin (`1.1.0`); see below |
-| `installed registry dogfood artifact matches expected publish layout` ([`test/package-invariants.test.js`](test/package-invariants.test.js)) | Lists files in `node_modules/@multipliers-dev/savepoints-lite` vs workspace `expected-package-paths.txt`; compares `installedPkg.files` to workspace `files` | **Will diverge** once workspace `expected-package-paths.txt` grows for 2.0.0 while registry dogfood remains `@1.1.0` |
+| `npm run verify` | Workspace source + [`scripts/expected-package-paths.txt`](scripts/expected-package-paths.txt) via `npm pack --dry-run` | **2.0.0** release candidate tarball |
+| `npm test` (package invariants) | Workspace rules + **registry dogfood** under `node_modules/` | Installed package **version** matches devDependency pin (`1.1.0`) |
+| `installed registry dogfood artifact matches expected publish layout` ([`test/package-invariants.test.js`](test/package-invariants.test.js)) | Lists files in `node_modules/@multipliers-dev/savepoints-lite` vs workspace allowlist | **May diverge** until post-publish dogfood bump |
 
-**Implementation requirement:** Before claiming phase 4 verification passes, the hub implementation PR must **split or extend** verification so both remain true without bypass:
+**Implementation requirement:** Split or extend verification so both remain true without bypass:
 
-1. **Source / release-candidate pack** — `npm run verify` (and any pack-focused tests) assert the **workspace** `2.0.0` candidate layout.
-2. **Registry dogfood** — tests assert the **installed `@1.1.0`** artifact independently (e.g. separate allowlist or conditional expectations keyed on devDependency pin vs workspace `version`) until the follow-up PR bumps the pin to `2.0.0` after publish.
-3. **`npm ci` stays reproducible** — do not bump devDependency to `2.0.0` before the version exists on npm; do not use `file:` link for dogfood in the pre-publish PR.
-4. **No gate weakening** — do not delete dogfood layout checks or stop running `npm test` / `npm run verify` to mask the version skew.
+1. **Source / release-candidate pack** — `npm run verify` asserts workspace **2.0.0** layout.
+2. **Registry dogfood** — tests assert installed **`@1.1.0`** independently until follow-up PR bumps pin.
+3. **`npm ci` stays reproducible** — do not bump devDependency to `2.0.0` before the version exists on npm; no `file:` dogfood link in the pre-publish PR.
+4. **No gate weakening** — do not delete dogfood layout checks or skip `npm test` / `npm run verify`.
 
-If scripts/tests cannot express the split yet, **update them in the same implementation PR** as the phase 2–4 code changes (not in this plan-only PR).
-
-**Post-publish (operator + follow-up hub PR):** publish `@2.0.0` → bump hub devDependency and lockfile to `2.0.0` → `npm ci` → dogfood layout checks align with workspace allowlist again.
+**Post-publish:** operator publishes `@2.0.0` → follow-up hub PR bumps devDependency and lockfile → `npm ci` → dogfood checks align with workspace allowlist again.
 
 ---
 
-## Slice — plan-review
+## Slice — plan-revision-explicit-integration
 
 **Recommended authority:** Plan-only PR
 
-**Rationale:** Staged multi-repo migration requires reviewed plan before consumer and package work.
+**Rationale:** Architecture shift (marketplace distribution) requires an updated authoritative plan before hub implementation.
 
-**Agent instruction:** Commit plan only; do not implement other slices.
+**Agent instruction:** Commit revised plan only; do not implement `oss-readiness-contract` or later slices.
 
 **Acceptance:**
 
-- [`.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md`](2026-10-27-oss-readiness-cleanup.plan.md) on `main` via plan-only PR
+- [`.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md`](2026-10-27-oss-readiness-cleanup.plan.md) reflects explicit-integration contract and marketplace handoff
 - `npm run validate:plans` passes
+- `plan-revision-explicit-integration` marked `completed` in frontmatter
 
 ---
 
-## Slice — phase1-inventory
+## Slice — oss-readiness-contract
 
 **Recommended authority:** Open PR only
 
-**Rationale:** Consumer list may drift; confirm before opening seven configuration PRs.
+**Rationale:** Breaking configuration change (explicit tier + removal of packaged maintainer destination) → semver **`2.0.0`**, plus public OSS documentation accuracy.
 
-**Agent instruction:** Re-scan dependencies; report adoption gaps. Do not merge.
+**Agent instruction:** savepoints-lite hub only; may combine with `release-verification` in one merge-safe PR; do not merge, publish npm, or edit cursor-team-marketplace.
 
-**Acceptance:**
-
-- Confirmed consumer list documented (chat or plan table update if operator requests a PR)
-- No Phase 2 work started
-
----
-
-## Slice — phase1-consumer-prs
-
-**Recommended authority:** Open PR only
-
-**Rationale:** Explicit destination in each repo preserves logging before package default removal.
-
-**Agent instruction:** One PR per consumer repo; pin stays `1.1.0`; do not merge.
+**Goal:** Implement configuration contract (above), package cleanup, tests, and documentation.
 
 **Acceptance:**
 
-- Per consumer PR: `.agents/savepoints-notion.yml` with `destination.data_source_id: "822cbc89-7c89-4863-af3a-2fe0cd8ab56e"`
-- Other `.agents/` files preserved
-- Repo validation commands pass
-- Ready PR opened
-
-| Repo | Typical validation |
-| --- | --- |
-| savepoints-lite | `npm test`, `npm run verify` |
-| cursor-team-marketplace | `npm test`, `npm run validate:plans` |
-| editorial-workflow | `npm test`, `npm run typecheck` |
-| renovate-workflow | `npm test`, `npm run typecheck` |
-| resumes | `npm run typecheck`, `npm test` |
-| portfolio | `npm run lint`, `npm run typecheck`, `npm test` |
-| codenames-ai-guesser | `npm test`, `npm run typecheck` |
-
----
-
-## Slice — phase1-checkpoint
-
-**Recommended authority:** Manual verification gate
-
-**Rationale:** Package breaking change must not ship while consumers still rely on packaged default only.
-
-**Agent instruction:** Verify merges on `main`; stop with report if any consumer missing config.
-
-**Acceptance:**
-
-- Every confirmed consumer: `main` contains `.agents/savepoints-notion.yml`
-- Explicit go/no-go recorded before phase2
-
----
-
-## Slice — phase2-package-config
-
-**Recommended authority:** Open PR only
-
-**Prerequisite:** phase1-checkpoint passed.
-
-**Rationale:** Remove maintainer destination from npm tarball; mandatory consumer file for writes.
-
-**Agent instruction:** Hub repo only; may combine with phase3/phase4 in one PR; do not merge or publish.
-
-**Acceptance:**
-
-- [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) has no real `data_source_id`
-- [`skills/savepoints-notion/SKILL.md`](skills/savepoints-notion/SKILL.md) resolves destination only from `.agents/savepoints-notion.yml`; missing → fail open, no MCP write
-- [`templates/consumer/savepoints-notion.yml.example`](templates/consumer/savepoints-notion.yml.example) uses `YOUR_NOTION_DATA_SOURCE_ID`
-- Tests updated; [`scripts/expected-package-paths.txt`](scripts/expected-package-paths.txt) if template added
-- No maintainer UUID in shipped package paths (grep policy in slice body of archived plan reference)
-
----
-
-## Slice — phase3-docs
-
-**Recommended authority:** Open PR only
-
-**Prerequisite:** phase1-checkpoint passed (same hard gate as phase2; do not open a standalone phase3 hub PR before every consumer has explicit Notion destination on `main`).
-
-**Rationale:** Public repo accuracy for privacy, reliability, maintenance, and `@1.1.0` / `@2.0.0` messaging.
-
-**Agent instruction:** Update README, AGENTS.md, docs/, skills/ per plan; preserve [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md) historical rows. If combined with phase2/phase4, still require checkpoint before starting the combined PR.
-
-**Acceptance:**
-
-- Version accuracy, privacy, reliability, maintenance sections per plan
-- No `CONTRIBUTING.md`, `SECURITY.md`, issue templates, or governance infra
-
----
-
-## Slice — phase4-release-prep
-
-**Recommended authority:** Open PR only
-
-**Prerequisite:** phase1-checkpoint passed — confirm every consumer has `.agents/savepoints-notion.yml` on `main` before bumping hub `"version"` or removing packaged defaults.
-
-**Rationale:** Breaking configuration change → semver `2.0.0`.
-
-**Agent instruction:**
-
-- Set hub **`"version": "2.0.0"`**; keep **`devDependencies["@multipliers-dev/savepoints-lite"]: "1.1.0"`** until after operator publishes `@2.0.0` (follow-up hub PR bumps dogfood pin).
-- Run full hub gates per **Hub package version vs registry dogfood pin** (split source pack vs registry dogfood verification if needed).
-- Do not `npm publish`.
-
-**Acceptance:**
-
+- **Skills / config:** three-tier `destination.data_source_id` precedence; router carries explicit destination in delegation context; provider does not read User Rules; tier-1-invalid no fallback; missing destination fail-open without MCP write
+- [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml): no maintainer `data_source_id`; resolve open question #2 in implementation
+- [`templates/consumer/savepoints-notion.yml.example`](templates/consumer/savepoints-notion.yml.example) with `YOUR_NOTION_DATA_SOURCE_ID`
+- [`scripts/expected-package-paths.txt`](scripts/expected-package-paths.txt) updated if new template paths ship
+- Tests updated (including no maintainer UUID in shipped paths; precedence / fail-open invariants as practical)
+- **Documentation:** README, [`AGENTS.md`](AGENTS.md), [`docs/adopt.md`](docs/adopt.md), [`docs/architecture.md`](docs/architecture.md), [`docs/publishing.md`](docs/publishing.md), [`skills/README.md`](skills/README.md) — `@2.0.0` messaging, installation, explicit-integration precedence, provider-neutral external integration example
+- **Privacy:** what session Savepoints write to Notion; host-owned Notion MCP auth; no credentials or personal destination IDs in the package
+- **Reliability:** best-effort fail-open, no retry queue, instruction-only, bounded async confirmation
+- **Maintenance / support:** public npm and GitHub; no implied SLA; preserve [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md) history (not in tarball)
+- **Scope guard:** no new `CONTRIBUTING.md`, `SECURITY.md`, or issue-template governance infra
 - `"version": "2.0.0"` in hub `package.json`; devDependency self-pin remains **`1.1.0`** until post-publish follow-up
-- `npm ci` reproducible (registry install of `@1.1.0` succeeds)
-- `npm run verify` passes for **workspace 2.0.0 release candidate** (pack dry-run vs `expected-package-paths.txt`)
-- `npm test` passes including **independent** registry dogfood checks (update tests/scripts if layout skew requires split allowlists — no weakening)
-- `npm run validate:plans` passes
-- Tarball candidate: no personal destination in package defaults
-- Optional in the same PR: phase5 **documentation** (post-`2.0.0` upgrade procedure) — docs may be written pre-publish; **consumer pin-bump PRs** still wait for registry `@2.0.0`
+- Ready PR opened (Open PR only)
 
 ---
 
-## Slice — phase5-upgrade-prep
+## Slice — release-verification
 
 **Recommended authority:** Open PR only
 
-**Rationale:** Operators and consumers need a written upgrade path; executing bumps is a separate step after publish.
+**Rationale:** Prove release candidate layout and gates before operator publish; document publish procedure.
 
-**Agent instruction:**
+**Agent instruction:** savepoints-lite hub only; may be same PR as `oss-readiness-contract`; do not `npm publish`.
 
-- **Documentation (hub):** Add post-`2.0.0` consumer upgrade steps to [`docs/adopt.md`](docs/adopt.md) (or equivalent). May land in the **same merge-safe PR as phase4**; mark `phase5-upgrade-prep` completed when that documentation merges.
-- **Execution (consumers):** Open consumer pin-bump PRs to `@2.0.0` **only after** phase4 is merged **and** the operator has published `@2.0.0` to npm. Not required to complete the hub phase5 slice.
-
-**Prerequisite for consumer bump PRs only:** `@2.0.0` on the public registry (operator action after phase4 merge). **Not** a prerequisite for writing upgrade documentation in the hub.
+**Goal:** Full hub verification and operator publish checklist alignment.
 
 **Acceptance:**
 
-- [`docs/adopt.md`](docs/adopt.md) (or equivalent) describes post-`2.0.0` consumer steps (including that Phase 1 destination files can stay unchanged when staying on the maintainer database)
-- No consumer `@2.0.0` bump PRs opened against an unpublished package version
+- `npm ci` reproducible (registry install of `@1.1.0` devDependency succeeds)
+- `npm test` passes including **split** workspace 2.0.0 pack vs registry `@1.1.0` dogfood checks (no weakening)
+- `npm run verify` passes for workspace **2.0.0** candidate vs `expected-package-paths.txt`
+- `npm run validate:plans` passes
+- Tarball candidate: no personal destination in package defaults (grep / invariant tests)
+- [`docs/publishing.md`](docs/publishing.md) (or release PR body) reflects operator preflight: `npm view @multipliers-dev/savepoints-lite@2.0.0 version` must 404 before publish; post-publish install check documented
+- Post-publish hub dogfood bump to `2.0.0` documented as follow-up PR (not executed in agent slice)
+- Mark `release-verification` completed when merged with passing gates
 
 ---
 
@@ -295,150 +235,55 @@ If scripts/tests cannot express the split yet, **update them in the same impleme
 
 **Recommended authority:** Open PR only
 
-**Rationale:** Archive completed plan per repository convention.
+**Rationale:** Archive completed plan per repository convention after shipped release.
 
-**Agent instruction:** Docs-only; move plan to `.cursor/plans/archive/`.
+**Agent instruction:** Docs-only; move plan to [`.cursor/plans/archive/`](archive/). **Prerequisite:** operator publish evidence for `@2.0.0` on npm.
 
 **Acceptance:**
 
-- `# Shipped` note; plan archived; `plan-closure` todo completed
+- `# Shipped` note with PR links, publish date, registry version evidence
+- Plan moved to `.cursor/plans/archive/2026-10-27-oss-readiness-cleanup.plan.md`
+- `plan-closure` todo completed; agent prompt references updated to archived path
+- `npm run validate:plans` passes
 
 ---
 
 ## Agent prompts (copy/paste for Cursor)
 
-### plan-review
+### oss-readiness-contract
 
 ```text
 @.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md
 
-Implement slice plan-review only.
+Implement slice oss-readiness-contract only on multipliers-dev/savepoints-lite.
 
-Authority: Plan-only PR — do not implement other slices. Stop after opening the PR.
+Authority: Open PR only — do not merge, npm publish, or edit cursor-team-marketplace.
 
-Topology: branch from latest origin/main in multipliers-dev/savepoints-lite; PR base main.
+Topology: git fetch; branch from latest origin/main; PR base main; hub repo only — no consumer-repository PRs.
 
-Deliverables: commit .cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md only.
+Deliverables: @2.0.0 explicit-integration destination.data_source_id contract (tier 1 integration context → tier 2 .agents/savepoints-notion.yml → tier 3 packaged defaults); router carries explicit destination in delegation context; provider must not read User Rules; tier-1-invalid fail open without fallback to tiers 2–3; remove maintainer UUID from shipped defaults and skill examples; templates/consumer/savepoints-notion.yml.example; tests and expected-package-paths.txt if needed; README, AGENTS.md, docs/, skills/ README for privacy, reliability, maintenance, and provider-neutral external integration handoff (docs/architecture.md, docs/adopt.md). Hub package.json version 2.0.0; devDependencies self-pin stays 1.1.0 until post-publish follow-up.
 
-Verification: npm run validate:plans. Mark plan-review completed in frontmatter in the same PR.
+Do not: marketplace vendoring, wrapper skills, User Rules, consumer cleanup, or per-repo migration PRs.
+
+Verification: npm test && npm run verify && npm run validate:plans. Mark oss-readiness-contract completed in frontmatter in the same PR (combine with release-verification in one PR if merge-safe).
 ```
 
-### phase1-inventory
+### release-verification
 
 ```text
 @.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md
 
-Implement slice phase1-inventory only.
-
-Authority: Open PR only — do not merge.
-
-Topology: N/A (read-only scan); if committing table updates, branch from origin/main in savepoints-lite.
-
-Deliverables: confirmed consumer inventory report; optional plan table PR.
-
-Verification: grep package.json across workspaces for @multipliers-dev/savepoints-lite. Do not start phase1-consumer-prs in the same run unless asked.
-```
-
-### phase1-consumer-prs
-
-```text
-@.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md
-
-Implement slice phase1-consumer-prs for <owner/repo> only.
-
-Authority: Open PR only — do not merge.
-
-Topology: branch from origin/main in <owner/repo>; PR base main; only this repo's config file.
-
-Deliverables: .agents/savepoints-notion.yml with destination.data_source_id "822cbc89-7c89-4863-af3a-2fe0cd8ab56e"; pin stays 1.1.0.
-
-Verification: run this repo's standard test/lint/typecheck gates from the plan slice table. Open ready PR; report URL.
-```
-
-### phase1-checkpoint
-
-```text
-@.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md
-
-Implement slice phase1-checkpoint only.
-
-Authority: Manual verification gate — no implementation PR.
-
-Topology: verify origin/main on each confirmed consumer.
-
-Deliverables: pass/fail report listing repos missing merged .agents/savepoints-notion.yml.
-
-Verification: gh / git show origin/main:.agents/savepoints-notion.yml per repo. Stop before phase2 if any fail.
-```
-
-### phase2-package-config
-
-```text
-@.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md
-
-Implement slice phase2-package-config only on multipliers-dev/savepoints-lite.
-
-Authority: Open PR only — do not merge or publish.
-
-Prerequisite: phase1-checkpoint passed — every confirmed consumer has .agents/savepoints-notion.yml merged to main. If not passed, stop; do not remove packaged defaults or change provider destination resolution.
-
-Topology: origin/main; PR base main.
-
-Deliverables: remove packaged Notion destination; mandatory .agents/savepoints-notion.yml in provider skill; example template; tests.
-
-Verification: npm test && npm run verify. Mark phase2-package-config completed in frontmatter in the same PR.
-```
-
-### phase3-docs
-
-```text
-@.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md
-
-Implement slice phase3-docs only on multipliers-dev/savepoints-lite.
-
-Authority: Open PR only — do not merge.
-
-Prerequisite: phase1-checkpoint passed — every confirmed consumer has .agents/savepoints-notion.yml merged to main. If not passed, stop; do not open this PR.
-
-Topology: origin/main; may combine with phase2/phase4 in one merge-safe PR only after checkpoint. Do not bypass phase2 by doing phase3 alone before checkpoint.
-
-Deliverables: README, AGENTS.md, docs/, skills/ updates per plan Phase 3.
-
-Verification: npm test && npm run verify && npm run validate:plans (if hub package layout unchanged, existing gates suffice). Mark phase3-docs completed in frontmatter in the same PR.
-```
-
-### phase4-release-prep
-
-```text
-@.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md
-
-Implement slice phase4-release-prep only on multipliers-dev/savepoints-lite.
+Implement slice release-verification only on multipliers-dev/savepoints-lite.
 
 Authority: Open PR only — do not merge or npm publish.
 
-Prerequisite: phase1-checkpoint passed — every confirmed consumer has .agents/savepoints-notion.yml merged to main. If not passed, stop; do not remove packaged defaults or bump version.
+Topology: origin/main; PR base main. May combine with oss-readiness-contract in one merge-safe PR if not already done.
 
-Topology: origin/main; PR base main. Hub "version" may become 2.0.0; devDependencies["@multipliers-dev/savepoints-lite"] stays 1.1.0 until after registry publish (see plan section Hub package version vs registry dogfood pin).
+Deliverables: npm ci reproducible; split workspace 2.0.0 pack verification vs registry @1.1.0 dogfood tests (no gate weakening); operator publish checklist aligned with docs/publishing.md; document post-publish hub dogfood bump follow-up PR.
 
-Deliverables: phases 2–4 as scoped; optional phase5 upgrade documentation (pre-publish OK); split pack vs dogfood verification in tests/scripts if required.
+Do not: npm publish, consumer-repo work, or cursor-team-marketplace edits.
 
-Verification: npm ci && npm test && npm run verify && npm run validate:plans — all pass without weakening gates. Mark phase4-release-prep completed in frontmatter in the same PR. If upgrade docs ship here, mark phase5-upgrade-prep completed too. Do not bump dogfood devDependency to 2.0.0 in this PR.
-```
-
-### phase5-upgrade-prep
-
-```text
-@.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md
-
-Implement slice phase5-upgrade-prep only (documentation), or fold into phase4 hub PR.
-
-Authority: Open PR only — do not merge. Consumer pin-bump PRs are out of scope until @2.0.0 is published.
-
-Topology: savepoints-lite hub; docs in adopt.md. May be same PR as phase4 before npm publish.
-
-Deliverables: written post-2.0.0 upgrade procedure (docs only). Do not open consumer @2.0.0 bump PRs until registry has 2.0.0.
-
-Verification: npm run validate:plans if plan frontmatter changes. Mark phase5-upgrade-prep completed when upgrade documentation merges (with phase4 or follow-up docs PR).
+Verification: npm ci && npm test && npm run verify && npm run validate:plans. Mark release-verification completed in frontmatter in the same PR.
 ```
 
 ### plan-closure
@@ -448,11 +293,13 @@ Verification: npm run validate:plans if plan frontmatter changes. Mark phase5-up
 
 Implement slice plan-closure only.
 
-Authority: Open PR only — do not merge.
+Authority: Open PR only — docs-only archive PR; do not merge.
 
-Topology: savepoints-lite hub; docs-only.
+Prerequisites: oss-readiness-contract and release-verification merged; operator published @multipliers-dev/savepoints-lite@2.0.0 to npm (registry evidence recorded).
 
-Deliverables: # Shipped note; move plan to .cursor/plans/archive/; mark plan-closure completed.
+Topology: savepoints-lite hub; branch from origin/main; PR base main.
+
+Deliverables: # Shipped note with PR links and publish evidence; move plan to .cursor/plans/archive/2026-10-27-oss-readiness-cleanup.plan.md; mark plan-closure completed; update references to archived path.
 
 Verification: npm run validate:plans.
 ```
