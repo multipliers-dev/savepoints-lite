@@ -12,8 +12,9 @@ flowchart TB
     end
 
     subgraph Installed["Installed package (node_modules)"]
-        Router["Savepoints router"]
+        direction LR
         Schema["Schema + defaults"]
+        Router["Savepoints router"]
         Provider["Notion provider"]
     end
 
@@ -22,18 +23,16 @@ flowchart TB
         Database["Notion Savepoints database"]
     end
 
-    Package -.->|"Installs"| Router
-    Package -.->|"Installs"| Schema
-    Package -.->|"Installs"| Provider
+    Package -.->|"Installs"| Installed
 
     Activation -->|"Loads skill"| Router
-    Router -->|"Reads protocol + config"| Schema
+    Schema -.->|"Protocol + config"| Router
     Router -->|"Delegates append"| Provider
     Provider -->|"notion-create-pages"| MCP
     MCP -->|"Creates record"| Database
 ```
 
-**Distribution** (dashed): the npm dependency places router skills, schema, and provider defaults under `node_modules` — install alone does not activate Savepoints.
+**Distribution** (dashed): one install step places the packaged skills and defaults under `node_modules` — install alone does not activate Savepoints.
 
 **Execution** (solid): consumer-owned agent instructions load the installed router; the router decides when to create Savepoints and assembles provider-neutral records; the configured provider persists through the consumer’s existing Notion MCP. There is no custom runtime, MCP server, or local persistence queue.
 
