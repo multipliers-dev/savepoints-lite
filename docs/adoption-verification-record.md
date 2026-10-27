@@ -103,7 +103,7 @@ These runs assumed the **subagent** would implicitly log. Activation now assigns
 
 ## Slice completion gate
 
-`adopt-and-verify` plan todo stays **pending** until required manual hub scenarios are **Passed** (or operator-waived with PR rationale). Scenarios **4** and **5** remain open — do not mark **Passed** without an observed successful run when ongoing logging is opted in.
+`adopt-and-verify` merged to `main` ([PR #8](https://github.com/multipliers-dev/savepoints-lite/pull/8)); plan archived 2026-10-27 with documented manual gaps (scenario **4** **Fail**; most scenarios **Not run**). See `# Shipped` in [`.cursor/plans/archive/2026-10-27-savepoints-lite-v1.plan.md`](../.cursor/plans/archive/2026-10-27-savepoints-lite-v1.plan.md). Fresh desktop runs remain required before claiming implicit logging verified.
 
 **Remaining behavioral check:** fresh **desktop** Cursor session with **`.cursor/rules/savepoints-lite.mdc` removed**, ordinary development task, no Savepoints mention — confirm Cursor loads root `AGENTS.md`, primary agent invokes installed router, and attempts persistence. Record outcome as scenario **4** evidence; do not pass on instruction edits alone or on Notion rows from the implementation session.
 

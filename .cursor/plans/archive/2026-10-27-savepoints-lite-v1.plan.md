@@ -13,11 +13,57 @@ todos:
     status: completed
   - id: adopt-and-verify
     content: "After npm publication: expand docs/adopt.md, templates/consumer/, skills/savepoints/verification.md; mandatory hub self-adoption (exact @1.0.0 devDep + activation); temp-dir registry portability check; record hub manual verification (Passed/Failed/Not run) — pending until implementation and required behavioral verification complete"
-    status: pending
+    status: completed
   - id: plan-closure
     content: "Docs-only PR: durable docs + publication + adoption evidence, deviations, # Shipped, archive plan"
-    status: pending
+    status: completed
 isProject: false
+---
+
+# Shipped
+
+**Archived 2026-10-27** in `multipliers-dev/savepoints-lite`.
+
+| Slice | Delivered |
+| --- | --- |
+| protocol-core | [PR #4](https://github.com/multipliers-dev/savepoints-lite/pull/4) — npm package, router + Notion provider skills, hub CI/pre-commit |
+| documentation | [PR #6](https://github.com/multipliers-dev/savepoints-lite/pull/6) — `docs/architecture.md`, `docs/publishing.md`, adopt stub, README landing |
+| npm-publication | Operator gate — `@1.0.0` on registry ([PR #7](https://github.com/multipliers-dev/savepoints-lite/pull/7) Trusted Publishing workflow); evidence table in plan body § npm-publication (2026-10-27) |
+| adopt-and-verify | [PR #8](https://github.com/multipliers-dev/savepoints-lite/pull/8) — adopt doc, `templates/consumer/`, `skills/savepoints/verification.md`, `docs/adoption-verification-record.md`, hub self-adoption |
+| plan-closure | This archive (docs-only closure PR) |
+
+**Prerequisites verified on `main`:** `docs/architecture.md` and `docs/publishing.md` present; `npm test` + `npm run verify` + `npm run validate:plans` pass at closure (2026-10-27).
+
+### npm publication evidence
+
+| Version | Mechanism | Notes |
+| --- | --- | --- |
+| `@1.0.0` | Manual publish (no provenance) | Recorded in plan § npm-publication — tarball SHA-1, clean temp-dir install (12 files), Trusted Publisher configured in [PR #7](https://github.com/multipliers-dev/savepoints-lite/pull/7) |
+| `@1.1.0` | `publish.yml` workflow_dispatch on `main` | [PR #10](https://github.com/multipliers-dev/savepoints-lite/pull/10) semver bump; [PR #11](https://github.com/multipliers-dev/savepoints-lite/pull/11) hub dogfoods exact `1.1.0` devDependency |
+
+### Hub self-adoption, portability, behavioral verification
+
+| Area | Result | Where |
+| --- | --- | --- |
+| Hub self-adoption | **Pass** (automated) | Hub pins published package (`1.1.0` after #11); activation in root `AGENTS.md` + `CLAUDE.md`; router path under `node_modules` only |
+| Registry portability | **Pass** | `@1.0.0` temp-dir install recorded in [`docs/adoption-verification-record.md`](../../../docs/adoption-verification-record.md) |
+| Manual hub dogfooding (§ B) | **Incomplete** | Same record — scenario **4** **Fail** (Runs A, D); scenario **5** and **1–3, 6–13** **Not run**; Run E (AGENTS.md-only, no `.mdc`) **Not run** |
+
+Do **not** claim implicit Notion session logging is production-verified until fresh desktop runs pass scenarios **4** / **5** per `skills/savepoints/verification.md`.
+
+### Accepted deviations from this plan
+
+- **Activation surface:** Hub and consumers use **root `AGENTS.md` only** (Claude via `CLAUDE.md`); **no** `.cursor/rules/savepoints-lite.mdc` (retired during adopt-and-verify).
+- **No committed `fixtures/consumer/`** — hub-only dogfood consumer; external repos use `templates/consumer/` + `docs/adopt.md`.
+- **`@1.0.0` provenance exception** — manual publish without provenance; `1.1.0+` uses OIDC + `--provenance` per `docs/publishing.md`.
+- **Hub dogfood version** — plan originally specified `@1.0.0` pin; hub moved to **`@1.1.0`** after first Trusted Publishing release (#11). `AGENTS.md` dogfood prose may still mention `1.0.0` in places — lockfile/`package.json` pin is authoritative.
+- **Skill name** — router skill directory `savepoints` (not `savepoints-lite`) per plan open decision.
+- **Post-v1 consumer rollout** — separate initiative (`@1.1.0` across application repos); not part of this plan’s slices.
+
+Essential architecture and operations remain in [`docs/architecture.md`](../../../docs/architecture.md), [`docs/publishing.md`](../../../docs/publishing.md), and [`docs/adopt.md`](../../../docs/adopt.md). Maintainer verification history: [`docs/adoption-verification-record.md`](../../../docs/adoption-verification-record.md) (not in npm tarball).
+
+This plan is archived. Remaining body preserved for historical context.
+
 ---
 
 # Savepoints Lite v1 — implementation plan
