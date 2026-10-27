@@ -1,55 +1,39 @@
 # Adoption verification record (adopt-and-verify)
 
-Durable record of automated install checks and manual agent behavioral runs. Update this file in the adopt-and-verify PR; link Notion page URLs in the GitHub PR description when operator authorization applies.
+Durable record of automated checks and manual agent behavioral runs. Status values: **Pass**, **Fail**, **Not run**. Link Notion page URLs in the GitHub PR description when operator authorization applies — not in this file.
 
 ## Automated checks
 
 | Check | Context | Status | Date | Notes |
 | --- | --- | --- | --- | --- |
-| `npm ci` installs published `@1.0.0` | Hub repo root | Pass | 2026-10-27 | `node_modules/@multipliers-dev/savepoints-lite` version `1.0.0` after `npm install` |
-| Router path resolves | Hub `node_modules/.../skills/savepoints/SKILL.md` | Pass | 2026-10-27 | File present; activation files reference this path |
-| `npm ci` in fixture | `fixtures/consumer/` | Pass | 2026-10-27 | `fixtures/consumer/package-lock.json` committed; registry dep only |
-| Router path resolves | Fixture `node_modules` | Pass | 2026-10-27 | Same canonical path under fixture |
-| `npm test` + `npm run verify` | Hub CI recipe | Pass | 2026-10-27 | 17 tarball paths incl. templates + verification docs |
+| `npm ci` at hub root | Hub repo | Pass | 2026-10-27 | Installs published `@1.0.0` devDependency from registry |
+| Hub lockfile pins `@1.0.0` | `package.json` / `package-lock.json` | Pass | 2026-10-27 | Exact devDependency committed on branch |
+| Hub activation paths | Rule + `AGENTS.md` + `CLAUDE.md` | Pass | 2026-10-27 | Reference `node_modules/.../skills/savepoints/SKILL.md` only |
+| `npm test` + `npm run verify` | Workspace tarball | Pass | 2026-10-27 | 17 paths; validates **workspace** pack — not the registry install tree |
+| `npm run validate:plans` | Plan frontmatter | Pass | 2026-10-27 | |
+| Registry portability | Temp dir outside repo | Pass | 2026-10-27 | `npm install @multipliers-dev/savepoints-lite@1.0.0`; router, provider, schema, defaults present; temp dir removed |
 
-## Manual behavioral verification
+## Manual hub dogfooding (§ B in verification.md)
 
-**Operator authorization required** for any scenario that creates Notion rows (fixture 2–7, hub H2–H7).
+**Operator authorization required** for scenarios 4–10 and Notion portions of 12.
 
-### Standalone fixture (`fixtures/consumer/`)
-
-| Scenario | Status | Date | Evidence |
-| --- | --- | --- | --- |
-| 1 Discoverability | Pending | — | Fresh Cursor session required |
-| 1b node_modules path | Pending | — | |
-| 2 Implicit logging | Pending | — | Notion URL in PR only |
-| 3 Metadata | Pending | — | |
-| 4 Content | Pending | — | |
-| 5 Multi-write | Pending | — | |
-| 6 Fail-open | Pending | — | |
-| 6b Persistence honesty | Pending | — | |
-| 6c Anti-loop | Pending | — | |
-| 7 Claude Code | Pending | — | |
-| 8 No capture hooks | Pending | — | |
-| 9 Provider delegation | Pending | — | |
-
-### Hub dogfooding (repository root)
-
-| Scenario | Status | Date | Evidence |
-| --- | --- | --- | --- |
-| H1 Discoverability | Pending | — | Fresh Cursor session at hub root |
-| H1b Not source `skills/` | Pending | — | |
-| H2–H7 Persistence | Pending | — | Operator authorized Notion runs |
-| H8 No capture hooks | Pending | — | |
-| H9 Provider delegation | Pending | — | |
+| # | Scenario | Status | Date | Evidence |
+| --- | --- | --- | --- | --- |
+| 1 | Discoverability | Not run | — | |
+| 2 | Installed router | Not run | — | |
+| 3 | Provider delegation | Not run | — | |
+| 4 | Implicit logging | Not run | — | Notion URL in PR only |
+| 5 | Metadata | Not run | — | |
+| 6 | Content | Not run | — | |
+| 7 | Multi-write | Not run | — | |
+| 8 | Fail-open | Not run | — | |
+| 9 | Persistence honesty | Not run | — | |
+| 10 | Anti-loop | Not run | — | |
+| 11 | No capture hooks | Not run | — | |
+| 12 | Claude Code | Not run | — | |
 
 ## Slice completion gate
 
-`adopt-and-verify` plan todo stays **pending** until:
+`adopt-and-verify` plan todo stays **pending** until required manual hub scenarios are **Passed** (or operator-waived with PR rationale).
 
-1. Hub devDependency + activation land on the branch, and
-2. Fixture + templates land on the branch, and
-3. Automated rows above are **Pass**, and
-4. All required manual rows are **Pass** (or explicitly waived by operator with rationale in PR).
-
-**Current branch status (2026-10-27):** items 1–3 satisfied on `slice/adopt-and-verify`; item 4 **not** satisfied — manual rows remain **Pending**.
+**Current PR branch:** hub implementation + automated checks **Pass**; all manual scenarios **Not run**.

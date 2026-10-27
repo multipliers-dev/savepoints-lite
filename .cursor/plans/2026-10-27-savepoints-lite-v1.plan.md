@@ -12,7 +12,7 @@ todos:
     content: "Operator release gate: @1.0.0 on registry (manual, no provenance); Trusted Publisher + publish.yml; clean install verified; evidence in plan + docs/publishing.md"
     status: completed
   - id: adopt-and-verify
-    content: "After npm publication: expand docs/adopt.md, templates/consumer/, fixtures/consumer/, mandatory hub dogfooding (pinned devDep + activation), verification record; manual Cursor/Claude checks for fixture and hub — slice pending until both activations implemented and verification recorded"
+    content: "After npm publication: expand docs/adopt.md, templates/consumer/, skills/savepoints/verification.md; mandatory hub self-adoption (exact @1.0.0 devDep + activation); temp-dir registry portability check; record hub manual verification (Passed/Failed/Not run) — pending until implementation and required behavioral verification complete"
     status: pending
   - id: plan-closure
     content: "Docs-only PR: durable docs + publication + adoption evidence, deviations, # Shipped, archive plan"
@@ -93,7 +93,9 @@ Router and provider skills must reference **package-relative** paths from that i
 
 **Provider resolution (v1):** `storage.provider: notion` → load provider skill from the same package install. Unknown or missing provider → report misconfiguration; **no** dynamic discovery or fallback provider.
 
-**Caveat:** Routing is **instruction-based** — behavioral verification (**adopt-and-verify**) must confirm delegation to `savepoints-notion`, reads from `node_modules`, and Notion MCP writes.
+**Hub as primary consumer:** The `multipliers-dev/savepoints-lite` repository is the **real-world consumer** of its own published package (**adopt-and-verify**). External consumers follow the same install + activation pattern via [`templates/consumer/`](templates/consumer/) and [`docs/adopt.md`](docs/adopt.md). There is **no** committed second consumer fixture.
+
+**Caveat:** Routing is **instruction-based** — behavioral verification (**adopt-and-verify**) must confirm hub activation, delegation to `savepoints-notion` from **installed** skills, reads from `node_modules` (not git `skills/` when testing consumer behaviour), and operator-authorized Notion MCP writes.
 
 ---
 
@@ -307,7 +309,7 @@ Follow [`@multipliers-dev/plan-validator`](https://www.npmjs.com/package/@multip
 | **`private`** | Remove `"private": true` or set `"private": false` before first publish |
 | **Versioning** | Semantic versioning; bump on publish |
 | **`publishConfig`** | `access: public`, `provenance: true` (match plan-validator scoped public package) |
-| **`files`** | Ship `skills/**`, `README.md`, `docs/**` (after **documentation** slice), and any packaged config templates — **no** `bin`, **no** compiled runtime |
+| **`files`** | Ship `skills/**`, `templates/**` (after **adopt-and-verify**), `README.md`, `docs/**` (after **documentation** slice) — **no** `bin`, **no** compiled runtime |
 | **`engines`** | Node `>=22` (align with plan-validator floor) |
 | **Install** | Consumer `devDependency` (or `dependency`): declare an **exact semver** in `package.json` (e.g. `"@multipliers-dev/savepoints-lite": "1.0.0"`) — not a floating range for production adoption |
 | **Verify publish** | `npm pack --dry-run` (and/or `prepack` script) asserts expected paths land in tarball |
@@ -323,7 +325,7 @@ Follow [`@multipliers-dev/plan-validator`](https://www.npmjs.com/package/@multip
 protocol-core merged to main
     → documentation PR merges (durable README + docs/architecture.md + docs/publishing.md in tarball)
     → npm-publication (operator gate: verify, authorize, publish @1.0.0, record evidence)
-    → adopt-and-verify (consumer pins published registry version)
+    → adopt-and-verify (hub self-adoption + consumer docs/templates; temp-dir registry portability)
     → plan-closure
 ```
 
@@ -333,9 +335,9 @@ protocol-core merged to main
 | **documentation** | Public landing README; architecture + publishing docs; `files` includes `docs/**`; verify/tests assert doc paths in tarball — **no** registry publish |
 | **npm-publication** | Clean checkout; `npm ci`, `npm test`, `npm run verify`, `npm pack --dry-run`; operator auth + explicit publish authorization; `@multipliers-dev/savepoints-lite@1.0.0` on registry with provenance; clean temp consumer install |
 | **Between slices (optional)** | Local `npm pack` + `file:` or packed tarball install for **early smoke** only — does **not** satisfy adoption verification |
-| **adopt-and-verify** | [`fixtures/consumer/`](fixtures/consumer/) and manual agent checks use the **published registry version** pinned in `package.json` + lockfile (`npm ci`) |
+| **adopt-and-verify** | **Hub:** exact `@multipliers-dev/savepoints-lite@1.0.0` devDependency + hub lockfile; hub activation; `npm ci` at repo root; manual Cursor/Claude sessions at hub root. **Portability:** clean `npm install @1.0.0` in a **temporary directory outside the repo** (not committed); confirm router, provider, schema, defaults; remove temp dir afterward. **Not** proof of agent behaviour |
 
-Do **not** treat `file:` workspace links as the acceptance path for **adopt-and-verify**; they may help developers before the first publish, but **adopt-and-verify** must confirm the real npm distribution path.
+Do **not** treat `file:` workspace links or the git `skills/` tree as the consumer acceptance path for **adopt-and-verify**; hub agents must use **installed** skills under `node_modules` when validating consumer behaviour.
 
 **Hard prerequisite:** **adopt-and-verify** does not start until **npm-publication** completes successfully (registry install verified, evidence recorded).
 
@@ -357,25 +359,38 @@ Establish only:
 | **Claude Code** | Short [`CLAUDE.md`](CLAUDE.md) pointer (preserve existing content; **append** Savepoints section) |
 | **Other agents** | [`AGENTS.md`](AGENTS.md) pointer where applicable (preserve existing content) |
 
-[`docs/adopt.md`](docs/adopt.md): **documentation** ships an initial stub (prerequisites, pinned install, non-activation, router path, honest integration-support status, architecture link). **adopt-and-verify** expands it with pinned registry workflow detail, Renovate-friendly updates, activation templates, fixture-backed verification, and recorded Cursor/Claude behavioral results. **README** links to `docs/adopt.md` from the first public tarball.
+[`docs/adopt.md`](docs/adopt.md): **documentation** ships an initial stub (prerequisites, pinned install, non-activation, router path, honest integration-support status, architecture link). **adopt-and-verify** expands it in plain language: what Savepoints Lite does, exact published install, why npm alone does not activate agents, how to activate the installed router, Notion provider configuration, how to verify persistence, and Renovate/npm update workflow — **without** duplicating router/provider skill specifications (link to [`docs/architecture.md`](docs/architecture.md) and installed skills). **README** links to `docs/adopt.md` from the tarball.
 
-**Hub repo (`savepoints-lite`):** **mandatory hub dogfooding** — this repository installs the **published** `@multipliers-dev/savepoints-lite@1.0.0` (exact devDependency + lockfile), activates Savepoints at the repo root (`.cursor/rules/savepoints-lite.mdc`, `AGENTS.md`, `CLAUDE.md`), and agents must read the router from **hub** `node_modules` (never the git `skills/` tree for activation). Hub dogfooding is **separate** from [`fixtures/consumer/`](fixtures/consumer/) but **both** are required **adopt-and-verify** acceptance paths. **protocol-core** deferred Savepoints activation to **adopt-and-verify**.
+**Consumer templates:** [`templates/consumer/`](templates/consumer/) — thin activation stubs (Cursor rule, `AGENTS.md` snippet, `CLAUDE.md` snippet) for **other** repositories.
 
-### Consumer fixture (`fixtures/consumer/` — adopt-and-verify)
+### Hub self-adoption (mandatory — adopt-and-verify)
 
-Disposable minimal consumer checkout used **only** for manual behavioral verification (not production adoption docs):
+The **Savepoints Lite hub repository** is the primary real-world consumer of `@multipliers-dev/savepoints-lite@1.0.0`. **Required** acceptance — not optional.
 
-| Aspect | Plan |
+| Requirement | Detail |
 | --- | --- |
-| **Location** | [`fixtures/consumer/`](fixtures/consumer/) — minimal `package.json`, lockfile, activation copied from [`templates/consumer/`](templates/consumer/) |
-| **vs hub** | **Separate checkout context** from hub dogfooding on the package repo root; fixture simulates an external consumer — **both** fixture and hub activation are required for slice acceptance |
-| **Dependency** | Pinned **published** `@multipliers-dev/savepoints-lite@<version>` from the npm registry (not `file:`) |
-| **Paths** | Manual checks confirm canonical skills under `fixtures/consumer/node_modules/@multipliers-dev/savepoints-lite/skills/` |
-| **Agents** | Manual Cursor and Claude Code sessions run **in or against** the fixture per [`verification.md`](skills/savepoints/verification.md) |
-| **Notion** | Rows in the shared production database **only** with explicit operator authorization |
-| **CI** | Optional layout checks only (e.g. fixture has lockfile + dependency pin); **no** agent behavior in CI |
+| **Dependency** | Exact-version devDependency `"@multipliers-dev/savepoints-lite": "1.0.0"`; commit hub `package.json` + `package-lock.json` |
+| **Cursor** | [`.cursor/rules/savepoints-lite.mdc`](.cursor/rules/savepoints-lite.mdc) at repo root (`alwaysApply: true`) — pattern from [`templates/consumer/`](templates/consumer/) |
+| **AGENTS.md** | Short Savepoints activation section (preserve existing hub instructions) |
+| **CLAUDE.md** | Short Savepoints section (preserve existing content if present) |
+| **Router path** | All activation text references **only** `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` |
+| **Provider** | Delegation via **installed** `savepoints-notion` skill in the same package — not git `skills/` when testing consumer behaviour |
+| **Hooks / runtime** | Preserve existing CI, Husky, and `.cursor/hooks.json` bootstrap; **no** Savepoints lifecycle hooks; **no** executable persistence logic |
+| **Behavioural proof** | Real Cursor and Claude Code sessions at **hub repo root** per [`skills/savepoints/verification.md`](skills/savepoints/verification.md) |
 
-Keep fixture minimal — no extra services, scripts, or frameworks beyond install + activation stubs.
+**protocol-core** deferred Savepoints activation to **adopt-and-verify**.
+
+### Registry portability (temporary directory — adopt-and-verify)
+
+Package portability is verified **outside** the repository — **not** via a committed fixture or second consumer repo:
+
+1. Create a temp directory (e.g. `mktemp -d`) **outside** the git checkout.
+2. `npm install @multipliers-dev/savepoints-lite@1.0.0` from the **public registry** (not `file:`).
+3. Assert router, Notion provider, `schema.md`, and both `defaults.yml` exist under `node_modules/@multipliers-dev/savepoints-lite/`.
+4. Confirm the install does not depend on local repository files.
+5. Remove the temp directory.
+
+Record command output or notes in the adopt-and-verify PR or [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md). This check does **not** prove agent behaviour.
 
 ---
 
@@ -538,19 +553,20 @@ Three implementation PRs (**protocol-core**, **documentation**, **adopt-and-veri
 
 **Agent instruction:** Do not merge. Stop after opening the PR.
 
-**Goal:** Expand [`docs/adopt.md`](docs/adopt.md), ship `templates/consumer/`, [`fixtures/consumer/`](fixtures/consumer/) with **pinned registry dependency** + lockfile, [`skills/savepoints/verification.md`](skills/savepoints/verification.md), [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md), and **mandatory hub dogfooding** (exact `@multipliers-dev/savepoints-lite@1.0.0` devDependency, hub `package-lock.json`, `.cursor/rules/savepoints-lite.mdc`, Savepoints sections in hub `AGENTS.md` / `CLAUDE.md` — all activation references **hub** `node_modules` router paths only). Document manual Cursor/Claude verification for **fixture and hub** (Notion writes only with explicit operator authorization). README adoption link already points at adopt doc — update in place.
+**Goal:** Expand [`docs/adopt.md`](docs/adopt.md); ship [`templates/consumer/`](templates/consumer/); add [`skills/savepoints/verification.md`](skills/savepoints/verification.md) and [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md); implement **mandatory hub self-adoption** (exact `@multipliers-dev/savepoints-lite@1.0.0` devDependency, hub lockfile, `.cursor/rules/savepoints-lite.mdc`, Savepoints sections in hub `AGENTS.md` / `CLAUDE.md` — activation references **only** hub `node_modules` router paths); run **registry portability** check in a temp directory outside the repo; document manual Cursor/Claude verification at **hub repo root** (Notion writes only with explicit operator authorization). Extend `package.json` `files` / verify tests for `templates/**` and verification docs as needed. README adoption link already points at the stub — update adopt doc in place.
 
-**Not in this slice:** Redesigning architecture; republishing npm (version bumps follow **docs/publishing.md**).
+**Not in this slice:** [`fixtures/consumer/`](fixtures/consumer/) or any committed second consumer project; redesigning architecture; republishing npm (version bumps follow **docs/publishing.md**); Savepoints lifecycle hooks; executable persistence runtime.
 
 **Acceptance:**
 
-- `docs/adopt.md` expanded; [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md) tracks automated + manual results  
-- [`fixtures/consumer/`](fixtures/consumer/) installs **published** version (not `file:`); lockfile + semver pin; documents `npm ci` / Renovate pattern  
-- **Hub dogfooding (required):** hub `package.json` + `package-lock.json` pin `@multipliers-dev/savepoints-lite@1.0.0`; hub activation (rule + `AGENTS.md` + `CLAUDE.md`) references **only** `node_modules/.../skills/savepoints/SKILL.md`; `npm ci` at hub root resolves installed package  
-- Manual verification checklist covers **fixture and hub** (provider delegation, `node_modules` paths, persistence honesty, anti-loop, no new Savepoints capture hooks)  
-- **Do not** mark `adopt-and-verify` **completed** in plan frontmatter until fixture **and** hub activation are implemented **and** required behavioral verification is recorded (automated pass + manual pass or operator-waived with PR rationale)  
-- Fixture documented; CI may validate fixture/hub layout and pin invariants (not agent behavior)  
-- Plan frontmatter: `npm-publication` marked completed if not already  
+- `docs/adopt.md` expanded per **Agent activation** (plain language; no protocol duplication)  
+- `templates/consumer/` shipped in tarball; adopt doc explains copy-paste activation for external repos  
+- **Hub self-adoption (required):** hub `package.json` + `package-lock.json` pin `@1.0.0`; hub activation files; `npm ci` at hub root installs published package; CI/tests may assert hub pin and installed router path — **not** agent behaviour  
+- **Registry portability:** temp-dir `npm install @1.0.0` recorded (outside repo; dir removed afterward)  
+- **Manual hub verification:** all scenarios in **Verification → Manual** recorded as **Passed**, **Failed**, or **Not run** with evidence where available; real Notion writes only with operator authorization  
+- **Do not** mark `adopt-and-verify` **completed** in plan frontmatter until hub implementation **and** required behavioral verification are complete  
+- **Do not** claim automated tests prove agent behaviour  
+- Plan frontmatter: `npm-publication` remains **completed** (historical evidence unchanged)  
 
 ## Slice — plan-closure
 
@@ -569,7 +585,7 @@ Three implementation PRs (**protocol-core**, **documentation**, **adopt-and-veri
 - **protocol-core**, **documentation**, and **adopt-and-verify** merged to `main`  
 - Durable **architecture** and **publishing** documentation exists outside the plan (`docs/architecture.md`, `docs/publishing.md`)  
 - Published package evidence recorded (version, registry verification, clean install)  
-- Consumer adoption and behavioral verification results recorded  
+- Hub self-adoption, registry portability evidence, and hub behavioral verification results recorded  
 - Deviations from the plan documented in closure note  
 - Plan moved to `.cursor/plans/archive/` — essential architecture and operational knowledge not lost with archive  
 - Do **not** auto-merge implementation PRs from this slice  
@@ -582,34 +598,39 @@ Three implementation PRs (**protocol-core**, **documentation**, **adopt-and-veri
 
 | Check | Mechanism |
 | --- | --- |
-| Hub package skills + defaults + docs | `npm run verify` (`npm pack --dry-run` + skill tree; **protocol-core**; **documentation** adds doc path assertions; extend in **adopt-and-verify** for fixture layout if needed) |
-| Hub invariants | `npm test` (protocol-core) |
+| Hub package skills + defaults + docs | `npm run verify` (`npm pack --dry-run` + skill tree; **documentation** doc paths; **adopt-and-verify** adds `templates/**`, `verification.md`, adoption record as needed) |
+| Hub self-adoption pin | `npm test` asserts exact `@multipliers-dev/savepoints-lite@1.0.0` devDependency and installed router path after `npm ci` (**adopt-and-verify**) |
+| Hub invariants | `npm test` (protocol-core + **adopt-and-verify** extensions) |
+| Registry portability | Manual or scripted temp-dir install recorded in adopt-and-verify PR / adoption verification record — **not** CI agent behaviour |
 | `storage.provider: notion` in router defaults; Notion `data_source_id` in provider defaults | grep/assert in respective `defaults.yml` |
 | No Savepoints capture hooks | script asserts `.cursor/hooks.json` has no savepoints-lite / Savepoints-logging hook entries; **does not** forbid existing Husky or unrelated bootstrap hooks |
 
 **Do not** build an “agent compliance test framework.”
 
-### Manual (real agent sessions — required for behavioral claims)
+### A. Registry portability (not agent behaviour)
 
-Use [`skills/savepoints/verification.md`](skills/savepoints/verification.md):
+Run in a **temporary directory outside the repository** (see **Registry portability** under **Agent activation**). Record outcome in [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md) or adopt-and-verify PR.
+
+### B. Manual hub dogfooding (real agent sessions — required for behavioral claims)
+
+Use [`skills/savepoints/verification.md`](skills/savepoints/verification.md) at the **Savepoints Lite hub repository root**. Record each scenario as **Passed**, **Failed**, or **Not run** (date + evidence; Notion page URLs in PR description only — not committed secrets). **Operator authorization required** for scenarios that create Notion rows.
 
 | # | Scenario | Pass criteria |
 | --- | --- | --- |
-| 1 | **Discoverability** | Fresh Cursor chat in [`fixtures/consumer/`](fixtures/consumer/); agent follows activation + reads router from fixture `node_modules` without user saying “use savepoints” |
-| 1b | **node_modules path** | Agent opens `fixtures/consumer/node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` (not vendored copy) |
-| 2 | **Implicit logging** | Complete a small doc edit; **≥1** Notion row appears without user reminder |
-| 3 | **Metadata** | Row has correct `Repository`, `Agent`, sensible `Name`; `Session ID` only if host provided |
-| 4 | **Content** | Body includes appropriate sections; empty sections omitted |
-| 5 | **Multi-write** | Same session: decision + completed task → **≥2** rows |
-| 6 | **Fail-open per event** | With MCP unavailable, agent finishes task and reports write failure; after MCP is available again in the **same session**, a later trigger still produces a row |
-| 6b | **Persistence honesty** | Agent does not claim “saved to Notion” unless sync create succeeded or bounded async poll reached `succeeded` |
-| 6c | **No Savepoint-on-failure loop** | After a failed Savepoint write, agent reports in chat only; does not immediately open another Savepoint solely to record that failure |
-| 7 | **Claude Code** | Repeat 2–5 in Claude with same DB |
-| 8 | **No Savepoints capture hooks** | Logging works via instructions + activation only — no new Savepoints lifecycle hooks; existing repo Husky/bootstrap hooks unchanged |
-| 9 | **Provider delegation** | With default config, router delegates to `savepoints-notion` skill (Notion MCP); router text does not inline Notion property/SQL steps |
-| H1–H9 | **Hub dogfooding** | Repeat discoverability, `node_modules` path (not git `skills/`), hooks, delegation, and operator-authorized persistence scenarios at **hub repo root** — see [`skills/savepoints/verification.md`](skills/savepoints/verification.md) |
+| 1 | **Discoverability** | Fresh Cursor chat at hub root; agent follows activation without an explicit “use savepoints” reminder |
+| 2 | **Installed router** | Agent reads `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` — **not** git `skills/` as the consumer router |
+| 3 | **Provider delegation** | Router delegates to installed `savepoints-notion` skill (Notion MCP); router does not inline Notion property steps |
+| 4 | **Implicit logging** | Completing meaningful work creates a Notion record (operator authorized) |
+| 5 | **Metadata** | Row has correct `Repository`, `Agent`, sensible `Name`; `Session ID` only if host provided |
+| 6 | **Content** | Body includes appropriate sections; empty sections omitted |
+| 7 | **Multi-write** | Separate meaningful events → separate records (≥2 in one session when applicable) |
+| 8 | **Fail-open** | Notion MCP failure does not block primary work; later independent event can still produce a record after recovery |
+| 9 | **Persistence honesty** | Agent does not report success on `unconfirmed` writes |
+| 10 | **Anti-loop** | Failed write does not recursively trigger more Savepoints |
+| 11 | **No capture hooks** | Logging via instructions + activation only; existing Husky/bootstrap hooks unchanged |
+| 12 | **Claude Code** | Repeat applicable scenarios (2–10) in Claude Code at hub root (operator authorized for Notion) |
 
-Record manual run date + Notion page URLs in PR description or [`docs/adoption-verification-record.md`](docs/adoption-verification-record.md) (not committed secrets).
+**Do not** claim `npm test` or CI proves the manual table above.
 
 ---
 
@@ -621,12 +642,14 @@ Record manual run date + Notion page URLs in PR description or [`docs/adoption-v
 | **npm vs activation** | `npm install` alone does **not** enable logging; consumers need activation templates + Notion MCP (`docs/adopt.md`). |
 | **Cloud Agents** | Rely on `AGENTS.md` (+ optional future `.cursor/CLOUD.md` one-pager); rules may load but must not assume hook delivery. |
 | **Session ID** | Inconsistent across hosts; optional by design. |
-| **Router vs provider** | Instruction-only routing; verify delegation via manual checklist (row 9) and adopt doc. |
+| **Router vs provider** | Instruction-only routing; verify delegation via manual hub checklist (scenario 3) and adopt doc. |
+| **Hub vs external consumers** | Hub repo is the canonical dogfood consumer; external repos use `templates/consumer/` + `docs/adopt.md` — no committed fixture repo. |
+| **Registry portability vs behaviour** | Temp-dir install proves tarball/registry path only; hub manual sessions prove agent behaviour. |
 | **Notion MCP variance** | Document in `savepoints-notion/SKILL.md`; tool names may differ by client. |
 | **PostgreSQL / multi-provider** | Deferred — `savepoints-postgres` skill only; no dual-write in v1. |
 | **Async creates** | **Require** `allow_async: false` where the Notion MCP supports it; when async is unavoidable, use **bounded** poll (no indefinite wait; at most two follow-ups per provider skill); then success, terminal failure, or unconfirmed — never imply persistence on queue alone. |
 | **Skill name** | **Decision:** use `savepoints` (slash `/savepoints`) vs `savepoints-lite` — recommend **`savepoints`** for ergonomics with repo name `savepoints-lite` disambiguating the product. |
-| **npm publish** | Operator **npm-publication** gate after **documentation** merges; publish `@1.0.0` with provenance; adopt-and-verify pins that registry version + lockfile. Optional local `npm pack` smoke does not replace registry validation. |
+| **npm publish** | Operator **npm-publication** gate after **documentation** merges; publish `@1.0.0` with provenance; **adopt-and-verify** pins that registry version in the **hub** lockfile. Optional local `npm pack` smoke does not replace registry validation or temp-dir portability check. |
 
 ---
 
@@ -699,9 +722,9 @@ Authority: Open PR only — implement and open the PR; do not merge.
 
 Topology: start from latest origin/main; branch represents only this slice; PR base must be main.
 
-Deliverables: expand docs/adopt.md; templates/consumer/; fixtures/consumer/ (pinned published dep); skills/savepoints/verification.md; docs/adoption-verification-record.md; mandatory hub dogfooding (exact @1.0.0 devDep, lockfile, .cursor/rules/savepoints-lite.mdc, AGENTS.md + CLAUDE.md — router paths under node_modules only); manual Cursor/Claude checks documented for fixture and hub. Do not mark adopt-and-verify completed until fixture and hub activation are implemented and required verification is recorded. Ensure npm-publication is completed if not already.
+Deliverables: expand docs/adopt.md; templates/consumer/; skills/savepoints/verification.md; docs/adoption-verification-record.md; mandatory hub self-adoption (exact @1.0.0 devDep, hub lockfile, .cursor/rules/savepoints-lite.mdc, AGENTS.md + CLAUDE.md — router paths under node_modules only); registry portability check in temp dir outside repo (not committed). Do NOT add fixtures/consumer/ or any second consumer project. Do not mark adopt-and-verify completed until hub implementation and required manual hub verification are recorded (Passed/Failed/Not run). npm-publication already completed — do not alter its historical evidence.
 
-Verification: npm ci (hub + fixture), npm test && npm run verify; path resolution for installed router; manual checklist per verification.md; no production Notion writes without explicit operator authorization.
+Verification: npm ci at hub root; npm test && npm run verify; temp-dir registry install recorded; manual hub checklist per verification.md; no production Notion writes without explicit operator authorization. Do not claim automated tests prove agent behaviour.
 ```
 
 ### plan-closure
@@ -717,7 +740,7 @@ Topology: start from latest origin/main; branch represents only this slice; PR b
 
 Prerequisites: protocol-core, documentation, and adopt-and-verify merged to main; npm-publication evidence recorded.
 
-Deliverables: verify implementation vs plan; confirm docs/architecture.md and docs/publishing.md on main; record publication evidence, adoption/verification results, and deviations in # Shipped; archive plan; mark plan-closure completed.
+Deliverables: verify implementation vs plan; confirm docs/architecture.md and docs/publishing.md on main; record publication evidence, hub self-adoption + registry portability + hub behavioral verification results, and deviations in # Shipped; archive plan; mark plan-closure completed.
 
 Verification: prerequisite slices done; plan archivable without losing essential architecture or operational knowledge; do not auto-merge implementation PRs.
 ```

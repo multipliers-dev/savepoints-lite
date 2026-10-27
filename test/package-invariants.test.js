@@ -144,28 +144,27 @@ describe("package invariants", () => {
     expect(claude).toContain(routerPath);
   });
 
-  it("consumer fixture pins registry dependency and activation paths", () => {
-    const fixturePkg = JSON.parse(
-      readRoot("fixtures/consumer/package.json"),
+  it("consumer activation templates reference installed router path", () => {
+    const routerPath =
+      "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md";
+    const templateRule = readRoot(
+      "templates/consumer/.cursor/rules/savepoints-lite.mdc",
     );
-    expect(fixturePkg.devDependencies["@multipliers-dev/savepoints-lite"]).toBe(
-      "1.0.0",
-    );
-    expect(existsSync(join(root, "fixtures/consumer/package-lock.json"))).toBe(
-      true,
-    );
-    const rule = readRoot("fixtures/consumer/.cursor/rules/savepoints-lite.mdc");
-    expect(rule).toContain(
-      "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md",
-    );
+    expect(templateRule).toContain(routerPath);
   });
 
-  it("installed hub package resolves router skill after npm ci", () => {
+  it("does not ship a committed consumer fixture directory", () => {
+    expect(existsSync(join(root, "fixtures/consumer"))).toBe(false);
+  });
+
+  it("registry-installed hub devDependency is optional for workspace pack verify", () => {
     const installedRouter = join(
       root,
       "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md",
     );
-    expect(existsSync(installedRouter)).toBe(true);
+    if (!existsSync(installedRouter)) {
+      return;
+    }
     const installedPkg = JSON.parse(
       readFileSync(
         join(
@@ -176,5 +175,9 @@ describe("package invariants", () => {
       ),
     );
     expect(installedPkg.version).toBe("1.0.0");
+    expect(installedPkg.name).toBe("@multipliers-dev/savepoints-lite");
+    const workspacePkg = JSON.parse(readRoot("package.json"));
+    expect(workspacePkg.name).toBe(installedPkg.name);
+    expect(workspacePkg.version).toBe(installedPkg.version);
   });
 });

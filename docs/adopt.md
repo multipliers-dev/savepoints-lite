@@ -35,7 +35,7 @@ Re-run manual checks in [`skills/savepoints/verification.md`](../skills/savepoin
 
 `npm install` does **not** register skills with Cursor or Claude native discovery. Consumers need **one-time activation** that tells agents **when** to read the router and **where** it lives under `node_modules`.
 
-Copy-paste templates ship in the package under `templates/consumer/` (also mirrored in this repository for the hub and [`fixtures/consumer/`](../fixtures/consumer/)).
+Copy-paste templates ship in the package under `templates/consumer/` (also present in this hub repository for packaging).
 
 | Surface | Action |
 | --- | --- |
@@ -76,7 +76,7 @@ Absent override files are normal — package defaults apply.
 
 ## Verification
 
-Automated: `npm ci`, lockfile pin, and path resolution (hub + [`fixtures/consumer/`](../fixtures/consumer/)).
+Automated: `npm ci` and lockfile pin at the consumer repo root; hub maintainers also run a **temporary** registry install outside the repo (see [`skills/savepoints/verification.md`](../skills/savepoints/verification.md) § A).
 
 Manual: [`skills/savepoints/verification.md`](../skills/savepoints/verification.md) — real Cursor and Claude Code sessions. **Notion writes to the production Savepoints database require explicit operator authorization** for each run. Record outcomes in [`docs/adoption-verification-record.md`](./adoption-verification-record.md) and Notion URLs in the PR description.
 
@@ -97,6 +97,6 @@ Skill index: [skills/README.md](../skills/README.md) (under the package install 
 | Router and Notion provider skills, schema, defaults | Installed via npm |
 | `templates/consumer/` activation stubs | Copy into consumer repos |
 | `skills/savepoints/verification.md` manual checklist | Required before claiming host integration |
-| Recorded behavioral verification | See adoption verification record — hub + fixture |
+| Recorded behavioral verification | See [`docs/adoption-verification-record.md`](./adoption-verification-record.md) — hub dogfooding for this package repo |
 
-The package does not certify Cursor or Claude integration until manual verification rows are **Pass** for your host and checkout.
+The package does not certify Cursor or Claude integration until manual verification scenarios are **Passed** for your host and checkout (or explicitly waived by the operator with rationale).

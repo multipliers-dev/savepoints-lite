@@ -1,46 +1,47 @@
 # Savepoints Lite — manual behavioral verification
 
-Instruction-only routing cannot be fully asserted in CI. Use this checklist after consumer **activation** and a pinned registry install (`npm ci`).
+Instruction-only routing cannot be fully asserted in CI. Use this checklist after **activation** and a pinned registry install (`npm ci` at the consumer repo root).
 
 **Notion writes:** production Savepoints database rows require **explicit operator authorization** for each manual run. Record page URLs in the PR description or [`docs/adoption-verification-record.md`](../../docs/adoption-verification-record.md) — not committed secrets.
+
+Record each scenario as **Passed**, **Failed**, or **Not run** (with date and evidence where available).
 
 ## Preconditions
 
 - Pinned `@multipliers-dev/savepoints-lite@1.0.0` (or documented release) in `package.json` + committed lockfile.
-- `npm ci` completed; router exists at `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`.
+- `npm ci` completed at **hub repo root**; router exists at `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`.
 - Authenticated Notion MCP in the agent host (for persistence scenarios).
-- Activation present: Cursor rule (`alwaysApply: true`), plus `AGENTS.md` / `CLAUDE.md` pointers as applicable.
+- Activation present: Cursor rule (`alwaysApply: true`), plus `AGENTS.md` / `CLAUDE.md` pointers.
 - **No** new Savepoints lifecycle hooks (logging via instructions only).
 
-## Standalone consumer fixture (`fixtures/consumer/`)
+## A. Registry portability (not agent behaviour)
 
-Run agent sessions **in or against** the fixture directory unless noted.
+Run **outside** the repository in a temporary directory (not committed):
 
-| # | Scenario | Pass criteria |
-| --- | --- | --- |
-| 1 | **Discoverability** | Fresh Cursor chat; agent follows activation and reads router from fixture `node_modules` without user saying “use savepoints” |
-| 1b | **node_modules path** | Agent opens `fixtures/consumer/node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` (not vendored copy) |
-| 2 | **Implicit logging** | Complete a small doc edit; ≥1 Notion row appears without user reminder (operator authorized) |
-| 3 | **Metadata** | Row has correct `Repository`, `Agent`, sensible `Name`; `Session ID` only if host provided |
-| 4 | **Content** | Body includes appropriate sections; empty sections omitted |
-| 5 | **Multi-write** | Same session: decision + completed task → ≥2 rows |
-| 6 | **Fail-open per event** | With MCP unavailable, agent finishes task and reports write failure; after MCP is available again, a later trigger still produces a row |
-| 6b | **Persistence honesty** | Agent does not claim “saved to Notion” unless sync create succeeded or bounded async poll reached `succeeded` |
-| 6c | **No Savepoint-on-failure loop** | After a failed Savepoint write, agent reports in chat only; does not immediately open another Savepoint solely to record that failure |
-| 7 | **Claude Code** | Repeat 2–5 in Claude with same DB (operator authorized) |
-| 8 | **No Savepoints capture hooks** | Logging works via instructions + activation only; existing repo Husky/bootstrap hooks unchanged |
-| 9 | **Provider delegation** | Router delegates to `savepoints-notion`; router text does not inline Notion property steps |
+1. `npm install @multipliers-dev/savepoints-lite@1.0.0` from the public registry (not `file:`).
+2. Confirm router, Notion provider, `schema.md`, and both `defaults.yml` under `node_modules/@multipliers-dev/savepoints-lite/`.
+3. Confirm the install does not depend on local repository files.
+4. Remove the temp directory.
 
-## Hub dogfooding (`multipliers-dev/savepoints-lite` repository root)
+Record outcome in [`docs/adoption-verification-record.md`](../../docs/adoption-verification-record.md).
 
-**Required** for adopt-and-verify acceptance — not optional. Repeat scenarios **1**, **1b**, **8**, and **9** at the hub root with hub activation files. Scenarios **2–7** require operator-authorized Notion writes in the hub context.
+## B. Hub dogfooding (real agent sessions)
+
+Run at the **Savepoints Lite hub repository root** (`multipliers-dev/savepoints-lite`). **Required** for adopt-and-verify acceptance.
 
 | # | Scenario | Pass criteria |
 | --- | --- | --- |
-| H1 | **Hub discoverability** | Fresh Cursor chat at repo root; agent uses hub `.cursor/rules/savepoints-lite.mdc` and reads router from **hub** `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` |
-| H1b | **Not source skills/** | Agent does **not** treat `skills/savepoints/SKILL.md` in the git tree as the activation router path |
-| H2–H7 | **Hub persistence** | Same as fixture rows 2–7 when operator authorizes Notion writes against the hub checkout |
-| H8 | **Hooks unchanged** | [`.cursor/hooks.json`](../../.cursor/hooks.json) still has no Savepoints capture hooks |
-| H9 | **Delegation** | Same as fixture row 9 |
+| 1 | **Discoverability** | Fresh Cursor chat; agent follows activation without an explicit “use savepoints” reminder |
+| 2 | **Installed router** | Agent reads `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` — **not** git `skills/` as the consumer router |
+| 3 | **Provider delegation** | Router delegates to installed `savepoints-notion` skill (Notion MCP); router does not inline Notion property steps |
+| 4 | **Implicit logging** | Completing meaningful work creates a Notion record (operator authorized) |
+| 5 | **Metadata** | Row has correct `Repository`, `Agent`, sensible `Name`; `Session ID` only if host provided |
+| 6 | **Content** | Body includes appropriate sections; empty sections omitted |
+| 7 | **Multi-write** | Separate meaningful events → separate records (≥2 in one session when applicable) |
+| 8 | **Fail-open** | Notion MCP failure does not block primary work; later independent event can still produce a record after recovery |
+| 9 | **Persistence honesty** | Agent does not report success on `unconfirmed` writes |
+| 10 | **Anti-loop** | Failed write does not recursively trigger more Savepoints |
+| 11 | **No capture hooks** | Logging via instructions + activation only; [`.cursor/hooks.json`](../../.cursor/hooks.json) unchanged for Savepoints capture |
+| 12 | **Claude Code** | Repeat applicable scenarios (2–10) in Claude Code at hub root (operator authorized for Notion) |
 
-Record results in [`docs/adoption-verification-record.md`](../../docs/adoption-verification-record.md).
+**Do not** claim `npm test` or CI proves this table.
