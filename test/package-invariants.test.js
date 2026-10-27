@@ -5,9 +5,17 @@ import { describe, it, expect } from "vitest";
 import { parse as parseYaml } from "yaml";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const MAINTAINER_DATA_SOURCE_ID = "822cbc89-7c89-4863-af3a-2fe0cd8ab56e";
 
 function readRoot(rel) {
   return readFileSync(join(root, rel), "utf8");
+}
+
+function readPathsList(rel) {
+  return readRoot(rel)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function markdownLinkTargets(markdown) {
@@ -30,9 +38,10 @@ function isExternalOrAnchorLink(link) {
 }
 
 describe("package invariants", () => {
-  it("package.json is publishable @multipliers-dev/savepoints-lite", () => {
+  it("package.json is publishable @multipliers-dev/savepoints-lite at 2.0.0", () => {
     const pkg = JSON.parse(readRoot("package.json"));
     expect(pkg.name).toBe("@multipliers-dev/savepoints-lite");
+    expect(pkg.version).toBe("2.0.0");
     expect(pkg.private).not.toBe(true);
     expect(pkg.publishConfig?.access).toBe("public");
     expect(pkg.publishConfig?.provenance).toBe(true);
@@ -58,11 +67,17 @@ describe("package invariants", () => {
     expect(doc.storage?.provider).toBe("notion");
   });
 
-  it("notion provider defaults set destination.data_source_id", () => {
+  it("notion provider packaged defaults omit destination.data_source_id", () => {
     const doc = parseYaml(readRoot("skills/savepoints-notion/defaults.yml"));
-    expect(doc.destination?.data_source_id).toBe(
-      "822cbc89-7c89-4863-af3a-2fe0cd8ab56e",
-    );
+    expect(doc?.destination?.data_source_id).toBeUndefined();
+  });
+
+  it("workspace release-candidate tarball paths exclude maintainer data_source_id", () => {
+    const listed = readPathsList("scripts/expected-package-paths.txt");
+    for (const rel of listed) {
+      const content = readRoot(rel);
+      expect(content).not.toContain(MAINTAINER_DATA_SOURCE_ID);
+    }
   });
 
   it("README links consumer adoption and architecture docs", () => {
@@ -71,6 +86,7 @@ describe("package invariants", () => {
     expect(readme).toMatch(/docs\/architecture\.md/);
     expect(readme).not.toMatch(/docs\/publishing\.md/);
     expect(readme).not.toMatch(/npm run verify/);
+    expect(readme).toMatch(/2\.0\.0/);
   });
 
   it("README does not claim Cursor or Claude integration verified", () => {
@@ -84,10 +100,7 @@ describe("package invariants", () => {
     expect(existsSync(licensePath)).toBe(true);
     const license = readRoot("LICENSE");
     expect(license).toMatch(/^MIT License\n\nCopyright \(c\) 2026 Michael Truong/m);
-    const listed = readRoot("scripts/expected-package-paths.txt")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
+    const listed = readPathsList("scripts/expected-package-paths.txt");
     expect(listed).toContain("LICENSE");
   });
 
@@ -108,10 +121,7 @@ describe("package invariants", () => {
     expect(existsSync(join(root, "docs/adoption-verification-record.md"))).toBe(
       true,
     );
-    const listed = readRoot("scripts/expected-package-paths.txt")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
+    const listed = readPathsList("scripts/expected-package-paths.txt");
     expect(listed).not.toContain("docs/adoption-verification-record.md");
   });
 
@@ -123,18 +133,50 @@ describe("package invariants", () => {
     expect(skill).toMatch(/Plain string/);
   });
 
+  it("notion provider documents three-tier destination resolution and fail-open", () => {
+    const skill = readRoot("skills/savepoints-notion/SKILL.md");
+    expect(skill).toMatch(/tier 1/i);
+    expect(skill).toMatch(/fail open without fallback/i);
+    expect(skill).toMatch(/User Rules/i);
+    expect(skill).not.toContain(MAINTAINER_DATA_SOURCE_ID);
+  });
+
+  it("router carries integration destination unchanged to provider", () => {
+    const skill = readRoot("skills/savepoints/SKILL.md");
+    expect(skill).toMatch(/carry this `destination` block unchanged/i);
+    expect(skill).toMatch(/data_source_id/);
+    expect(skill).toMatch(/does \*\*not\*\* call Notion MCP, read Cursor User Rules/i);
+  });
+
+  it("consumer savepoints-notion example template exists", () => {
+    const example = readRoot("templates/consumer/savepoints-notion.yml.example");
+    expect(example).toMatch(/YOUR_NOTION_DATA_SOURCE_ID/);
+    const doc = parseYaml(example);
+    expect(doc.destination?.data_source_id).toBe("YOUR_NOTION_DATA_SOURCE_ID");
+  });
+
   it("notion provider requires synchronous create when supported", () => {
     const skill = readRoot("skills/savepoints-notion/SKILL.md");
     expect(skill).toMatch(/allow_async:\s*false/);
-    expect(skill).toMatch(/absent.*savepoints-notion\.yml/i);
+    expect(skill).toMatch(/savepoints-notion\.yml/i);
   });
 
-  it("expected package paths file matches verify script usage", () => {
-    const listed = readRoot("scripts/expected-package-paths.txt")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
+  it("expected workspace release-candidate paths file matches verify script usage", () => {
+    const listed = readPathsList("scripts/expected-package-paths.txt");
+    expect(listed).toHaveLength(16);
+    for (const rel of listed) {
+      expect(existsSync(join(root, rel))).toBe(true);
+    }
+  });
+
+  it("expected registry dogfood paths file documents @1.1.0 layout", () => {
+    const listed = readPathsList(
+      "scripts/expected-package-paths-registry-dogfood.txt",
+    );
     expect(listed).toHaveLength(15);
+    expect(listed).not.toContain(
+      "templates/consumer/savepoints-notion.yml.example",
+    );
     for (const rel of listed) {
       expect(existsSync(join(root, rel))).toBe(true);
     }
@@ -142,10 +184,7 @@ describe("package invariants", () => {
 
   it("tarball markdown relative links resolve within npm pack file set", () => {
     const tarballFiles = new Set(
-      readRoot("scripts/expected-package-paths.txt")
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean),
+      readPathsList("scripts/expected-package-paths.txt"),
     );
     const violations = [];
     for (const rel of [...tarballFiles].filter((p) => p.endsWith(".md"))) {
@@ -189,11 +228,12 @@ describe("package invariants", () => {
     expect(hooks).not.toMatch(/observe\.sh/);
   });
 
-  it("hub dogfoods published package with exact devDependency pin", () => {
+  it("hub dogfoods published package with exact devDependency pin 1.1.0 pre-publish", () => {
     const pkg = JSON.parse(readRoot("package.json"));
     const dogfoodVersion =
       pkg.devDependencies["@multipliers-dev/savepoints-lite"];
-    expect(dogfoodVersion).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(dogfoodVersion).toBe("1.1.0");
+    expect(pkg.version).toBe("2.0.0");
   });
 
   it("hub activation uses AGENTS.md only (no Cursor savepoints rule)", () => {
@@ -264,15 +304,10 @@ describe("package invariants", () => {
     expect(installedPkg.name).toBe("@multipliers-dev/savepoints-lite");
     expect(installedPkg.version).toBe(dogfoodVersion);
     expect(installedPkg.files).toEqual(workspacePkg.files);
-    expect(installedPkg.files.join(" ")).not.toMatch(
-      /adoption-verification-record/,
-    );
 
-    const expectedRelFiles = readRoot("scripts/expected-package-paths.txt")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .sort();
+    const expectedRelFiles = readPathsList(
+      "scripts/expected-package-paths-registry-dogfood.txt",
+    ).sort();
     const relFiles = listFilesRecursive(installRoot)
       .map((abs) => abs.slice(installRoot.length + 1))
       .sort();
@@ -295,6 +330,11 @@ describe("package invariants", () => {
     ).toBe(false);
     expect(
       existsSync(join(installRoot, ".cursor/rules/savepoints-lite.mdc")),
+    ).toBe(false);
+    expect(
+      existsSync(
+        join(installRoot, "templates/consumer/savepoints-notion.yml.example"),
+      ),
     ).toBe(false);
 
     const lock = readRoot("package-lock.json");

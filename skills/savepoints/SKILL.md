@@ -61,12 +61,23 @@ From the consumer install root:
 
 Load and follow that provider skill for persistence. Unknown provider → misconfiguration; stop delegation.
 
+## Integration destination (tier 1 handoff)
+
+When the calling integration (host `AGENTS.md`, marketplace wrapper, or other delegation context) supplies an explicit Notion destination for this Savepoint, it appears as labelled YAML in the **instruction/delegation context** passed into the router:
+
+```yaml
+destination:
+  data_source_id: "<NOTION_DATA_SOURCE_ID>"
+```
+
+On delegation to the Notion provider, **carry this `destination` block unchanged** in the provider’s instruction context. The router does **not** call Notion MCP, read Cursor User Rules, or resolve `data_source_id` itself.
+
 ## Delegation steps
 
 1. Assemble the Savepoint per [schema.md](./schema.md).
 2. Resolve `storage.provider` from config (table above).
 3. Read the matching provider `SKILL.md` from the **same** `@multipliers-dev/savepoints-lite` install.
-4. Pass the Savepoint to the provider skill; let the provider perform MCP writes and bounded confirmation.
+4. Pass the Savepoint to the provider skill together with any tier-1 `destination` block from the integration context (unchanged); let the provider perform MCP writes and bounded confirmation.
 5. Handle the provider outcome (`success` | `failure` | `unconfirmed`).
 
 The router **must not** document Notion page properties, Postgres table schemas, or MCP tool parameters.
