@@ -10,4 +10,4 @@ Shipped inside `@multipliers-dev/savepoints-lite` under `skills/`.
 | [savepoints-notion/SKILL.md](./savepoints-notion/SKILL.md) | Notion MCP persistence (v1) |
 | [savepoints-notion/defaults.yml](./savepoints-notion/defaults.yml) | `destination.data_source_id` |
 
-Consumers install via npm; activation templates and adoption docs ship in a later release slice. Skills are read from `node_modules/@multipliers-dev/savepoints-lite/skills/` — do not vendor copies.
+Consumers install via npm; see [docs/adopt.md](../docs/adopt.md) for prerequisites and current adoption support. Skills are read from `node_modules/@multipliers-dev/savepoints-lite/skills/` — do not vendor copies.

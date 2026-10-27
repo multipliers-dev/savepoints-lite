@@ -22,7 +22,9 @@
   },
   "files": [
     "skills/**",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "docs/**"
   ],
   "scripts": {
     "test": "vitest run",
