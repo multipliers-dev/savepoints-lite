@@ -4,6 +4,39 @@
 
 Contrast with [multipliers-dev/savepoints](https://github.com/multipliers-dev/savepoints): full Savepoints optimizes **durable learnings** (five-check rubric, lifecycle hooks, Postgres). Lite optimizes **activity and session narrative** with immediate appends and no lifecycle automation.
 
+```mermaid
+flowchart TB
+    subgraph Consumer["Consumer repository"]
+        Activation["Cursor rule / CLAUDE.md / AGENTS.md"]
+        Package["npm dependency"]
+    end
+
+    subgraph Installed["Installed package (node_modules)"]
+        Router["Savepoints router"]
+        Schema["Schema + defaults"]
+        Provider["Notion provider"]
+    end
+
+    subgraph External["External services"]
+        MCP["Authenticated Notion MCP"]
+        Database["Notion Savepoints database"]
+    end
+
+    Package -.->|"Installs"| Router
+    Package -.->|"Installs"| Schema
+    Package -.->|"Installs"| Provider
+
+    Activation -->|"Loads skill"| Router
+    Router -->|"Reads protocol + config"| Schema
+    Router -->|"Delegates append"| Provider
+    Provider -->|"notion-create-pages"| MCP
+    MCP -->|"Creates record"| Database
+```
+
+**Distribution** (dashed): the npm dependency places router skills, schema, and provider defaults under `node_modules` — install alone does not activate Savepoints.
+
+**Execution** (solid): consumer-owned agent instructions load the installed router; the router decides when to create Savepoints and assembles provider-neutral records; the configured provider persists through the consumer’s existing Notion MCP. There is no custom runtime, MCP server, or local persistence queue.
+
 ## Layer model
 
 | Layer | Responsibility |
