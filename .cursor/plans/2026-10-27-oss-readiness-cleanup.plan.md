@@ -24,7 +24,7 @@ todos:
     content: "Phase 4: Bump to 2.0.0, npm ci/test/verify/validate:plans, package implementation PR (no publish)"
     status: pending
   - id: phase5-upgrade-prep
-    content: "Phase 5: Document post-publish consumer bump sequence in adopt/docs (no upgrade PRs until @2.0.0 on registry)"
+    content: "Phase 5: Document post-2.0.0 consumer upgrade procedure (may ship in phase4 PR); consumer pin-bump PRs only after @2.0.0 is published"
     status: pending
   - id: plan-closure
     content: "Docs-only PR after last implementation slice: # Shipped, archive plan, update references"
@@ -45,7 +45,7 @@ isProject: false
 | phase2-package-config | Open PR only | savepoints-lite hub only. Do not merge or publish. |
 | phase3-docs | Open PR only | savepoints-lite hub only. May combine with phase2/phase4 in one merge-safe PR. Do not merge. |
 | phase4-release-prep | Open PR only | savepoints-lite hub only. Do not merge or publish npm. |
-| phase5-upgrade-prep | Open PR only | Docs only; no consumer bump PRs until `@2.0.0` on registry. Do not merge. |
+| phase5-upgrade-prep | Open PR only | **Docs:** upgrade procedure in hub adopt/docs (may merge with phase4 PR). **Execution:** consumer `@2.0.0` bump PRs only after operator publishes registry release — not part of this slice’s hub PR. |
 | plan-closure | Open PR only | Docs-only archive PR. Do not merge. |
 
 Repo default: **Open PR only** (plan-review for plan artifact only).
@@ -60,7 +60,9 @@ Multi-slice plans stack execution order, not Git branches. Integration branch is
 
 **After opening the PR:** GitHub base is `main`; diff excludes prior-slice work except through merged `main`.
 
-**Cross-repo:** Phase 1 opens PRs in each consumer repository. Phases 2–5 target `multipliers-dev/savepoints-lite` only (phase5 may be docs-only in the same hub PR as phase4).
+**Cross-repo:** Phase 1 opens PRs in each consumer repository. Phases 2–4 target `multipliers-dev/savepoints-lite` (one merge-safe hub implementation PR is typical).
+
+**Phase 5 sequencing:** Distinguish **documenting** the post-`2.0.0` upgrade procedure from **executing** consumer upgrades. Upgrade **documentation** may ship in the same hub PR as phase4 (before npm publish). **Consumer version-bump PRs** wait until `@2.0.0` exists on the registry (operator publish after phase4 merge) — those are separate per-repo PRs, not phase5 hub deliverables.
 
 ---
 
@@ -91,7 +93,7 @@ flowchart TB
   P2[Phase 2 remove package default]
   P3[Phase 3 docs]
   P4[Phase 4 package 2.0.0 PR]
-  P5[Phase 5 upgrade playbook]
+  P5[Phase 5 upgrade docs plus post-publish consumer bumps]
   P1 --> CP
   CP -->|no| STOP[Stop report remaining]
   CP -->|yes| P2
@@ -224,6 +226,7 @@ flowchart TB
 - Version `2.0.0` in package metadata
 - `npm ci && npm test && npm run verify && npm run validate:plans` pass
 - Tarball verify: no personal destination in package defaults
+- Optional in the same PR: phase5 **documentation** (post-`2.0.0` upgrade procedure in adopt/docs) — does not require registry publish first
 
 ---
 
@@ -231,15 +234,19 @@ flowchart TB
 
 **Recommended authority:** Open PR only
 
-**Prerequisite:** phase4 merged and operator publishes `@2.0.0` (operator action).
+**Rationale:** Operators and consumers need a written upgrade path; executing bumps is a separate step after publish.
 
-**Rationale:** Consumers need documented bump path after registry release.
+**Agent instruction:**
 
-**Agent instruction:** Document upgrade sequence only; no consumer bump PRs until `@2.0.0` exists on npm.
+- **Documentation (hub):** Add post-`2.0.0` consumer upgrade steps to [`docs/adopt.md`](docs/adopt.md) (or equivalent). May land in the **same merge-safe PR as phase4**; mark `phase5-upgrade-prep` completed when that documentation merges.
+- **Execution (consumers):** Open consumer pin-bump PRs to `@2.0.0` **only after** phase4 is merged **and** the operator has published `@2.0.0` to npm. Not required to complete the hub phase5 slice.
+
+**Prerequisite for consumer bump PRs only:** `@2.0.0` on the public registry (operator action after phase4 merge). **Not** a prerequisite for writing upgrade documentation in the hub.
 
 **Acceptance:**
 
-- [`docs/adopt.md`](docs/adopt.md) (or equivalent) describes post-`2.0.0` consumer steps
+- [`docs/adopt.md`](docs/adopt.md) (or equivalent) describes post-`2.0.0` consumer steps (including that Phase 1 destination files can stay unchanged when staying on the maintainer database)
+- No consumer `@2.0.0` bump PRs opened against an unpublished package version
 
 ---
 
@@ -366,9 +373,9 @@ Authority: Open PR only — do not merge or npm publish.
 
 Topology: origin/main; PR base main.
 
-Deliverables: package version 2.0.0; hub implementation PR for phases 2–4 as scoped.
+Deliverables: package version 2.0.0; hub implementation PR for phases 2–4 as scoped; optional phase5 upgrade **documentation** in the same PR.
 
-Verification: npm ci && npm test && npm run verify && npm run validate:plans. Mark phase4-release-prep completed in frontmatter in the same PR.
+Verification: npm ci && npm test && npm run verify && npm run validate:plans. Mark phase4-release-prep completed in frontmatter in the same PR. If upgrade docs ship here, mark phase5-upgrade-prep completed too.
 ```
 
 ### phase5-upgrade-prep
@@ -376,15 +383,15 @@ Verification: npm ci && npm test && npm run verify && npm run validate:plans. Ma
 ```text
 @.cursor/plans/2026-10-27-oss-readiness-cleanup.plan.md
 
-Implement slice phase5-upgrade-prep only.
+Implement slice phase5-upgrade-prep only (documentation), or fold into phase4 hub PR.
 
-Authority: Open PR only — do not merge; no consumer bump PRs until @2.0.0 on registry.
+Authority: Open PR only — do not merge. Consumer pin-bump PRs are out of scope until @2.0.0 is published.
 
-Topology: savepoints-lite hub; docs-only.
+Topology: savepoints-lite hub; docs in adopt.md. May be same PR as phase4 before npm publish.
 
-Deliverables: adopt.md upgrade sequence for post-2.0.0 consumers.
+Deliverables: written post-2.0.0 upgrade procedure (docs only). Do not open consumer @2.0.0 bump PRs until registry has 2.0.0.
 
-Verification: npm run validate:plans if plan frontmatter changes. Mark phase5-upgrade-prep completed when merged.
+Verification: npm run validate:plans if plan frontmatter changes. Mark phase5-upgrade-prep completed when upgrade documentation merges (with phase4 or follow-up docs PR).
 ```
 
 ### plan-closure
