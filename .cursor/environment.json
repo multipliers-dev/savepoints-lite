@@ -1,0 +1,5 @@
+{
+  "name": "savepoints-lite",
+  "install": "npm ci",
+  "start": "ENSURE_HOOKS_MODE=wait ENSURE_HOOKS_WAIT_SECS=120 sh scripts/ensure-hooks.sh"
+}
