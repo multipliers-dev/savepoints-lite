@@ -6,4 +6,4 @@ Pin `@multipliers-dev/savepoints-lite` (exact version) and run `npm ci`. Instruc
 
 `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`
 
-Do not use vendored `skills/` copies. Cursor: copy `templates/consumer/.cursor/rules/savepoints-lite.mdc` to `.cursor/rules/` (`alwaysApply: true`). Claude Code: add `@AGENTS.md` to your existing `CLAUDE.md` (or create `CLAUDE.md` with only that line if the file does not exist yet).
+Do not use vendored `skills/` copies. Cursor: copy `savepoints-lite.mdc` from your template source to `.cursor/rules/` (`alwaysApply: true`) — from `node_modules/@multipliers-dev/savepoints-lite/templates/consumer/.cursor/rules/` when your installed version ships templates; on published `@1.0.0`, copy from the [savepoints-lite GitHub repo](https://github.com/multipliers-dev/savepoints-lite/tree/main/templates/consumer). Claude Code: add `@AGENTS.md` to your existing `CLAUDE.md` (or create `CLAUDE.md` with only that line if the file does not exist yet).

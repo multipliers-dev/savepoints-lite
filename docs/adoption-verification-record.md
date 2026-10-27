@@ -9,7 +9,7 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 | `npm ci` at hub root | Hub repo | Pass | 2026-10-27 | Installs published `@1.0.0` devDependency from registry |
 | Hub lockfile pins `@1.0.0` | `package.json` / `package-lock.json` | Pass | 2026-10-27 | Exact devDependency committed on branch |
 | Hub activation paths | Rule + `AGENTS.md` + `CLAUDE.md` | Pass | 2026-10-27 | Reference `node_modules/.../skills/savepoints/SKILL.md` only |
-| `npm test` + `npm run verify` | Workspace tarball | Pass | 2026-10-27 | 17 paths; validates **workspace** pack — not the registry install tree |
+| `npm test` + `npm run verify` | Workspace tarball | Pass | 2026-10-27 | 16 paths; validates **workspace** `npm pack` — not the immutable registry `@1.0.0` (12 files) |
 | `npm run validate:plans` | Plan frontmatter | Pass | 2026-10-27 | |
 | Registry portability | Temp dir outside repo | Pass | 2026-10-27 | `npm install @multipliers-dev/savepoints-lite@1.0.0`; router, provider, schema, defaults present; temp dir removed |
 

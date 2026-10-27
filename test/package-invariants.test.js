@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, it, expect } from "vitest";
@@ -23,9 +23,12 @@ describe("package invariants", () => {
         "templates/**",
         "README.md",
         "LICENSE",
-        "docs/**",
+        "docs/adopt.md",
+        "docs/architecture.md",
+        "docs/publishing.md",
       ]),
     );
+    expect(pkg.files).not.toContain("docs/**");
     expect(pkg.license).toBe("MIT");
     expect(pkg.scripts.typecheck).toBeUndefined();
     expect(pkg.scripts.verify).toBeDefined();
@@ -79,6 +82,20 @@ describe("package invariants", () => {
     }
   });
 
+  it("maintainer adoption record stays out of npm files allowlist", () => {
+    const pkg = JSON.parse(readRoot("package.json"));
+    const files = pkg.files ?? [];
+    expect(files.join(" ")).not.toMatch(/adoption-verification-record/);
+    expect(existsSync(join(root, "docs/adoption-verification-record.md"))).toBe(
+      true,
+    );
+    const listed = readRoot("scripts/expected-package-paths.txt")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    expect(listed).not.toContain("docs/adoption-verification-record.md");
+  });
+
   it("notion provider documents verified property types", () => {
     const skill = readRoot("skills/savepoints-notion/SKILL.md");
     expect(skill).toMatch(/Notion type/);
@@ -98,7 +115,7 @@ describe("package invariants", () => {
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
-    expect(listed).toHaveLength(17);
+    expect(listed).toHaveLength(16);
     for (const rel of listed) {
       expect(existsSync(join(root, rel))).toBe(true);
     }
@@ -158,27 +175,55 @@ describe("package invariants", () => {
     expect(existsSync(join(root, "fixtures/consumer"))).toBe(false);
   });
 
-  it("registry-installed hub devDependency is optional for workspace pack verify", () => {
-    const installedRouter = join(
+  function listFilesRecursive(dir) {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    const files = [];
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        files.push(...listFilesRecursive(full));
+      } else {
+        files.push(full);
+      }
+    }
+    return files;
+  }
+
+  it("published registry @1.0.0 artifact matches immutable 12-file layout", () => {
+    const installRoot = join(
       root,
-      "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md",
+      "node_modules/@multipliers-dev/savepoints-lite",
+    );
+    const installedRouter = join(
+      installRoot,
+      "skills/savepoints/SKILL.md",
     );
     if (!existsSync(installedRouter)) {
       return;
     }
     const installedPkg = JSON.parse(
-      readFileSync(
-        join(
-          root,
-          "node_modules/@multipliers-dev/savepoints-lite/package.json",
-        ),
-        "utf8",
-      ),
+      readFileSync(join(installRoot, "package.json"), "utf8"),
     );
     expect(installedPkg.version).toBe("1.0.0");
     expect(installedPkg.name).toBe("@multipliers-dev/savepoints-lite");
+    expect(installedPkg.files).toEqual(
+      expect.arrayContaining(["skills/**", "docs/**"]),
+    );
+    expect(installedPkg.files).not.toContain("templates/**");
+
+    const relFiles = listFilesRecursive(installRoot)
+      .map((abs) => abs.slice(installRoot.length + 1))
+      .sort();
+    expect(relFiles).toHaveLength(12);
+    expect(relFiles).not.toContain("skills/savepoints/verification.md");
+    expect(
+      existsSync(join(installRoot, "templates/consumer")),
+    ).toBe(false);
+
     const workspacePkg = JSON.parse(readRoot("package.json"));
     expect(workspacePkg.name).toBe(installedPkg.name);
     expect(workspacePkg.version).toBe(installedPkg.version);
+    expect(workspacePkg.files).toContain("templates/**");
+    expect(workspacePkg.files).not.toContain("docs/**");
   });
 });

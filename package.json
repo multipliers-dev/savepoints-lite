@@ -25,7 +25,9 @@
     "templates/**",
     "README.md",
     "LICENSE",
-    "docs/**"
+    "docs/adopt.md",
+    "docs/architecture.md",
+    "docs/publishing.md"
   ],
   "scripts": {
     "test": "vitest run",

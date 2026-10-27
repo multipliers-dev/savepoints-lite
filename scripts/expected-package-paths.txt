@@ -1,7 +1,6 @@
 LICENSE
 README.md
 docs/adopt.md
-docs/adoption-verification-record.md
 docs/architecture.md
 docs/publishing.md
 package.json
