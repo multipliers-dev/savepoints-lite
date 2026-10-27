@@ -3,13 +3,19 @@ name: Savepoints Lite v1
 overview: npm-first instruction package (@multipliers-dev/savepoints-lite) shipping router + Notion provider skills; consumers install via npm, activate once (Cursor rule / CLAUDE.md / AGENTS.md), delegate to existing Notion MCP — no marketplace, no runtime, no custom MCP server.
 todos:
   - id: protocol-core
-    content: "PR 1: @multipliers-dev/savepoints-lite package (skills, defaults, schema), npm verify script, hub AGENTS.md/CI/pre-commit without typecheck — no adopt.md link, no Savepoints activation"
+    content: "@multipliers-dev/savepoints-lite package (skills, defaults, schema), npm verify script, hub AGENTS.md/CI/pre-commit without typecheck — minimal README, no adopt.md link, no Savepoints activation"
     status: completed
+  - id: documentation
+    content: "Documentation-only PR: README landing page, docs/architecture.md, docs/publishing.md, package files allowlist + verify/tests for tarball docs — no npm publish, no consumer activation templates"
+    status: pending
+  - id: npm-publication
+    content: "Operator release gate (no publish-only PR): after documentation merges — verify, authorize, publish @multipliers-dev/savepoints-lite@1.0.0 with provenance, registry + clean-consumer install checks, record evidence"
+    status: pending
   - id: adopt-and-verify
-    content: "PR 2 (after operator npm publish): docs/adopt.md, fixtures/consumer/, templates/consumer/, activation, manual Cursor/Claude verification via pinned registry dependency"
+    content: "After successful npm publication: docs/adopt.md, fixtures/consumer/, templates/consumer/, activation, manual Cursor/Claude verification via pinned registry dependency"
     status: pending
   - id: plan-closure
-    content: "Docs-only PR: verify vs plan, record deviations, # Shipped, archive plan"
+    content: "Docs-only PR: durable docs + publication + adoption evidence, deviations, # Shipped, archive plan"
     status: pending
 isProject: false
 ---
@@ -83,11 +89,11 @@ node_modules/@multipliers-dev/savepoints-lite/skills/savepoints-notion/SKILL.md
 
 Router and provider skills must reference **package-relative** paths from that install root. **`node_modules` must exist** in the agent execution environment (after `npm install` / `npm ci`).
 
-**npm does not register skills** with Cursor or Claude native discovery — activation templates (slice 2) tell agents **when** to read the router and **where** the installed file lives.
+**npm does not register skills** with Cursor or Claude native discovery — activation templates (**adopt-and-verify**) tell agents **when** to read the router and **where** the installed file lives.
 
 **Provider resolution (v1):** `storage.provider: notion` → load provider skill from the same package install. Unknown or missing provider → report misconfiguration; **no** dynamic discovery or fallback provider.
 
-**Caveat:** Routing is **instruction-based** — behavioral verification (slice 2) must confirm delegation to `savepoints-notion`, reads from `node_modules`, and Notion MCP writes.
+**Caveat:** Routing is **instruction-based** — behavioral verification (**adopt-and-verify**) must confirm delegation to `savepoints-notion`, reads from `node_modules`, and Notion MCP writes.
 
 ---
 
@@ -242,7 +248,7 @@ destination:
 | 2 | Consumer repo [`.agents/savepoints-notion.yml`](.agents/savepoints-notion.yml) | Notion `destination.data_source_id` only |
 | 3 (default) | Package [`skills/savepoints/defaults.yml`](skills/savepoints/defaults.yml) and [`skills/savepoints-notion/defaults.yml`](skills/savepoints-notion/defaults.yml) under `node_modules` | Shared Savepoints database |
 
-Consumers **need not** copy default YAML — install npm package only unless overriding provider or destination. Hub repo does not commit live `.agents/*.yml` (templates ship in slice 2).
+Consumers **need not** copy default YAML — install npm package only unless overriding provider or destination. Hub repo does not commit live `.agents/*.yml` (templates ship in **adopt-and-verify**).
 
 **Unsupported `storage.provider`:** report misconfiguration; do not guess or fall back.
 
@@ -301,7 +307,7 @@ Follow [`@multipliers-dev/plan-validator`](https://www.npmjs.com/package/@multip
 | **`private`** | Remove `"private": true` or set `"private": false` before first publish |
 | **Versioning** | Semantic versioning; bump on publish |
 | **`publishConfig`** | `access: public`, `provenance: true` (match plan-validator scoped public package) |
-| **`files`** | Ship `skills/**`, package `README.md`, and any packaged config templates — **no** `bin`, **no** compiled runtime |
+| **`files`** | Ship `skills/**`, `README.md`, `docs/**` (after **documentation** slice), and any packaged config templates — **no** `bin`, **no** compiled runtime |
 | **`engines`** | Node `>=22` (align with plan-validator floor) |
 | **Install** | Consumer `devDependency` (or `dependency`): declare an **exact semver** in `package.json` (e.g. `"@multipliers-dev/savepoints-lite": "1.0.0"`) — not a floating range for production adoption |
 | **Verify publish** | `npm pack --dry-run` (and/or `prepack` script) asserts expected paths land in tarball |
@@ -309,29 +315,35 @@ Follow [`@multipliers-dev/plan-validator`](https://www.npmjs.com/package/@multip
 
 **Out of scope:** installation CLI, bootstrap script, executable Savepoints runtime, custom MCP server.
 
-**Publication verification (protocol-core):** CI/local script confirms tarball contains router + Notion provider skills and default YAML. **npm publish to the registry is an operator step after protocol-core merges** — not part of the implementation PR unless explicitly authorized.
+**Publication verification:** **protocol-core** confirms tarball contains router + Notion provider skills and default YAML. **documentation** extends verify/tests so the packed artifact also includes README, `docs/architecture.md`, and `docs/publishing.md`. **npm publish** is an **operator-controlled release gate** (**npm-publication**) after **documentation** merges — not an implementation PR unless explicitly authorized.
 
 ### Publication and adoption sequence
 
 ```text
-protocol-core merges to main
-    → operator publishes @multipliers-dev/savepoints-lite@<version> to npm
-    → adopt-and-verify starts (consumer pins that published version)
+protocol-core merged to main
+    → documentation PR merges (durable README + docs/architecture.md + docs/publishing.md in tarball)
+    → npm-publication (operator gate: verify, authorize, publish @1.0.0, record evidence)
+    → adopt-and-verify (consumer pins published registry version)
+    → plan-closure
 ```
 
 | Phase | What is validated |
 | --- | --- |
-| **protocol-core** | Package is publishable; `npm pack` / dry-run proves tarball contents |
+| **protocol-core** | Package is publishable; `npm pack` / dry-run proves skills + defaults (+ minimal README) |
+| **documentation** | Public landing README; architecture + publishing docs; `files` includes `docs/**`; verify/tests assert doc paths in tarball — **no** registry publish |
+| **npm-publication** | Clean checkout; `npm ci`, `npm test`, `npm run verify`, `npm pack --dry-run`; operator auth + explicit publish authorization; `@multipliers-dev/savepoints-lite@1.0.0` on registry with provenance; clean temp consumer install |
 | **Between slices (optional)** | Local `npm pack` + `file:` or packed tarball install for **early smoke** only — does **not** satisfy adoption verification |
 | **adopt-and-verify** | [`fixtures/consumer/`](fixtures/consumer/) and manual agent checks use the **published registry version** pinned in `package.json` + lockfile (`npm ci`) |
 
-Do **not** treat `file:` workspace links as the acceptance path for slice 2; they may help developers before the first publish, but slice 2 must confirm the real npm distribution path.
+Do **not** treat `file:` workspace links as the acceptance path for **adopt-and-verify**; they may help developers before the first publish, but **adopt-and-verify** must confirm the real npm distribution path.
+
+**Hard prerequisite:** **adopt-and-verify** does not start until **npm-publication** completes successfully (registry install verified, evidence recorded).
 
 ---
 
-## Agent activation (consumer; slice 2)
+## Agent activation (consumer; adopt-and-verify)
 
-npm install alone does **not** enable Savepoints. One-time **activation** per consumer repo (templates in slice 2). Activation files are **thin** — they must **not** duplicate the full protocol.
+npm install alone does **not** enable Savepoints. One-time **activation** per consumer repo (templates in **adopt-and-verify**). Activation files are **thin** — they must **not** duplicate the full protocol.
 
 Establish only:
 
@@ -345,9 +357,9 @@ Establish only:
 | **Claude Code** | Short [`CLAUDE.md`](CLAUDE.md) pointer (preserve existing content; **append** Savepoints section) |
 | **Other agents** | [`AGENTS.md`](AGENTS.md) pointer where applicable (preserve existing content) |
 
-Document in [`docs/adopt.md`](docs/adopt.md) (slice 2): pinned registry dependency + lockfile + `npm ci`, Renovate-friendly updates, `node_modules` requirement, Notion MCP prerequisite, optional `.agents` overrides, **no skill vendoring**, npm does not auto-register native skill discovery.
+Document in [`docs/adopt.md`](docs/adopt.md) (**adopt-and-verify**): pinned registry dependency + lockfile + `npm ci`, Renovate-friendly updates, `node_modules` requirement, Notion MCP prerequisite, optional `.agents` overrides, **no skill vendoring**, npm does not auto-register native skill discovery. **README** (after **documentation**) may link to `docs/architecture.md` and `docs/publishing.md` but must **not** link to `docs/adopt.md` until **adopt-and-verify** lands.
 
-**Hub repo (`savepoints-lite`):** optional **hub dogfooding** (this repository installing the published package + activation) is separate from [`fixtures/consumer/`](fixtures/consumer/) — see **Consumer fixture**. Slice 1 updates hub **Commands / CI / pre-commit** docs in [`AGENTS.md`](AGENTS.md) (and [`CLAUDE.md`](CLAUDE.md) if present) when removing the placeholder app; slice 1 does **not** add Savepoints activation templates or Savepoints-specific `AGENTS.md` / `CLAUDE.md` sections (deferred to adopt-and-verify).
+**Hub repo (`savepoints-lite`):** optional **hub dogfooding** (this repository installing the published package + activation) is separate from [`fixtures/consumer/`](fixtures/consumer/) — see **Consumer fixture**. **protocol-core** updated hub **Commands / CI / pre-commit** in [`AGENTS.md`](AGENTS.md); it does **not** add Savepoints activation templates or Savepoints-specific `AGENTS.md` / `CLAUDE.md` sections (deferred to **adopt-and-verify**).
 
 ### Consumer fixture (`fixtures/consumer/` — adopt-and-verify)
 
@@ -393,7 +405,7 @@ Current [`src/index.ts`](src/index.ts) is a placeholder (`console.log("ready")`)
 | **`npm test`** | Automated checks for package/skill invariants (e.g. Vitest exercising verifier assertions) — **not** a TypeScript app compile |
 | [`.husky/pre-commit`](.husky/pre-commit) + [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Replace `npm run typecheck` with `npm run verify` (keep `npm test`); update in **protocol-core** same PR as script removal |
 | Update [`AGENTS.md`](AGENTS.md) (and [`CLAUDE.md`](CLAUDE.md) if present) | Remove obsolete `dev`/`start`/TypeScript commands; document `npm test`, `npm run verify`, `verify:git-hooks`; preserve unrelated instructions; **no** Savepoints activation section yet |
-| Update [`README.md`](README.md) (slice 1) | Minimal package purpose + Notion MCP prerequisite — **no** `docs/adopt.md` link until slice 2 |
+| Update [`README.md`](README.md) (**protocol-core**: minimal; **documentation**: full npm landing page) | **protocol-core** shipped minimal purpose + Notion MCP prerequisite — **no** `docs/adopt.md` link. **documentation** expands README per slice deliverables; still **no** `docs/adopt.md` until **adopt-and-verify** |
 | **Remove** (if present after bootstrap) | `.cursor-plugin/`, root `plugin.json` — marketplace distribution out of scope |
 
 **Planned hub scripts (post protocol-core):**
@@ -411,21 +423,23 @@ Current [`src/index.ts`](src/index.ts) is a placeholder (`console.log("ready")`)
 
 ## Implementation slices (merge-safe)
 
-Two implementation PRs + docs closure. Each slice is **merge-safe on its own** — no cross-slice links to files that do not exist yet on `main`.
+Three implementation PRs (**protocol-core**, **documentation**, **adopt-and-verify**) plus an **operator release gate** (**npm-publication**) and docs-only **plan-closure**. Each mergeable slice is **merge-safe on its own** — no cross-slice links to files that do not exist yet on `main`.
 
 ## Slice — protocol-core
+
+**Status:** completed (merged to `main`).
 
 **Recommended authority:** Open PR only
 
 **Rationale:**
 
-- Ships the npm instruction package and skills without consumer adoption docs or activation templates.
+- Ships the npm instruction package and skills without durable public docs, consumer adoption docs, or activation templates.
 
 **Agent instruction:** Do not merge. Stop after opening the PR.
 
-**Goal:** Publishable `@multipliers-dev/savepoints-lite` package (`name`, public scoped `publishConfig`, semver, `files`) with router + Notion provider skills, provider-neutral `schema.md`, split defaults, `npm run verify` (`npm pack --dry-run`), and `npm test`. Remove placeholder TypeScript app and **all** `typecheck`/`tsc` usage. Update hub [`AGENTS.md`](AGENTS.md), [`.husky/pre-commit`](.husky/pre-commit), [`.github/workflows/ci.yml`](.github/workflows/ci.yml), and minimal README (no `docs/adopt.md` link). Remove plugin/marketplace manifests if present. **npm publish** remains operator-authorized after merge.
+**Goal:** Publishable `@multipliers-dev/savepoints-lite` package (`name`, public scoped `publishConfig`, semver `1.0.0`, `files`) with router + Notion provider skills, provider-neutral `schema.md`, split defaults, `npm run verify` (`npm pack --dry-run`), and `npm test`. Remove placeholder TypeScript app and **all** `typecheck`/`tsc` usage. Update hub [`AGENTS.md`](AGENTS.md), [`.husky/pre-commit`](.husky/pre-commit), [`.github/workflows/ci.yml`](.github/workflows/ci.yml), and **minimal** README (no `docs/adopt.md` link). Remove plugin/marketplace manifests if present. **npm publish** deferred to **npm-publication** after **documentation**.
 
-**Not in this slice:** `docs/adopt.md`, `verification.md`, `fixtures/consumer/`, consumer activation templates, Savepoints activation in hub `AGENTS.md` / `CLAUDE.md`.
+**Not in this slice:** `docs/architecture.md`, `docs/publishing.md`, expanded README, `docs/adopt.md`, `verification.md`, `fixtures/consumer/`, consumer activation templates, Savepoints activation in hub `AGENTS.md` / `CLAUDE.md`.
 
 **Acceptance:**
 
@@ -436,27 +450,92 @@ Two implementation PRs + docs closure. Each slice is **merge-safe on its own** �
 - `README.md` has **no** `docs/adopt.md` reference (grep / verifier)  
 - Merge-safe on `main` alone  
 
+## Slice — documentation
+
+**Recommended authority:** Open PR only
+
+**Rationale:**
+
+- Durable public documentation and tarball inclusion must land before first registry publish and before consumer adoption claims.
+
+**Prerequisite:** **protocol-core** merged to `main`.
+
+**Agent instruction:** Do not merge. Stop after opening the PR.
+
+**Goal:** Documentation-only / product-metadata PR — expand package docs without publishing or adding consumer activation.
+
+**Deliverables:**
+
+| Artifact | Requirement |
+| --- | --- |
+| [`README.md`](README.md) | Public npm package landing page: purpose and non-goals; router/provider architecture (high level); Node.js + authenticated Notion MCP prerequisites; `npm install` command; npm install does **not** auto-activate skills; canonical installed skill paths; links to `docs/architecture.md` and `docs/publishing.md`; distinguish publication-ready state from future **adopt-and-verify** consumer workflow; **do not** claim Cursor/Claude integration verified; **do not** link to nonexistent `docs/adopt.md` |
+| [`docs/architecture.md`](docs/architecture.md) | Agreed architecture only: router/provider boundaries; Savepoint schema + configuration precedence; append-only same-turn persistence; synchronous-first Notion create, bounded async confirmation, three outcomes; failure handling + anti-loop; v1 exclusions; link skill files as authoritative behavioral specs |
+| [`docs/publishing.md`](docs/publishing.md) | Initial + subsequent releases; npm auth, org/package permissions, provenance prerequisites; supported environment and commands; prepublication verify + tarball inspection; explicit operator authorization; postpublish registry + clean-consumer install checks; semver, immutable versions, consumer pin updates; **no** automated publish without explicit approval |
+| [`skills/README.md`](skills/README.md) | Retain as skill index |
+| [`package.json`](package.json) | Include `docs/**` in published `files` allowlist |
+| Verify / tests | Assert required documentation files appear in `npm pack` tarball |
+
+**Not in this slice:** `npm publish`; `docs/adopt.md`; `templates/consumer/`; `fixtures/consumer/`; consumer activation; hub Savepoints activation sections.
+
+**Acceptance:**
+
+- `npm test` and `npm run verify` pass  
+- `npm pack --dry-run` lists README, `docs/architecture.md`, `docs/publishing.md`, skills, schema, defaults  
+- README meets landing-page requirements above; no `docs/adopt.md` link  
+- No claim that Cursor/Claude behavioral integration is already verified  
+- Merge-safe on `main` alone  
+
+## Slice — npm-publication
+
+**Recommended authority:** Manual verification gate (operator-controlled; **not** a publish-only PR)
+
+**Rationale:**
+
+- First registry release requires human authorization, provenance-compatible publish, and recorded evidence before consumer adoption work.
+
+**Prerequisite:** **documentation** merged to `main`.
+
+**Agent instruction:** Execute only when the operator explicitly authorizes publication. Do **not** open a PR solely to run `npm publish`. Record evidence (version, date, install check) in a durable place agreed with the operator (e.g. PR description for **adopt-and-verify**, plan closure note, or maintainer log referenced from **plan-closure**). Mark `npm-publication` **completed** in plan frontmatter when evidence is recorded (typically when opening **adopt-and-verify** or **plan-closure**).
+
+**Acceptance:**
+
+- **documentation** PR merged into `main`  
+- Clean checkout of intended release commit  
+- `npm ci`, `npm test`, `npm run verify`, and `npm pack --dry-run` pass  
+- Packed artifact contains README, architecture doc, publishing doc, router skill, Notion provider skill, schema, and defaults  
+- Operator confirms npm authentication and publication permissions  
+- Operator explicitly authorizes publication  
+- Publish `@multipliers-dev/savepoints-lite@1.0.0` using a method compatible with configured `publishConfig.provenance`  
+- Verify published version and public registry availability  
+- Verify installation from registry into a clean temporary consumer directory  
+- Confirm canonical installed skill paths and documentation contents in that install  
+- Record publication evidence and exact released version  
+- If provenance cannot be established: **stop** and document blocker — do **not** silently disable provenance  
+
 ## Slice — adopt-and-verify
 
 **Recommended authority:** Open PR only
 
 **Rationale:**
 
-- Consumer adoption, activation, and behavioral verification depend on a **published** npm package from slice 1.
+- Consumer adoption, activation, and behavioral verification depend on a **published** npm package from **npm-publication**.
 
-**Prerequisite (operator, between PRs):** After **protocol-core** merges, publish `@multipliers-dev/savepoints-lite@<version>` to the npm registry before opening adopt-and-verify.
+**Prerequisite (hard):** **npm-publication** complete — `@multipliers-dev/savepoints-lite@1.0.0` (or documented released version) available on the npm registry with verified clean-consumer install.
 
 **Agent instruction:** Do not merge. Stop after opening the PR.
 
-**Goal:** `docs/adopt.md`, README adoption link (same PR), `templates/consumer/`, [`fixtures/consumer/`](fixtures/consumer/) with **pinned registry dependency** + lockfile, `verification.md`, optional hub dogfooding activation (separate from fixture), documented manual Cursor/Claude verification in the fixture (Notion writes only with authorization).
+**Goal:** `docs/adopt.md`, README adoption link (same PR), `templates/consumer/`, [`fixtures/consumer/`](fixtures/consumer/) with **pinned registry dependency** + lockfile, [`skills/savepoints/verification.md`](skills/savepoints/verification.md), optional hub dogfooding activation (separate from fixture), documented manual Cursor/Claude verification in the fixture (Notion writes only with explicit operator authorization).
+
+**Not in this slice:** Redesigning architecture; republishing npm (version bumps follow **docs/publishing.md**).
 
 **Acceptance:**
 
 - `docs/adopt.md` and README link land in **one** PR  
-- [`fixtures/consumer/`](fixtures/consumer/) installs published version (not `file:`); documents semver pin + `npm ci` / Renovate pattern  
+- [`fixtures/consumer/`](fixtures/consumer/) installs **published** version (not `file:`); documents semver pin + `npm ci` / Renovate pattern  
 - Manual verification uses fixture `node_modules` skill paths; distinct from hub dogfooding if both are documented  
 - Checklists cover provider delegation, `node_modules` paths, persistence honesty, anti-loop  
 - Fixture documented; CI may validate fixture layout only (not agent behavior)  
+- Plan frontmatter: `npm-publication` marked completed if not already  
 
 ## Slice — plan-closure
 
@@ -464,7 +543,7 @@ Two implementation PRs + docs closure. Each slice is **merge-safe on its own** �
 
 **Rationale:**
 
-- Docs-only archival after implementation merges.
+- Docs-only archival after implementation merges and release gate completion.
 
 **Agent instruction:** Do not merge. Stop after opening the PR.
 
@@ -472,8 +551,12 @@ Two implementation PRs + docs closure. Each slice is **merge-safe on its own** �
 
 **Acceptance:**
 
-- Prerequisite implementation PRs merged to `main`  
-- Plan moved to `.cursor/plans/archive/` with closure note  
+- **protocol-core**, **documentation**, and **adopt-and-verify** merged to `main`  
+- Durable **architecture** and **publishing** documentation exists outside the plan (`docs/architecture.md`, `docs/publishing.md`)  
+- Published package evidence recorded (version, registry verification, clean install)  
+- Consumer adoption and behavioral verification results recorded  
+- Deviations from the plan documented in closure note  
+- Plan moved to `.cursor/plans/archive/` — essential architecture and operational knowledge not lost with archive  
 - Do **not** auto-merge implementation PRs from this slice  
 
 ---
@@ -484,7 +567,7 @@ Two implementation PRs + docs closure. Each slice is **merge-safe on its own** �
 
 | Check | Mechanism |
 | --- | --- |
-| Hub package skills + defaults | `npm run verify` (`npm pack --dry-run` + skill tree; protocol-core; extend in adopt-and-verify for docs/fixture layout if needed) |
+| Hub package skills + defaults + docs | `npm run verify` (`npm pack --dry-run` + skill tree; **protocol-core**; **documentation** adds doc path assertions; extend in **adopt-and-verify** for fixture layout if needed) |
 | Hub invariants | `npm test` (protocol-core) |
 | `storage.provider: notion` in router defaults; Notion `data_source_id` in provider defaults | grep/assert in respective `defaults.yml` |
 | No Savepoints capture hooks | script asserts `.cursor/hooks.json` has no savepoints-lite / Savepoints-logging hook entries; **does not** forbid existing Husky or unrelated bootstrap hooks |
@@ -527,7 +610,7 @@ Record manual run date + Notion page URLs in PR description or verification chec
 | **PostgreSQL / multi-provider** | Deferred — `savepoints-postgres` skill only; no dual-write in v1. |
 | **Async creates** | Prefer `allow_async: false`; when async is unavoidable, **bounded** poll (no indefinite wait); then success, terminal failure, or unconfirmed — never imply persistence on queue alone. |
 | **Skill name** | **Decision:** use `savepoints` (slash `/savepoints`) vs `savepoints-lite` — recommend **`savepoints`** for ergonomics with repo name `savepoints-lite` disambiguating the product. |
-| **npm publish** | Operator publishes after protocol-core merges; adopt-and-verify pins that registry version + lockfile. Optional local `npm pack` smoke before publish does not replace registry validation. |
+| **npm publish** | Operator **npm-publication** gate after **documentation** merges; publish `@1.0.0` with provenance; adopt-and-verify pins that registry version + lockfile. Optional local `npm pack` smoke does not replace registry validation. |
 
 ---
 
@@ -535,7 +618,9 @@ Record manual run date + Notion page URLs in PR description or verification chec
 
 | Slice | Recommended authority | Agent instruction |
 | --- | --- | --- |
-| protocol-core | Open PR only | Do not merge. Stop after opening the PR. |
+| protocol-core | Open PR only | Completed — merged to `main`. |
+| documentation | Open PR only | Do not merge. Stop after opening the PR. |
+| npm-publication | Manual verification gate | Operator authorizes publish; no publish-only PR; record evidence. |
 | adopt-and-verify | Open PR only | Do not merge. Stop after opening the PR. |
 | plan-closure | Open PR only | Do not merge. Stop after opening the PR. |
 
@@ -550,15 +635,41 @@ Repo default: **Open PR only** — implement and open the PR; do not merge unles
 ```text
 @.cursor/plans/2026-10-27-savepoints-lite-v1.plan.md
 
-Implement slice protocol-core only. Do not start adopt-and-verify or plan-closure.
+Slice protocol-core is completed on main. Do not re-implement unless fixing a regression.
+
+If revisiting: implement protocol-core only; do not start documentation, npm-publication, adopt-and-verify, or plan-closure.
+```
+
+### documentation
+
+```text
+@.cursor/plans/2026-10-27-savepoints-lite-v1.plan.md
+
+Implement slice documentation only. Prerequisite: protocol-core merged to main. Do not start npm-publication, adopt-and-verify, or plan-closure.
 
 Authority: Open PR only — implement and open the PR; do not merge.
 
 Topology: start from latest origin/main; branch represents only this slice; PR base must be main.
 
-Deliverables: per plan — @multipliers-dev/savepoints-lite package (name, public publishConfig, skills, defaults, schema), npm run verify + npm test, update AGENTS.md/CI/pre-commit (remove typecheck/tsc); minimal README without docs/adopt.md link; no activation templates; no plugin/marketplace. Mark protocol-core completed in plan frontmatter in this PR.
+Deliverables: expand README (npm landing page per plan); add docs/architecture.md and docs/publishing.md; keep skills/README.md as index; package.json files includes docs/**; update verify/tests for tarball doc paths. Do not publish to npm; do not add docs/adopt.md, templates/consumer/, or fixtures/consumer/. Mark documentation completed in plan frontmatter in this PR.
 
-Verification: npm test && npm run verify. No typecheck. Do not publish to npm or create Notion test rows unless explicitly asked.
+Verification: npm test && npm run verify && npm pack --dry-run shows README and docs. README must not link docs/adopt.md or claim Cursor/Claude integration verified.
+```
+
+### npm-publication
+
+```text
+@.cursor/plans/2026-10-27-savepoints-lite-v1.plan.md
+
+Execute slice npm-publication only (operator release gate). Prerequisite: documentation merged to main. Do not open a PR solely to npm publish. Do not start adopt-and-verify until this gate completes.
+
+Authority: Manual verification gate — run verification, obtain explicit operator authorization to publish, publish @multipliers-dev/savepoints-lite@1.0.0 with provenance-compatible tooling, verify registry + clean temp consumer install, record evidence. If provenance cannot be established, stop and document blocker. Do not silently disable provenance.
+
+Topology: clean checkout of intended release commit on main; no feature branch PR required for publish itself.
+
+Deliverables: recorded publication evidence (exact version, date, registry URL confirmation, clean temp consumer install of skills + docs); mark npm-publication completed in plan frontmatter when evidence is recorded (e.g. when opening adopt-and-verify).
+
+Verification: npm ci && npm test && npm run verify && npm pack --dry-run on release commit; operator confirms npm auth and permissions; postpublish registry check; clean-directory npm install of @multipliers-dev/savepoints-lite@1.0.0; confirm canonical skill paths and doc files in node_modules.
 ```
 
 ### adopt-and-verify
@@ -566,15 +677,15 @@ Verification: npm test && npm run verify. No typecheck. Do not publish to npm or
 ```text
 @.cursor/plans/2026-10-27-savepoints-lite-v1.plan.md
 
-Implement slice adopt-and-verify only. Prerequisites: protocol-core merged; operator has published @multipliers-dev/savepoints-lite@<version> to npm. Do not archive the plan.
+Implement slice adopt-and-verify only. Hard prerequisites: documentation merged; npm-publication complete (@multipliers-dev/savepoints-lite@1.0.0 on registry with verified install). Do not archive the plan.
 
 Authority: Open PR only — implement and open the PR; do not merge.
 
 Topology: start from latest origin/main; branch represents only this slice; PR base must be main.
 
-Deliverables: docs/adopt.md, README link, templates/consumer/, fixtures/consumer/ (pinned published dep), verification.md, optional hub dogfooding activation; manual Cursor/Claude checks in fixture documented. Mark adopt-and-verify completed in plan frontmatter in this PR.
+Deliverables: docs/adopt.md, README link, templates/consumer/, fixtures/consumer/ (pinned published dep), skills/savepoints/verification.md, optional hub dogfooding activation; manual Cursor/Claude checks in fixture documented. Mark adopt-and-verify completed in plan frontmatter in this PR; ensure npm-publication is completed if not already.
 
-Verification: npm test && npm run verify; manual checklist in fixtures/consumer/; no production Notion writes in CI without authorization.
+Verification: npm test && npm run verify; manual checklist in fixtures/consumer/; no production Notion writes without explicit operator authorization.
 ```
 
 ### plan-closure
@@ -588,9 +699,9 @@ Authority: Open PR only — docs-only archive PR; do not merge.
 
 Topology: start from latest origin/main; branch represents only this slice; PR base must be main.
 
-Prerequisites: protocol-core and adopt-and-verify merged to main.
+Prerequisites: protocol-core, documentation, and adopt-and-verify merged to main; npm-publication evidence recorded.
 
-Deliverables: verify implementation vs plan, record deviations in # Shipped, archive plan, mark plan-closure completed.
+Deliverables: verify implementation vs plan; confirm docs/architecture.md and docs/publishing.md on main; record publication evidence, adoption/verification results, and deviations in # Shipped; archive plan; mark plan-closure completed.
 
-Verification: prerequisite PRs merged; do not auto-merge implementation PRs.
+Verification: prerequisite slices done; plan archivable without losing essential architecture or operational knowledge; do not auto-merge implementation PRs.
 ```
