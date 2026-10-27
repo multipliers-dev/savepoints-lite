@@ -1,0 +1,6 @@
+# Optional consumer override — copy to .agents/savepoints-notion.yml when not using
+# tier-1 integration instruction context. Overrides packaged defaults only when tier 1
+# is absent for a Savepoint delegation.
+
+destination:
+  data_source_id: "YOUR_NOTION_DATA_SOURCE_ID"

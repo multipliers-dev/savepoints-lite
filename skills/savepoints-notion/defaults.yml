@@ -1,2 +1,3 @@
-destination:
-  data_source_id: "822cbc89-7c89-4863-af3a-2fe0cd8ab56e"
+# Packaged tier-3 defaults — no destination.data_source_id in @2.0.0.
+# Resolve destination from integration instruction context (tier 1) or
+# consumer .agents/savepoints-notion.yml (tier 2).

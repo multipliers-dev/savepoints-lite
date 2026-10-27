@@ -28,7 +28,7 @@ Cloud Agents: committed `.cursor/environment.json` runs `npm ci` (triggers `prep
 
 ## Savepoints Lite (hub dogfooding)
 
-This repository **consumes** the published npm package it ships. `npm ci` installs `@multipliers-dev/savepoints-lite@1.0.0` as a devDependency (exact version in `package.json` + lockfile). Instruction-only — **no** Savepoints lifecycle hooks.
+This repository **consumes** the published npm package it ships. Workspace `package.json` version is the **release candidate** (e.g. `2.0.0`); `npm ci` installs the **pinned registry** devDependency (e.g. `@1.1.0` until a follow-up PR bumps the pin after operator publish). Session logging reads skills from `node_modules/`, not git `skills/`. Instruction-only — **no** Savepoints lifecycle hooks.
 
 ### Ongoing logging authorization
 

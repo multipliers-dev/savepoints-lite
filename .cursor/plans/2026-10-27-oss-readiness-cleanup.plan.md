@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: oss-readiness-and-release-prep
     content: "Hub PR: 2.0.0 contract, OSS docs, examples, split pack vs @1.1.0 dogfood tests; npm ci/test/verify/validate:plans pass; no npm publish"
-    status: pending
+    status: completed
   - id: plan-closure
     content: "Docs-only PR after @2.0.0 published and verified on npm: # Shipped with registry evidence, archive plan, update references"
     status: pending

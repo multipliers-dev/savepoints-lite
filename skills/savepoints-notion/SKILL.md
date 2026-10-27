@@ -13,34 +13,45 @@ Accepts a Savepoint from the **router** (`skills/savepoints/SKILL.md`). Does **n
 
 Provider-neutral Savepoint per router [schema.md](../savepoints/schema.md).
 
-## Configuration resolution
-
-Resolve `destination.data_source_id` in two steps (static; no dynamic discovery):
-
-1. Start from package [defaults.yml](./defaults.yml) next to this skill under `node_modules`.
-2. If consumer `.agents/savepoints-notion.yml` exists and sets `destination.data_source_id`, that value **overrides** the package default.
-
-An absent `.agents/savepoints-notion.yml` is normal — use the packaged default. Only the **resolved** value after step 2 is authoritative.
-
-| Precedence | Location | Overrides |
-| --- | --- | --- |
-| 1 (highest) | Consumer `.agents/savepoints-notion.yml` (optional) | `destination.data_source_id` only |
-| 2 (default) | Package [defaults.yml](./defaults.yml) | Shared Savepoints database |
-
-Package default:
+Optional tier-1 `destination` block from the router handoff (integration instruction context):
 
 ```yaml
 destination:
-  data_source_id: "822cbc89-7c89-4863-af3a-2fe0cd8ab56e"
+  data_source_id: "<NOTION_DATA_SOURCE_ID>"
 ```
 
-**Misconfiguration (after resolution):** report in chat when the resolved `destination.data_source_id` is empty, missing, or invalid for the target data source. Do not treat “no consumer override file” as misconfiguration.
+## Configuration resolution
 
-Shared Notion database id for humans: `05e4c804-1380-4ea2-8eb6-30027aa05fe4`. Do **not** change Notion schema unless `notion-fetch` proves incompatibility.
+Resolve `destination.data_source_id` in **three** tiers (static; no dynamic discovery). Do **not** read Cursor User Rules or other host-specific rule stores.
+
+| Tier | Source | When it applies |
+| --- | --- | --- |
+| 1 (highest) | Labelled `destination` in the **router delegation / instruction context** | Integration supplied a `destination` block for this Savepoint |
+| 2 | Consumer `.agents/savepoints-notion.yml` (optional) | Tier 1 **absent** for this delegation |
+| 3 | Package [defaults.yml](./defaults.yml) next to this skill under `node_modules` | Never supplies an id in `@2.0.0` — file retained for relative references only |
+
+**Tier 2 shape** (overrides packaged defaults when tier 1 is absent):
+
+```yaml
+destination:
+  data_source_id: "YOUR_NOTION_DATA_SOURCE_ID"
+```
+
+Example consumer file: [`templates/consumer/savepoints-notion.yml.example`](../../templates/consumer/savepoints-notion.yml.example).
+
+**Resolution order:** tier 1 → tier 2 → tier 3. Only the **resolved** value after applicable tiers is authoritative.
+
+**Missing valid destination** (no usable `data_source_id` after applicable tiers): do **not** call Notion MCP. Return **`failure`** to the router (configuration prevented persistence — not a confirmed write). The router reports briefly if useful and **continues primary work** (fail open).
+
+**Tier 1 present but invalid** (empty, malformed UUID, or otherwise unusable): **fail open without fallback** to tier 2 or tier 3 — do not silently use `.agents` or packaged defaults. Return **`failure`** without Notion MCP.
+
+**Misconfiguration (after resolution):** when a Savepoint was requested for persistence but cannot be written because configuration is invalid — resolved `destination.data_source_id` empty, missing, or unusable for the target data source, or tier 1 invalid with no fallback — report briefly in chat, return **`failure`**, do not call Notion MCP.
 
 ## Notion mapping
 
-Verified against the shared Savepoints data source (`collection://822cbc89-7c89-4863-af3a-2fe0cd8ab56e`) via `notion-fetch` on database `05e4c804-1380-4ea2-8eb6-30027aa05fe4`. Property names are case-sensitive.
+Discover property names and types with `notion-fetch` on the target data source when mapping or when a create error indicates schema mismatch. Property names are case-sensitive.
+
+Typical Savepoints data source shape (verify on your destination):
 
 | Savepoint field | Notion property | Notion type | Set on create? | `notion-create-pages` `properties` value |
 | --- | --- | --- | --- | --- |
@@ -71,9 +82,9 @@ Return to the router:
 success | failure | unconfirmed
 ```
 
-- `success` — persistence **confirmed** (synchronous create succeeded, or async polling reached a terminal succeeded state).
-- `failure` — tool error, auth failure, or terminal async failure with no confirmed row.
-- `unconfirmed` — async operation still unresolved after bounded polling, or the first create might have persisted and a duplicate create was refused.
+- `success` — persistence **confirmed** only after a write was attempted and succeeded (synchronous create succeeded, or async polling reached a terminal succeeded state).
+- `failure` — configuration prevented persistence (missing or invalid destination; no MCP write attempted), or a write was attempted and failed terminally (tool error, auth failure, terminal async failure with no confirmed row).
+- `unconfirmed` — a write was attempted but confirmation remains uncertain (async still unresolved after bounded polling, or the first create might have persisted and a duplicate create was refused).
 
 Never imply persistence on queue alone or on an unconfirmed async task.
 
@@ -82,3 +93,4 @@ Never imply persistence on queue alone or on an unconfirmed async task.
 - Event detection or trigger logic (router only)
 - Modifying or deleting previous Savepoint rows
 - Retry queues, background workers, or duplicate create attempts when the first write may already exist
+- Reading host User Rules or other undocumented stores for `destination.data_source_id`
