@@ -285,6 +285,7 @@ describe("package invariants", () => {
     const snippet = readRoot("templates/consumer/AGENTS.md.snippet");
     expect(snippet).toContain(routerPath);
     expect(snippet).toMatch(/session log/i);
+    expect(snippet).toMatch(/at least one Savepoint/i);
     expect(snippet).toMatch(/does not count as recording an entry/i);
     expect(snippet).not.toMatch(/savepoints-lite\.mdc/);
     expect(snippet).not.toMatch(/templates\/consumer/);

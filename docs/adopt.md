@@ -43,7 +43,7 @@ destination:
 
 ## Installation does not activate Savepoints
 
-`npm install` does **not** register skills with Cursor or Claude native discovery. Consumers need **one-time activation** that makes **session logging** an immediate obligation — **when** to record, **what** each entry should capture, and **where** the installed logging workflow lives under `node_modules`.
+`npm install` does **not** register skills with Cursor or Claude native discovery. Consumers need **one-time activation** that makes **session logging** an immediate obligation — **when** to record (including at least one Savepoint per engineering session when logging is available), **what** each entry should capture, and **where** the installed logging workflow lives under `node_modules`.
 
 ### Activation templates (in the tarball)
 
@@ -74,13 +74,15 @@ The **primary agent** owns the session log for the whole session, including work
 
 ### Ongoing logging authorization (opt-in)
 
+The merged `AGENTS.md.snippet` **Session log** section is the canonical standing-instruction wording for standalone consumers. It expresses the same expectations as team-harness User Rules, adapted for repo-local activation and the `node_modules` router path — without requiring a marketplace wrapper or global User Rules.
+
 | Case | Behavior |
 | --- | --- |
-| **Normal operation, logging authorized** | Savepoints Lite session-log section committed in root `AGENTS.md`. Record after meaningful work without per-entry authorization, subject to Notion MCP permissions. Fail open on write failure. |
+| **Normal operation, logging authorized** | Savepoints Lite session-log section committed in root `AGENTS.md`. **Every engineering session must produce at least one Savepoint** when logging is available; additional Savepoints after completed work, decisions, task switches, and errors or resolutions are expected — not capped at a minimum beyond one per session. Do not batch unrelated work into one entry to reduce volume. Log during work and **before stopping or handing off** completed work (including Open PR only boundaries). Record without per-entry authorization, subject to Notion MCP permissions. Fail open on write failure or unavailable logging. |
 | **Normal operation, not authorized or unclear** | Package install or Notion MCP alone is **not** consent. Do not write to Notion. |
 | **Manual verification** | Behavioral checklist ([`skills/savepoints/verification.md`](../skills/savepoints/verification.md)) requires **explicit operator authorization for that verification session** — separate from routine logging when activation is in place. |
 
-`.agents/savepoints-lite.yml` overrides `storage.provider` only; it is **not** the logging opt-in mechanism.
+Each Savepoint must capture what was done, decisions (and rationale), open threads, and errors (what happened and how they were handled). `.agents/savepoints-lite.yml` overrides `storage.provider` only; it is **not** the logging opt-in mechanism.
 
 ## Router skill path (after install)
 

@@ -12,7 +12,7 @@ Record each scenario as **Passed**, **Failed**, or **Not run** (with date and ev
 
 | Mode | When | Agent behavior |
 | --- | --- | --- |
-| **Ongoing session logging** | Savepoints Lite session-log section committed in root `AGENTS.md` (Claude Code: loaded via `CLAUDE.md` `@AGENTS.md`). Hub dogfooding uses `AGENTS.md` + `CLAUDE.md`. | After each session-log trigger, invoke the installed router and attempt persistence **without** asking for separate authorization before every entry, subject to Notion MCP permissions. Fail open; do not claim writes without provider confirmation. |
+| **Ongoing session logging** | Savepoints Lite session-log section committed in root `AGENTS.md` (Claude Code: loaded via `CLAUDE.md` `@AGENTS.md`). Hub dogfooding uses `AGENTS.md` + `CLAUDE.md`. | **At least one Savepoint per engineering session** when logging is available; additional Savepoints after each session-log trigger. Invoke the installed router and attempt persistence **without** asking for separate authorization before every entry, subject to Notion MCP permissions. Before stopping or handing off, ensure completed work is logged. Fail open; do not claim writes without provider confirmation. |
 | **Not opted in** | No activation or operator consent unclear | Do not write to Notion; fail open without claiming persistence. |
 | **Manual verification session** | Operator explicitly authorizes running **this checklist** (required before deliberate failure simulations and other non-routine test writes) | Proceed with the scenario under test; record evidence. **Does not** suspend ongoing logging during ordinary work when activation opt-in already applies. **Does not** mean “skip logging until the operator authorizes each row.” |
 
