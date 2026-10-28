@@ -8,16 +8,27 @@ Installing the package or connecting Notion MCP does **not** alone authorize pro
 
 ### Session log
 
-Maintain a running session log in Notion.
+Maintain a continuous session log in Notion using the installed Savepoints Lite router skill.
 
-Do not wait until the session ends. Record an entry immediately after:
+**Every engineering session must produce at least one Savepoint** when logging is available. Sessions can produce multiple Savepoints as work progresses. Do not wait until the end of the session to begin logging.
 
-- Every completed piece of meaningful work.
-- Every significant decision.
-- Every task switch.
-- Every primary-task error or its resolution.
+Write a Savepoint:
 
-Each entry should capture what was done, decisions (and why), open threads, and errors (what happened and how they were handled).
+- After every finished piece of work, including commits, completed investigations, documentation changes, and PR creation or updates.
+- After every decision.
+- Whenever we switch tasks.
+- After encountering or resolving an error.
+
+Do not combine unrelated work into a single entry merely to reduce the number of Savepoints. Frequent logging is intentional; there is no need to minimize the number of entries.
+
+Every entry must capture:
+
+- **What was done:** commands, files, features
+- **Decisions made:** decisions and rationale
+- **Open threads:** unfinished work and next steps
+- **Errors:** what went wrong and how it was handled
+
+**Before stopping or handing control back to the user, ensure completed work has been logged.** This includes Open PR only boundaries. If no Savepoint has been written during the session, write one before finishing.
 
 Use the installed Savepoints Lite instructions at:
 
@@ -25,7 +36,7 @@ Use the installed Savepoints Lite instructions at:
 
 Complete the logging workflow before moving on to the next task or delivering the final response. Reading the instructions alone does not count as recording an entry.
 
-If logging fails, continue the primary work without retry loops.
+If logging is unavailable or fails, continue the primary work without retry loops or claiming successful persistence.
 
 **Delegated work:** The primary agent maintains the session log, including meaningful work completed by subagents. When a subagent returns, evaluate its reported outcome and record an entry before continuing — using this checkout's installed router and Notion provider. Do not assume the subagent succeeded without supporting evidence; skip duplicate entries for the same event. Subagents do not need to install Savepoints Lite or persist Savepoints independently. Do not assume isolated worktrees contain `node_modules`, workspace activation, or Notion MCP access.
 
