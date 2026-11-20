@@ -16,12 +16,14 @@ npm is the single source of truth for installed **skill** file versions — **do
 
 ## Notion destination (`destination.data_source_id`)
 
-`@2.1.0` does **not** ship a maintainer Notion database id in packaged defaults. You must supply a valid `data_source_id` through one of these tiers (provider resolves in order):
+`@2.1.0` does **not** ship a maintainer Notion database id in packaged defaults. You must supply a valid `data_source_id` through one of these tiers (provider resolves in order).
+
+**Distribution layer (optional):** anything *outside* this npm package that (1) delivers the skill tree to the agent host and/or (2) injects labelled config (`destination`, optional `validation.post_write`) into the router’s instruction context when delegating. Standalone consumers usually skip this and use **tier 2**. The public example is [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `team-harness`: it vendors `plugins/team-harness/vendor/savepoints-lite/` and a `/savepoints` wrapper that maps Cursor User Rules → tier-1 `destination` (see § External integrations below).
 
 | Tier | Source | When it applies |
 | --- | --- | --- |
-| 1 (highest) | Labelled YAML in the calling integration’s **instruction/delegation context** (router → Notion provider handoff) | Your distribution layer (e.g. team marketplace wrapper) passes `destination` when delegating |
-| 2 | Consumer [`.agents/savepoints-notion.yml`](../templates/consumer/savepoints-notion.yml.example) | Tier 1 **absent** for that delegation |
+| 1 (highest) | Labelled YAML in the calling integration’s **instruction/delegation context** (router → Notion provider handoff) | A distribution layer (e.g. [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `/savepoints` wrapper) passes `destination` when delegating |
+| 2 | Consumer [`.agents/savepoints-notion.yml`](../templates/consumer/savepoints-notion.yml.example) | Tier 1 **absent** for that delegation — **typical standalone npm path** |
 | 3 | Packaged `skills/savepoints-notion/defaults.yml` | Never supplies an id in `@2.x` |
 
 **Tier 1 block** (provider-neutral; reuse in wrappers and external integrations):
@@ -126,18 +128,21 @@ The hub publishes release-candidate semver from workspace `package.json` while p
 
 ## External integrations (provider-neutral)
 
-Wrappers and non-Cursor hosts should pass the tier-1 `destination` block in instruction context when delegating to the Savepoints router, and carry it unchanged to the Notion provider. They may also pass `validation.post_write` in the same handoff so consumers need not commit `.agents/savepoints-lite.yml` solely to enable checks. The public npm package stays host-agnostic — convention in skills, not a programmatic API.
+Distribution layers (wrappers and non-Cursor hosts — see § Notion destination) should pass the tier-1 `destination` block in instruction context when delegating to the Savepoints router, and carry it unchanged to the Notion provider. They may also pass `validation.post_write` in the same handoff so consumers need not commit `.agents/savepoints-lite.yml` solely to enable checks. The public npm package stays host-agnostic — convention in skills, not a programmatic API.
 
-### [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) (after publish)
+### [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace)
 
-[`multipliers-dev/cursor-team-marketplace`](https://github.com/multipliers-dev/cursor-team-marketplace) team-harness vendors the published `skills/` tree under `plugins/team-harness/vendor/savepoints-lite/`. After `@2.1.0` is published, marketplace maintainers should:
+**Available now:** [team-harness](https://github.com/multipliers-dev/cursor-team-marketplace) **1.16.0+** (marketplace [PR #78](https://github.com/multipliers-dev/cursor-team-marketplace/pull/78)) distributes published Savepoints Lite **`@2.1.0`** as a vendored skill tree under `plugins/team-harness/vendor/savepoints-lite/` (including optional `skills/bin/savepoints-lite-validate.mjs`) plus a `/savepoints` wrapper that maps Cursor User Rules → tier-1 `destination` and, when configured, `validation.post_write`. Canonical skills still do not read User Rules.
 
-1. Bump the root pin `devDependencies["@multipliers-dev/savepoints-lite"]` and re-sync vendor (`npm run sync:savepoints-vendor`).
-2. Ensure `scripts/expected-savepoints-vendor-paths.txt` includes `skills/bin/savepoints-lite-validate.mjs` (committed under the published `skills/` tree — sync from the npm artifact, not a consumer build).
-3. Optionally extend the `/savepoints` wrapper to pass `validation.post_write` from User Rules / engineering invariants into router context (same pattern as destination). Canonical skills must not read User Rules.
-4. Refresh layout verify docs so the package-equivalent install root mentions the optional CLI under `skills/bin/`.
+**Install / configure** (plugin path — no consumer `npm install` of this package required):
 
-Do not implement those marketplace edits from this package repository.
+1. Install or refresh the **team-harness** plugin from the [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace).
+2. Put standing session-log instructions and `savepoints_lite.destination.data_source_id` in global Cursor **User Rules** (engineering invariants). Optionally set `savepoints_lite.validation.post_write`.
+3. Connect **Notion MCP** with write access to that data source.
+
+Operator setup, copy-ready User Rules generation, and troubleshooting live in the marketplace guide: [`plugins/team-harness/docs/savepoints-integration.md`](https://github.com/multipliers-dev/cursor-team-marketplace/blob/main/plugins/team-harness/docs/savepoints-integration.md).
+
+After a Savepoints Lite release that changes the published `skills/` inventory, marketplace maintainers bump the pin and re-sync the vendor tree in that repository (`npm run sync:savepoints-vendor`). Do not implement those marketplace edits from this package repository.
 
 ## Learn more
 

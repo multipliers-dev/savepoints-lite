@@ -46,7 +46,7 @@ Resolve in **three** tiers (static; no dynamic discovery). An absent key at a ti
 
 | Tier | Source | When it applies |
 | --- | --- | --- |
-| 1 (highest) | Labelled `validation` in the **integration instruction/delegation context** | Calling integration (e.g. marketplace wrapper) supplied `validation.post_write` for this Savepoint |
+| 1 (highest) | Labelled `validation` in the **integration instruction/delegation context** | Calling distribution layer (e.g. [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `/savepoints` wrapper) supplied `validation.post_write` for this Savepoint |
 | 2 | Consumer `.agents/savepoints-lite.yml` (optional) | Tier 1 **absent** for this delegation |
 | 3 (default) | Package [defaults.yml](./defaults.yml) | `validation.post_write: false` |
 
@@ -97,7 +97,7 @@ Load provider skills and the optional validator from **this** install root — n
 
 ## Integration handoff (tier 1)
 
-When the calling integration (host `AGENTS.md`, marketplace wrapper, or other delegation context) supplies labelled YAML in the **instruction/delegation context**, the router may receive:
+When the calling distribution layer (host `AGENTS.md`, [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `/savepoints` wrapper, or other delegation context) supplies labelled YAML in the **instruction/delegation context**, the router may receive:
 
 ```yaml
 destination:
