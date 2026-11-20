@@ -51,10 +51,10 @@ function isExternalOrAnchorLink(link) {
 }
 
 describe("package invariants", () => {
-  it("package.json is publishable @multipliers-dev/savepoints-lite at 2.0.0", () => {
+  it("package.json is publishable @multipliers-dev/savepoints-lite at 2.1.0", () => {
     const pkg = JSON.parse(readRoot("package.json"));
     expect(pkg.name).toBe("@multipliers-dev/savepoints-lite");
-    expect(pkg.version).toBe("2.0.0");
+    expect(pkg.version).toBe("2.1.0");
     expect(pkg.private).not.toBe(true);
     expect(pkg.publishConfig?.access).toBe("public");
     expect(pkg.publishConfig?.provenance).toBe(true);
@@ -94,12 +94,13 @@ describe("package invariants", () => {
   });
 
   it("README links consumer adoption and architecture docs", () => {
+    const pkg = JSON.parse(readRoot("package.json"));
     const readme = readRoot("README.md");
     expect(readme).toMatch(/docs\/adopt\.md/);
     expect(readme).toMatch(/docs\/architecture\.md/);
     expect(readme).not.toMatch(/docs\/publishing\.md/);
     expect(readme).not.toMatch(/npm run verify/);
-    expect(readme).toMatch(/2\.0\.0/);
+    expect(readme).toContain(pkg.version);
   });
 
   it("README does not claim Cursor or Claude integration verified", () => {
@@ -185,6 +186,17 @@ describe("package invariants", () => {
     expect(skill).toMatch(/savepoints-notion\.yml/i);
   });
 
+  it("notion provider documents same-append post-write verify and repair", () => {
+    const skill = readRoot("skills/savepoints-notion/SKILL.md");
+    expect(skill).toMatch(/## Post-write verification and repair/);
+    expect(skill).toMatch(/verification unavailable/);
+    expect(skill).toMatch(/contract mismatch/);
+    expect(skill).toMatch(/repair confirmation unknown/);
+    expect(skill).toMatch(/missing persisted property/);
+    const schema = readRoot("skills/savepoints/schema.md");
+    expect(schema).toMatch(/Same-append only/);
+  });
+
   it("expected workspace release-candidate paths file matches verify script usage", () => {
     const listed = readPathsList("scripts/expected-package-paths.txt");
     expect(listed).toHaveLength(16);
@@ -254,12 +266,11 @@ describe("package invariants", () => {
     expect(hooks).not.toMatch(/observe\.sh/);
   });
 
-  it("hub dogfoods published package with exact devDependency pin matching workspace", () => {
+  it("hub dogfoods published package with exact semver pin (may lag workspace until post-publish bump)", () => {
     const pkg = JSON.parse(readRoot("package.json"));
     const dogfoodVersion =
       pkg.devDependencies["@multipliers-dev/savepoints-lite"];
     expect(dogfoodVersion).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(dogfoodVersion).toBe(pkg.version);
     readRegistryDogfoodManifest(dogfoodVersion);
   });
 

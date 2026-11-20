@@ -50,7 +50,7 @@ Map to persisted body under **provider skill** formatting rules. Omit empty sect
 - `open_threads`
 - `errors`
 
-Each trigger produces **one new record** — no updates, deduplication, or batching.
+Each trigger produces **one new record** — no cross-event updates, deduplication, or batching.
 
 ## Append contract (behavioral)
 
@@ -64,9 +64,10 @@ append(savepoint) → success | failure | unconfirmed
 
 **Provider skill** must:
 
-- Create a **new** record without modifying previous records.
+- Create a **new** record. Do **not** modify records from earlier appends.
 - Preserve Savepoint content and metadata per provider mapping.
 - Confirm persistence when the provider supports it (`success`); otherwise return `unconfirmed`.
 - On `failure`, return `failure` so the router can report in chat without blocking primary work.
+- **Same-append only (optional provider step):** after a **confirmed** create, the provider may read back that record, validate required fields using this schema’s optionality (fields not marked optional) together with the provider’s field mappings, and attempt **at most one** repair of **that** record. Repair values must already be present on the Savepoint for this append — never invent. Unresolved gaps, contract mismatches, or unavailable verification do **not** change a confirmed create to `failure`. Never create a second record to “fix” the first.
 
 **Per event, not per session:** Each work trigger → one Savepoint → one provider delegation. No session-wide latch after failure. **No retry queue.**

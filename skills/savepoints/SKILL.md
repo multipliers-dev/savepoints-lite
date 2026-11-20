@@ -86,7 +86,7 @@ The router **must not** document Notion page properties, Postgres table schemas,
 
 | Outcome | Router behavior |
 | --- | --- |
-| `success` | Continue primary work; optional brief confirmation only if useful |
+| `success` | Continue primary work; optional brief confirmation only if useful. The provider may also report post-write issues after `success` (missing persisted property, contract mismatch, verification unavailable, repair confirmation unknown) — that is **not** a failed append and must **not** trigger another Savepoint |
 | `failure` | One-sentence report (tool name + error summary); **no retry queue**; continue primary work |
 | `unconfirmed` | One-sentence report (“queued — not confirmed”); continue primary work |
 

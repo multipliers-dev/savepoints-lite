@@ -4,25 +4,25 @@ How to install `@multipliers-dev/savepoints-lite` in a consumer repository, conf
 
 ## What ships in the npm package
 
-`@multipliers-dev/savepoints-lite@2.0.0` is an instruction-only tarball: router + Notion provider skills, `schema.md`, defaults YAML, consumer templates (including optional Notion destination example), shipped docs, and `LICENSE`. Maintainer-only evidence ([adoption verification record on GitHub](https://github.com/multipliers-dev/savepoints-lite/blob/main/docs/adoption-verification-record.md)) is **not** in the npm package.
+`@multipliers-dev/savepoints-lite@2.1.0` is an instruction-only tarball: router + Notion provider skills, `schema.md`, defaults YAML, consumer templates (including optional Notion destination example), shipped docs, and `LICENSE`. Maintainer-only evidence ([adoption verification record on GitHub](https://github.com/multipliers-dev/savepoints-lite/blob/main/docs/adoption-verification-record.md)) is **not** in the npm package.
 
 Pin an **exact** semver and commit the lockfile. Use `npm ci` in CI.
 
 ```bash
-npm install @multipliers-dev/savepoints-lite@2.0.0 --save-dev --save-exact
+npm install @multipliers-dev/savepoints-lite@2.1.0 --save-dev --save-exact
 ```
 
 npm is the single source of truth for installed **skill** file versions — **do not** vendor or copy router/provider skills from this package into your repo.
 
 ## Notion destination (`destination.data_source_id`)
 
-`@2.0.0` does **not** ship a maintainer Notion database id in packaged defaults. You must supply a valid `data_source_id` through one of these tiers (provider resolves in order):
+`@2.1.0` does **not** ship a maintainer Notion database id in packaged defaults. You must supply a valid `data_source_id` through one of these tiers (provider resolves in order):
 
 | Tier | Source | When it applies |
 | --- | --- | --- |
 | 1 (highest) | Labelled YAML in the calling integration’s **instruction/delegation context** (router → Notion provider handoff) | Your distribution layer (e.g. team marketplace wrapper) passes `destination` when delegating |
 | 2 | Consumer [`.agents/savepoints-notion.yml`](../templates/consumer/savepoints-notion.yml.example) | Tier 1 **absent** for that delegation |
-| 3 | Packaged `skills/savepoints-notion/defaults.yml` | Never supplies an id in `@2.0.0` |
+| 3 | Packaged `skills/savepoints-notion/defaults.yml` | Never supplies an id in `@2.x` |
 
 **Tier 1 block** (provider-neutral; reuse in wrappers and external integrations):
 

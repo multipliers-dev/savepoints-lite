@@ -1,6 +1,6 @@
 # @multipliers-dev/savepoints-lite
 
-Instruction-only npm package for append-only **session Savepoints**: a router skill detects meaningful work, builds provider-neutral records, and delegates to provider skills. Version **2.0.0** ships a **Notion** provider that writes through the consumer’s existing **Notion MCP**. Destination configuration is **explicit** — integration instruction context, optional consumer `.agents`, or unconfigured packaged defaults (no maintainer database id in the tarball).
+Instruction-only npm package for append-only **session Savepoints**: a router skill detects meaningful work, builds provider-neutral records, and delegates to provider skills. Version **2.1.0** ships a **Notion** provider that writes through the consumer’s existing **Notion MCP**, with same-append post-write verification and best-effort repair. Destination configuration is **explicit** — integration instruction context, optional consumer `.agents`, or unconfigured packaged defaults (no maintainer database id in the tarball).
 
 There is no executable runtime, custom MCP server, local spool, or Savepoints learning capture (`emit-learning`). For durable learnings and lifecycle hooks, see [multipliers-dev/savepoints](https://github.com/multipliers-dev/savepoints).
 
@@ -9,7 +9,7 @@ There is no executable runtime, custom MCP server, local spool, or Savepoints le
 | Piece | Role |
 | --- | --- |
 | Router skill | When to Savepoint, schema, provider selection, delegation, tier-1 `destination` handoff |
-| Notion provider skill | Destination resolution (3 tiers), Notion property mapping, MCP create, bounded confirmation |
+| Notion provider skill | Destination resolution (3 tiers), Notion property mapping, MCP create, bounded confirmation, same-append verify/repair |
 | `schema.md` + defaults YAML | Protocol; router `storage.provider`; packaged Notion defaults without `data_source_id` |
 
 Full skill index: [skills/README.md](./skills/README.md).

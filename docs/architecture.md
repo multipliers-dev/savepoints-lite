@@ -49,7 +49,7 @@ flowchart TB
 | **Consumer activation** | Root `AGENTS.md` session-log section; Claude Code via `CLAUDE.md` (`@AGENTS.md`). [`docs/adopt.md`](./adopt.md). |
 | **Integration (optional)** | Tier-1 `destination.data_source_id` in instruction/delegation context — marketplace wrappers, CI agents, etc. |
 | **Router** [`skills/savepoints/SKILL.md`](../skills/savepoints/SKILL.md) | Event detection, Savepoint assembly, `storage.provider`, carry tier-1 `destination` unchanged, load provider skill, handle outcomes. **No** Notion MCP. |
-| **Provider** [`skills/savepoints-notion/SKILL.md`](../skills/savepoints-notion/SKILL.md) | Resolve destination (3 tiers), map Savepoint → Notion, MCP write, bounded confirmation. **Does not** decide when to Savepoint or read User Rules. |
+| **Provider** [`skills/savepoints-notion/SKILL.md`](../skills/savepoints-notion/SKILL.md) | Resolve destination (3 tiers), map Savepoint → Notion, MCP write, bounded confirmation, same-append post-write verify/repair. **Does not** decide when to Savepoint or read User Rules. |
 | **Distribution** | npm package only — consumers must not vendor skills. |
 | **Runtime** | None — persistence uses the consumer’s **Notion MCP**. |
 
@@ -59,7 +59,7 @@ flowchart TB
 
 Canonical field contract: [`skills/savepoints/schema.md`](../skills/savepoints/schema.md).
 
-Each meaningful work trigger produces **one new record** — no updates, dedupe, or batching across events.
+Each meaningful work trigger produces **one new record** — no cross-event updates, dedupe, or batching. The Notion provider may read back and, at most once, repair **that** record in the same append (see provider skill); it must not edit earlier rows.
 
 ## Configuration precedence
 
@@ -102,6 +102,7 @@ Authoritative behavior: [`skills/savepoints-notion/SKILL.md`](../skills/savepoin
 - **Synchronous-first:** `allow_async: false` when supported.
 - **Bounded async:** at most **two** poll follow-ups, then `unconfirmed`.
 - **Three outcomes:** `success`, `failure`, `unconfirmed` — do not claim persistence on `unconfirmed`.
+- **Same-append verify/repair:** after confirmed create, optional read-back against schema required fields + provider mappings; at most one repair from the Savepoint already assembled for that append. Report missing persisted property, contract mismatch, verification unavailable, or repair confirmation unknown without flipping `success` to `failure`.
 
 ### Failure handling and anti-loop
 
@@ -120,7 +121,7 @@ Public npm + GitHub; no implied SLA. Maintainer verification history: [adoption 
 
 Out of scope:
 
-- Read/recovery flows, queues, `emit-learning`, custom MCP server, local spool
+- General read/recovery flows, queues, background reconciliation, `emit-learning`, custom MCP server, local spool (same-append post-write verify/repair in the Notion provider is in scope)
 - `savepoints-postgres` provider (future)
 - Host User Rules as configuration source
 

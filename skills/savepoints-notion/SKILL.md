@@ -74,7 +74,7 @@ Use exact property names in the `properties` map. Pass Savepoint string fields a
 - **Async fallback only:** if the tool rejects `allow_async: false` or does not support the parameter, retry **once** with the tool’s required/default async shape for the same Savepoint — not a second create. If the first call might have persisted (indeterminate write), do **not** issue another create; return `unconfirmed` and report in chat.
 - Distinguish **parameter retry** (unsupported `allow_async: false` → one async-shaped retry of the same logical write) from **write confirmation** (polling an async task). Never use a second create to “fix” an indeterminate first create.
 - When the accepted call is async: poll at most **two** follow-ups (e.g. `notion-get-async-task` or equivalent), then stop.
-- Use `notion-fetch` **only** on property mismatch or tool-required discovery — not a session preflight.
+- Use `notion-fetch` for property mismatch or tool-required discovery, and for **same-append** post-write verification below — **not** as a session preflight before create.
 
 Return to the router:
 
@@ -88,9 +88,28 @@ success | failure | unconfirmed
 
 Never imply persistence on queue alone or on an unconfirmed async task.
 
+## Post-write verification and repair
+
+Run **only** after create outcome is confirmed `success` (skip for `failure` / `unconfirmed`). Fail-open: the page already exists; verification issues are reported and do **not** change the outcome to `failure`. Outcomes remain `success | failure | unconfirmed` only.
+
+Do **not** maintain a separate required-field list. Derive required fields from [schema.md](../savepoints/schema.md): every **top-level** field that is **not** marked optional. For this path, verify/repair **required top-level fields only** (skip optional `session_id` and all `content.*`).
+
+1. **Read back** the created page once (`notion-fetch` by page id/url from the create result).
+   - If read-back fails: report **verification unavailable** with page id/url; do **not** claim required fields are missing; do **not** attempt repair; return `success`.
+2. **Map required fields** to the Notion mapping table above (same skill — no duplicated rules).
+   - If a required schema field has **no** mapping row: report an unresolved **contract mismatch** naming the field; do **not** invent a mapping or value; do **not** silently skip.
+   - For each mapped required field: the mapped Notion property on the fetched page must be present and non-empty.
+3. **Repair (best effort, once):** only for **verified missing** mapped properties where the Savepoint for this append already has a usable value. One `notion-update-page` (or equivalent) setting **only** those properties from that Savepoint. Never invent. Never repair when verification was unavailable. Contract-mismatch fields are not repairable via invented mappings.
+4. **Re-verify** with one fetch after a repair attempt that appeared to succeed.
+   - If post-repair read-back fails: report **repair confirmation unknown** with page id/url; do **not** assert remaining gaps as verified missing; return `success`.
+   - If post-repair read-back succeeds: report any still-missing mapped properties, or finish quietly if complete.
+5. **Report** unresolved issues in one short chat line including **page id/url**, using precise labels: **missing persisted property**, **contract mismatch**, **verification unavailable**, or **repair confirmation unknown**. Still return `success` for the confirmed create.
+
+**Bounds:** no second create; single repair attempt; no retry loop; do not modify other Savepoint rows.
+
 ## Forbidden (provider)
 
 - Event detection or trigger logic (router only)
-- Modifying or deleting previous Savepoint rows
+- Modifying or deleting Savepoint rows **other than** the single same-append repair above
 - Retry queues, background workers, or duplicate create attempts when the first write may already exist
 - Reading host User Rules or other undocumented stores for `destination.data_source_id`

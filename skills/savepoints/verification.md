@@ -57,5 +57,10 @@ Run at the **Savepoints Lite hub repository root** ([`multipliers-dev/savepoints
 | 11 | **Anti-loop** | Failed write does not recursively trigger more Savepoints |
 | 12 | **No capture hooks** | Logging via instructions + activation only; hub [`.cursor/hooks.json`](https://github.com/multipliers-dev/savepoints-lite/blob/main/.cursor/hooks.json) unchanged for Savepoints capture |
 | 13 | **Claude Code** | Repeat applicable scenarios (2–11) in Claude Code at hub root (`AGENTS.md` via `CLAUDE.md` `@AGENTS.md`; activation opt-in + verification session authorization when required) |
+| 14 | **Post-write verify (complete)** | Confirmed create with required mapped properties present → no missing-field report; outcome remains `success` |
+| 15 | **Post-write repair** | Confirmed create missing a mapped required property that exists on the Savepoint → one repair; re-fetch shows property present; no duplicate page |
+| 16 | **Irreparable missing fields** | Confirmed create with verified missing required mapped property and no usable Savepoint value → report **missing persisted property** + page id/url; page preserved; outcome `success` |
+| 17 | **Verification unavailable** | Confirmed create then failed initial read-back → report **verification unavailable** + page id/url; do **not** claim fields missing; no repair; outcome `success` |
+| 18 | **Repair confirmation unknown** | Repair attempted then failed post-repair read-back → report **repair confirmation unknown** + page id/url; do not assert remaining gaps as verified missing; outcome `success` |
 
 **Do not** claim `npm test` or CI proves this table.
