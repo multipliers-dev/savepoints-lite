@@ -34,7 +34,7 @@ Savepoints Lite supports both standalone npm installation and vendored distribut
 
 Architectural changes must preserve both paths:
 
-- Keep canonical behaviour in Savepoints Lite; marketplace wrappers handle integration-specific configuration and paths.
+- Keep canonical behaviour in Savepoints Lite; distribution layers (e.g. [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) wrappers) handle integration-specific configuration and paths.
 - Do not assume consuming repositories have `node_modules`, npm dependencies, or a Node.js runtime.
 - Keep distributed skills, schemas, mappings, and optional executables portable within the vendored package layout.
 - Runtime-dependent features must remain optional and fail open.

@@ -16,12 +16,14 @@ npm is the single source of truth for installed **skill** file versions — **do
 
 ## Notion destination (`destination.data_source_id`)
 
-`@2.1.0` does **not** ship a maintainer Notion database id in packaged defaults. You must supply a valid `data_source_id` through one of these tiers (provider resolves in order):
+`@2.1.0` does **not** ship a maintainer Notion database id in packaged defaults. You must supply a valid `data_source_id` through one of these tiers (provider resolves in order).
+
+**Distribution layer (optional):** anything *outside* this npm package that (1) delivers the skill tree to the agent host and/or (2) injects labelled config (`destination`, optional `validation.post_write`) into the router’s instruction context when delegating. Standalone consumers usually skip this and use **tier 2**. The public example is [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `team-harness`: it vendors `plugins/team-harness/vendor/savepoints-lite/` and a `/savepoints` wrapper that maps Cursor User Rules → tier-1 `destination` (see § External integrations below).
 
 | Tier | Source | When it applies |
 | --- | --- | --- |
-| 1 (highest) | Labelled YAML in the calling integration’s **instruction/delegation context** (router → Notion provider handoff) | Your distribution layer (e.g. team marketplace wrapper) passes `destination` when delegating |
-| 2 | Consumer [`.agents/savepoints-notion.yml`](../templates/consumer/savepoints-notion.yml.example) | Tier 1 **absent** for that delegation |
+| 1 (highest) | Labelled YAML in the calling integration’s **instruction/delegation context** (router → Notion provider handoff) | A distribution layer (e.g. [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `/savepoints` wrapper) passes `destination` when delegating |
+| 2 | Consumer [`.agents/savepoints-notion.yml`](../templates/consumer/savepoints-notion.yml.example) | Tier 1 **absent** for that delegation — **typical standalone npm path** |
 | 3 | Packaged `skills/savepoints-notion/defaults.yml` | Never supplies an id in `@2.x` |
 
 **Tier 1 block** (provider-neutral; reuse in wrappers and external integrations):
@@ -126,7 +128,7 @@ The hub publishes release-candidate semver from workspace `package.json` while p
 
 ## External integrations (provider-neutral)
 
-Wrappers and non-Cursor hosts should pass the tier-1 `destination` block in instruction context when delegating to the Savepoints router, and carry it unchanged to the Notion provider. They may also pass `validation.post_write` in the same handoff so consumers need not commit `.agents/savepoints-lite.yml` solely to enable checks. The public npm package stays host-agnostic — convention in skills, not a programmatic API.
+Distribution layers (wrappers and non-Cursor hosts — see § Notion destination) should pass the tier-1 `destination` block in instruction context when delegating to the Savepoints router, and carry it unchanged to the Notion provider. They may also pass `validation.post_write` in the same handoff so consumers need not commit `.agents/savepoints-lite.yml` solely to enable checks. The public npm package stays host-agnostic — convention in skills, not a programmatic API.
 
 ### [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) (after publish)
 

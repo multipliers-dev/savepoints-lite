@@ -29,7 +29,7 @@ Installing the package does **not** automatically activate Savepoints. Activatio
 
 - **Node.js 22+**
 - **Authenticated Notion MCP** in the agent host when using the default Notion provider
-- A **configured Notion Savepoints destination** (`data_source_id`) via integration context, [`.agents/savepoints-notion.yml`](./templates/consumer/savepoints-notion.yml.example), or your distribution layer (e.g. team marketplace wrapper)
+- A **configured Notion Savepoints destination** (`data_source_id`) via [`.agents/savepoints-notion.yml`](./templates/consumer/savepoints-notion.yml.example) (typical standalone path), or via a **distribution layer** — an optional host outside this package that delivers skills and/or injects destination config at call time. The public example is [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `team-harness` (vendored skills + `/savepoints` wrapper). See [docs/adopt.md](./docs/adopt.md) § Notion destination.
 
 ## Installed skill paths
 
