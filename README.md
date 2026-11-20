@@ -4,7 +4,7 @@ Append-only **session Savepoints** for AI coding agents: when meaningful work ha
 
 Version **2.1.0** ships a router skill and a **Notion** provider that writes through the host’s authenticated **Notion MCP**. Default path is instruction-only create/confirm. Optional deterministic post-write validation (`validation.post_write`) can inspect persisted properties and attempt **at most one** repair of the newly created record.
 
-There is no custom MCP server, local spool, or Savepoints learning capture (`emit-learning`). For durable learnings and lifecycle hooks, see [multipliers-dev/savepoints](https://github.com/multipliers-dev/savepoints).
+There is no custom MCP server, local spool, or automated learning capture (`emit-learning`).
 
 ## How it works
 
