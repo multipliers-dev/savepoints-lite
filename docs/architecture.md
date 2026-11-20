@@ -79,6 +79,19 @@ Savepoints Lite has **two supported distribution paths**. Architectural changes 
 
 Downstream vendor scripts and wrapper skills may change without updating this contract, as long as they keep distributing a package-equivalent tree and continue to own host-specific path/config mapping outside Savepoints Lite.
 
+### Why the optional validator is bundled (not a separate package)
+
+Both Savepoints Lite and `@multipliers-dev/plan-validator` (Cursor Team Marketplace) **separate agent orchestration from deterministic checks**. They differ in **who else executes the check**:
+
+| | `@multipliers-dev/plan-validator` | Savepoints Lite post-write validator |
+| --- | --- | --- |
+| **Independent consumers?** | Yes — e.g. GitHub Actions installs a pinned package and runs it without Cursor or an agent | No — today the check runs only inside the agent-orchestrated Notion persistence path |
+| **Distribution** | Standalone npm package so CI (and other hosts) can enforce without the agent | Bundled with the distributed skill tree so vendored/plugin installs get the same optional CLI without a second package |
+| **Invocation** | CI/scripts call it directly | Agent may call it when `validation.post_write` is enabled; bundling does **not** guarantee invocation |
+| **Enforcement boundary** | Independent CI gate | No separate CI consumer for Savepoint property checks today |
+
+**Principle:** distribute validators as independent packages when they have independent execution consumers; otherwise prefer bundling them with the workflow that invokes them. Bundling here stays compatible with fail-open when Node or the CLI is unavailable — confirmed persistence is not flipped to failure solely because validation could not run.
+
 ## Savepoint protocol
 
 Canonical field contract: machine-readable [`skills/savepoints/schema.json`](../skills/savepoints/schema.json); semantics in [`skills/savepoints/schema.md`](../skills/savepoints/schema.md).

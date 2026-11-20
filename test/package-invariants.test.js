@@ -345,6 +345,13 @@ describe("package invariants", () => {
     expect(architecture).toMatch(/Canonical ownership|Self-contained package tree/);
     expect(architecture).toMatch(/fail open/i);
     expect(architecture).toMatch(/No host-specific branching/i);
+    expect(architecture).toMatch(
+      /Why the optional validator is bundled \(not a separate package\)/,
+    );
+    expect(architecture).toMatch(/plan-validator/);
+    expect(architecture).toMatch(
+      /distribute validators as independent packages when they have independent execution consumers/i,
+    );
     const agents = readRoot("AGENTS.md");
     expect(agents).toMatch(/## Distribution compatibility/);
     expect(agents).toMatch(/docs\/architecture\.md/);
