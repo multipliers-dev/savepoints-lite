@@ -97,17 +97,30 @@ function preferredKeys(type) {
   return RICH_KEYS;
 }
 function fromPropertyObject(value) {
-  for (const key of preferredKeys(value.type)) {
-    if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+  let sawAbsent = false;
+  const considerKey = (key) => {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) {
+      return void 0;
+    }
     const fromArray = fromRichArray(value[key]);
-    if (fromArray) return fromArray;
+    if (fromArray === void 0) {
+      return { kind: "unsupported" };
+    }
+    if (fromArray.kind === "present" || fromArray.kind === "unsupported") {
+      return fromArray;
+    }
+    sawAbsent = true;
+    return void 0;
+  };
+  for (const key of preferredKeys(value.type)) {
+    const outcome = considerKey(key);
+    if (outcome) return outcome;
   }
   for (const key of RICH_KEYS) {
-    if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
-    const fromArray = fromRichArray(value[key]);
-    if (fromArray) return fromArray;
+    const outcome = considerKey(key);
+    if (outcome) return outcome;
   }
-  return { kind: "unsupported" };
+  return sawAbsent ? { kind: "absent" } : { kind: "unsupported" };
 }
 function interpretNotionPropertyValue(value) {
   if (value === void 0 || value === null) {

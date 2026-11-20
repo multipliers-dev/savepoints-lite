@@ -18,6 +18,7 @@ import {
   loadSchema,
   resolvePackageRoot,
 } from "../src/validate/load-contract.ts";
+import { interpretNotionPropertyValue } from "../src/validate/notion-value.ts";
 import { validatePersistedProperties } from "../src/validate/validate.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,6 +26,56 @@ const cliPath = join(root, "skills/bin/savepoints-lite-validate.mjs");
 const notionFetchFixture = JSON.parse(
   readFileSync(join(root, "test/fixtures/notion-fetch-persisted.json"), "utf8"),
 );
+
+describe("interpretNotionPropertyValue / fromPropertyObject", () => {
+  it("uses populated text after empty rich_text", () => {
+    expect(
+      interpretNotionPropertyValue({
+        type: "rich_text",
+        rich_text: [],
+        text: [{ plain_text: "from text key" }],
+      }),
+    ).toEqual({ kind: "present", text: "from text key" });
+  });
+
+  it("uses populated rich_text after empty title", () => {
+    expect(
+      interpretNotionPropertyValue({
+        type: "title",
+        title: [],
+        rich_text: [{ plain_text: "fallback rich" }],
+      }),
+    ).toEqual({ kind: "present", text: "fallback rich" });
+  });
+
+  it("returns absent when all supported representations are empty", () => {
+    expect(
+      interpretNotionPropertyValue({
+        title: [],
+        rich_text: [],
+        text: [],
+      }),
+    ).toEqual({ kind: "absent" });
+  });
+
+  it("keeps unsupported shapes distinct from absent", () => {
+    expect(
+      interpretNotionPropertyValue({
+        type: "title",
+        title: [{ no_plain_text: true }],
+      }),
+    ).toEqual({ kind: "unsupported" });
+    expect(
+      interpretNotionPropertyValue({
+        rich_text: [],
+        text: [{ broken: true }],
+      }),
+    ).toEqual({ kind: "unsupported" });
+    expect(interpretNotionPropertyValue({ unrelated: 1 })).toEqual({
+      kind: "unsupported",
+    });
+  });
+});
 
 describe("validatePersistedProperties", () => {
   const schema = loadSchema(root);
@@ -179,6 +230,51 @@ describe("validatePersistedProperties", () => {
     expect(result.issues.some((i) => i.kind === "missing_persisted_property")).toBe(
       false,
     );
+  });
+
+  it("accepts empty rich_text with populated text on required fields", () => {
+    const result = validatePersistedProperties(
+      {
+        persisted: {
+          Name: { type: "title", title: [{ plain_text: "ok" }] },
+          Repository: {
+            type: "rich_text",
+            rich_text: [],
+            text: [{ plain_text: "owner/repo" }],
+          },
+          Agent: {
+            rich_text: [],
+            text: [{ text: { content: "Agent" } }],
+          },
+        },
+      },
+      schema,
+      mapping,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.issues).toEqual([]);
+  });
+
+  it("reports missing when every supported representation is empty", () => {
+    const result = validatePersistedProperties(
+      {
+        persisted: {
+          Name: { title: [], rich_text: [], text: [] },
+          Repository: "owner/repo",
+          Agent: "Agent",
+        },
+      },
+      schema,
+      mapping,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual([
+      expect.objectContaining({
+        kind: "missing_persisted_property",
+        field: "title",
+        property: "Name",
+      }),
+    ]);
   });
 });
 

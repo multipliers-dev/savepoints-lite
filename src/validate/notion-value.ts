@@ -75,19 +75,39 @@ function preferredKeys(type: unknown): readonly (typeof RICH_KEYS)[number][] {
 }
 
 function fromPropertyObject(value: Record<string, unknown>): NotionValueOutcome {
-  for (const key of preferredKeys(value.type)) {
-    if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+  let sawAbsent = false;
+
+  const considerKey = (
+    key: (typeof RICH_KEYS)[number],
+  ): NotionValueOutcome | undefined => {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) {
+      return undefined;
+    }
     const fromArray = fromRichArray(value[key]);
-    if (fromArray) return fromArray;
+    if (fromArray === undefined) {
+      // Key present but not a supported array representation.
+      return { kind: "unsupported" };
+    }
+    // Only short-circuit on present or unsupported. Absent must not block
+    // checking later representations (e.g. empty rich_text with populated text).
+    if (fromArray.kind === "present" || fromArray.kind === "unsupported") {
+      return fromArray;
+    }
+    sawAbsent = true;
+    return undefined;
+  };
+
+  for (const key of preferredKeys(value.type)) {
+    const outcome = considerKey(key);
+    if (outcome) return outcome;
   }
 
   for (const key of RICH_KEYS) {
-    if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
-    const fromArray = fromRichArray(value[key]);
-    if (fromArray) return fromArray;
+    const outcome = considerKey(key);
+    if (outcome) return outcome;
   }
 
-  return { kind: "unsupported" };
+  return sawAbsent ? { kind: "absent" } : { kind: "unsupported" };
 }
 
 /**
