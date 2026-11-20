@@ -60,6 +60,25 @@ flowchart TB
 
 **Design principle:** Router owns **what** and **when**; static config and integration context select **where**; provider skills own **how** to persist; the optional validator owns **deterministic property checks** only.
 
+## Distribution compatibility
+
+Savepoints Lite has **two supported distribution paths**. Architectural changes must preserve both:
+
+| Path | Shape |
+| --- | --- |
+| **Standalone npm** | Consumers install `@multipliers-dev/savepoints-lite` and load skills from that package install |
+| **Vendored plugin** | An integration (e.g. Cursor Team Marketplace) distributes a package-equivalent copy of the published skill tree for hosts that do not install the package into consumer `node_modules` |
+
+**Invariants** (constraints, not marketplace implementation details):
+
+1. **Canonical ownership** — Router, provider, schema, mapping, defaults, and validation behaviour live in Savepoints Lite. Wrappers may supply integration configuration and resolve install paths; they must not fork or reimplement that behaviour.
+2. **Self-contained package tree** — Features that ship for agents must work from a vendored package-equivalent tree without requiring consumer `npm install`, consumer `node_modules`, or runtime package installation in the host repository.
+3. **Installation-relative resolution** — Skills, contracts, and optional executables resolve relative to the package-equivalent install root (the directory that contains the shipped `skills/` tree), not relative to an arbitrary consumer repository layout.
+4. **Optional execution / fail open** — Runtime-dependent features (e.g. Node-based validation) stay opt-in and degrade gracefully when the host lacks the runtime or executable: preserve confirmed persistence outcomes; report unavailability; do not install runtimes or block primary work.
+5. **No host-specific branching in the package** — Canonical skills and tooling stay host-agnostic. Do not embed marketplace-only paths, User Rules readers, or Cursor-specific control flow in the published package; integrations pass labelled context (destination, validation preference) through the existing handoff.
+
+Downstream vendor scripts and wrapper skills may change without updating this contract, as long as they keep distributing a package-equivalent tree and continue to own host-specific path/config mapping outside Savepoints Lite.
+
 ## Savepoint protocol
 
 Canonical field contract: machine-readable [`skills/savepoints/schema.json`](../skills/savepoints/schema.json); semantics in [`skills/savepoints/schema.md`](../skills/savepoints/schema.md).

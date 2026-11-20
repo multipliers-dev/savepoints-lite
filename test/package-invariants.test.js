@@ -338,6 +338,19 @@ describe("package invariants", () => {
     expect(claude).toBe("@AGENTS.md");
   });
 
+  it("documents dual-distribution compatibility for agents and architecture", () => {
+    const architecture = readRoot("docs/architecture.md");
+    expect(architecture).toMatch(/## Distribution compatibility/);
+    expect(architecture).toMatch(/Two supported distribution paths|standalone npm/i);
+    expect(architecture).toMatch(/Canonical ownership|Self-contained package tree/);
+    expect(architecture).toMatch(/fail open/i);
+    expect(architecture).toMatch(/No host-specific branching/i);
+    const agents = readRoot("AGENTS.md");
+    expect(agents).toMatch(/## Distribution compatibility/);
+    expect(agents).toMatch(/docs\/architecture\.md/);
+    expect(agents).toMatch(/vendored package layout/i);
+  });
+
   it("consumer AGENTS snippet is runtime-only (no adoption install prose)", () => {
     const routerPath =
       "node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md";
