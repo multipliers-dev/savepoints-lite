@@ -364,6 +364,10 @@ describe("package invariants", () => {
     expect(agents).toMatch(/## Distribution compatibility/);
     expect(agents).toMatch(/docs\/architecture\.md/);
     expect(agents).toMatch(/vendored package layout/i);
+    const marketplaceRepo =
+      "https://github.com/multipliers-dev/cursor-team-marketplace";
+    expect(architecture).toContain(marketplaceRepo);
+    expect(agents).toContain(marketplaceRepo);
   });
 
   it("consumer AGENTS snippet is runtime-only (no adoption install prose)", () => {

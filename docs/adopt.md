@@ -128,9 +128,9 @@ The hub publishes release-candidate semver from workspace `package.json` while p
 
 Wrappers and non-Cursor hosts should pass the tier-1 `destination` block in instruction context when delegating to the Savepoints router, and carry it unchanged to the Notion provider. They may also pass `validation.post_write` in the same handoff so consumers need not commit `.agents/savepoints-lite.yml` solely to enable checks. The public npm package stays host-agnostic — convention in skills, not a programmatic API.
 
-### Cursor Team Marketplace (after publish)
+### [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) (after publish)
 
-Team-harness vendors the published `skills/` tree under `plugins/team-harness/vendor/savepoints-lite/`. After `@2.1.0` is published, marketplace maintainers should:
+[`multipliers-dev/cursor-team-marketplace`](https://github.com/multipliers-dev/cursor-team-marketplace) team-harness vendors the published `skills/` tree under `plugins/team-harness/vendor/savepoints-lite/`. After `@2.1.0` is published, marketplace maintainers should:
 
 1. Bump the root pin `devDependencies["@multipliers-dev/savepoints-lite"]` and re-sync vendor (`npm run sync:savepoints-vendor`).
 2. Ensure `scripts/expected-savepoints-vendor-paths.txt` includes `skills/bin/savepoints-lite-validate.mjs` (committed under the published `skills/` tree — sync from the npm artifact, not a consumer build).
