@@ -1,6 +1,6 @@
 # Publishing @multipliers-dev/savepoints-lite
 
-Operator-controlled npm releases for an instruction-only package (skills and docs; no `bin` or runtime).
+Operator-controlled npm releases for an **instruction-first** package: router and provider skills plus docs. There is **no** custom MCP server and **no** persistent runtime service. An optional bundled validation CLI (`skills/bin/savepoints-lite-validate.mjs`, npm bin `savepoints-lite-validate`) ships in the tarball for opt-in post-write checks — not a required daemon.
 
 **Mechanism:** [GitHub Trusted Publishing](https://docs.npmjs.com/trusted-publishers) via the repository [publish workflow](https://github.com/multipliers-dev/savepoints-lite/blob/main/.github/workflows/publish.yml) — manual `workflow_dispatch` on **`main` only**. OIDC (`id-token: write`); do not use long-lived `NPM_TOKEN` for registry releases.
 

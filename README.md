@@ -46,7 +46,7 @@ Best when you want a pinned package install in a specific repository.
 Requires **Node.js 22+** for package install and for optional executable validation. Full setup: [docs/adopt.md](./docs/adopt.md).
 
 ```bash
-npm install @multipliers-dev/savepoints-lite --save-dev
+npm install @multipliers-dev/savepoints-lite@2.1.0 --save-dev --save-exact
 ```
 
 ## What you get
