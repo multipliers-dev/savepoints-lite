@@ -123,7 +123,7 @@ Static resolution only — no environment variables in v2.
 | --- | --- | --- |
 | 1 | Integration **instruction/delegation context** (`destination` YAML block) | Supplied for this delegation |
 | 2 | Consumer `.agents/savepoints-notion.yml` (optional) | Tier 1 absent |
-| 3 | Package [`skills/savepoints-notion/defaults.yml`](../skills/savepoints-notion/defaults.yml) | No id in `@2.0.0` |
+| 3 | Package [`skills/savepoints-notion/defaults.yml`](../skills/savepoints-notion/defaults.yml) | No id in `@2.x` |
 
 **Fail open:** no valid id after applicable tiers → no MCP write. **Tier 1 invalid:** fail open without tier 2/3 fallback.
 

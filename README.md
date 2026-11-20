@@ -1,46 +1,76 @@
 # @multipliers-dev/savepoints-lite
 
-npm package for append-only **session Savepoints**: a router skill detects meaningful work, builds provider-neutral records, and delegates to provider skills. Version **2.1.0** ships a **Notion** provider that writes through the consumer’s existing **Notion MCP**. Default path is **instruction-only** create/confirm; optional deterministic post-write validation (`validation.post_write`) uses a self-contained in-package CLI under `skills/bin/` (works for standalone npm and marketplace vendor copies). Destination and optional validation preference are **explicit** — integration instruction context, optional consumer `.agents`, or packaged defaults (no maintainer database id in the tarball).
+Append-only **session Savepoints** for AI coding agents: when meaningful work happens, agents record what was done, decisions, open threads, and errors into **your** Notion database.
+
+Version **2.1.0** ships a router skill and a **Notion** provider that writes through the host’s authenticated **Notion MCP**. Default path is instruction-only create/confirm. Optional deterministic post-write validation (`validation.post_write`) can inspect persisted properties and attempt **at most one** repair of the newly created record.
 
 There is no custom MCP server, local spool, or Savepoints learning capture (`emit-learning`). For durable learnings and lifecycle hooks, see [multipliers-dev/savepoints](https://github.com/multipliers-dev/savepoints).
+
+## How it works
+
+```text
+Agent → router skill → Notion provider skill → Notion MCP → your Notion database
+```
+
+1. The **router** decides when to Savepoint and builds a provider-neutral record.
+2. The **Notion provider** resolves destination, maps fields, and creates a page via Notion MCP.
+3. Optionally, when `validation.post_write` is enabled, a self-contained CLI checks persisted properties and may repair the new row once. Validation is **opt-in** and **fail-open** if the CLI or a compatible Node runtime is unavailable (the confirmed create still counts as success).
+
+Installing the package or plugin does **not** by itself activate agent logging. Activation is a separate step (User Rules for marketplace, or root `AGENTS.md` for standalone npm).
+
+## Adoption paths
+
+Two supported ways to get the skills into the agent host:
+
+### Cursor Team Marketplace
+
+Best when you already use (or can install) the multipliers-dev **team-harness** plugin.
+
+1. Install or refresh **team-harness** **1.16.0+** from [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace).
+2. Configure session logging and the Notion destination in Cursor **User Rules** (engineering invariants).
+3. Use your existing authenticated **Notion MCP**.
+
+No `@multipliers-dev/savepoints-lite` npm dependency is required in consumer repositories. Ordinary marketplace Notion MCP persistence does **not** require Node.js in the consumer repo or host runtime.
+
+Full setup: [marketplace savepoints-integration.md](https://github.com/multipliers-dev/cursor-team-marketplace/blob/main/plugins/team-harness/docs/savepoints-integration.md). Overview in this repo: [docs/adopt.md](./docs/adopt.md) § Cursor Team Marketplace.
+
+### Standalone npm
+
+Best when you want a pinned package install in a specific repository.
+
+1. Install and pin `@multipliers-dev/savepoints-lite` (exact semver + lockfile; use `npm ci` in CI).
+2. Activate logging by merging the session-log contract into root `AGENTS.md` (and `CLAUDE.md` `@AGENTS.md` where applicable).
+3. Configure [`.agents/savepoints-notion.yml`](./templates/consumer/savepoints-notion.yml.example) (or an integration-supplied destination).
+4. Use authenticated **Notion MCP**.
+
+Requires **Node.js 22+** for package install and for optional executable validation. Full setup: [docs/adopt.md](./docs/adopt.md).
+
+```bash
+npm install @multipliers-dev/savepoints-lite --save-dev
+```
 
 ## What you get
 
 | Piece | Role |
 | --- | --- |
-| Router skill | When to Savepoint, schema, provider selection, `validation.post_write` (integration → `.agents` → defaults), delegation, tier-1 `destination` handoff |
+| Router skill | When to Savepoint, schema, provider selection, `validation.post_write`, delegation, tier-1 `destination` handoff |
 | Notion provider skill | Destination resolution (3 tiers), mapping via `mapping.json`, MCP create, bounded confirmation; optional same-append validate/repair |
 | `schema.json` / `schema.md` + defaults YAML | Machine-readable requiredness + semantics; `storage.provider`; `validation.post_write: false` by default |
 | `skills/bin/savepoints-lite-validate.mjs` | Optional deterministic property check (npm bin `savepoints-lite-validate`; no Notion credentials) |
 
 Full skill index: [skills/README.md](./skills/README.md).
 
-## Install
+After standalone install, skills live under `node_modules/@multipliers-dev/savepoints-lite/skills/`. Marketplace consumers load the vendored package-equivalent tree from the plugin — do **not** hand-copy skill files into consumer repos.
 
-```bash
-npm install @multipliers-dev/savepoints-lite --save-dev
-```
+## Runtime notes
 
-Use a committed lockfile and `npm ci` in CI for reproducible skill versions.
-
-Installing the package does **not** automatically activate Savepoints. Activation is a **committed Savepoints Lite section in root `AGENTS.md`** (runtime logging contract); Claude Code loads the same file via `CLAUDE.md` (`@AGENTS.md`). See the [adoption guide](./docs/adopt.md) for install, destination configuration, merge steps, and verification.
-
-## Prerequisites
-
-- **Node.js 22+**
-- **Authenticated Notion MCP** in the agent host when using the default Notion provider
-- A **configured Notion Savepoints destination** (`data_source_id`) via [`.agents/savepoints-notion.yml`](./templates/consumer/savepoints-notion.yml.example) (typical standalone path), or via a **distribution layer** — an optional host outside this package that delivers skills and/or injects destination config at call time. The public example is [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `team-harness` (vendored skills + `/savepoints` wrapper). See [docs/adopt.md](./docs/adopt.md) § Notion destination.
-
-## Installed skill paths
-
-After `npm install` or `npm ci`:
-
-```text
-node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md
-node_modules/@multipliers-dev/savepoints-lite/skills/savepoints-notion/SKILL.md
-```
-
-Agents must read skills from this install root. **Do not** vendor or copy skill files into the consumer repo.
+| Concern | Standalone npm | Marketplace (team-harness) |
+| --- | --- | --- |
+| Skill delivery | Pinned npm package under `node_modules` | Vendored copy under the installed plugin |
+| Activation | Root `AGENTS.md` session-log section | Cursor User Rules + `/savepoints` wrapper |
+| Notion persistence | Authenticated Notion MCP | Same |
+| Node.js 22+ | Required for install; required when opt-in validation runs | Not required for ordinary MCP create/confirm; required only if validation runs |
+| Validation | Opt-in, fail-open | Same |
 
 ## Privacy and reliability
 

@@ -7,7 +7,7 @@ description: Notion provider for Savepoints — map Savepoint to Notion properti
 
 Accepts a Savepoint from the **router** (`skills/savepoints/SKILL.md`). Does **not** decide when Savepoints are created.
 
-**Installed path (consumer):** `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints-notion/SKILL.md`
+**Install root:** same package-equivalent tree as the router — standalone npm under `node_modules/@multipliers-dev/savepoints-lite/`, or marketplace vendor under `…/vendor/savepoints-lite/`. Schema, mapping, and optional validator resolve relative to that root; marketplace consumers do not need consumer `node_modules`.
 
 ## Input
 
@@ -28,7 +28,7 @@ Resolve `destination.data_source_id` in **three** tiers (static; no dynamic disc
 | --- | --- | --- |
 | 1 (highest) | Labelled `destination` in the **router delegation / instruction context** | Integration supplied a `destination` block for this Savepoint |
 | 2 | Consumer `.agents/savepoints-notion.yml` (optional) | Tier 1 **absent** for this delegation |
-| 3 | Package [defaults.yml](./defaults.yml) next to this skill under `node_modules` | Never supplies an id in `@2.0.0` — file retained for relative references only |
+| 3 | Package [defaults.yml](./defaults.yml) next to this skill (same install root) | Never supplies an id in `@2.x` — file retained for relative references only |
 
 **Tier 2 shape** (overrides packaged defaults when tier 1 is absent):
 

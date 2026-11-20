@@ -56,12 +56,12 @@ Record version, date, commit, and install-check summary (release PR or maintaine
 
 ## Post-publish hub dogfood bump (follow-up PR)
 
-After `@2.0.0` (or the released version) is on the registry:
+After the released version is on the registry (e.g. `@2.1.0`):
 
 1. Open a **separate** hub PR on `multipliers-dev/savepoints-lite`.
 2. Bump `devDependencies["@multipliers-dev/savepoints-lite"]` to the new exact version and refresh `package-lock.json`.
 3. Run `npm ci`, `npm test`, `npm run verify`, `npm run validate:plans`.
-4. `npm test` selects the registry dogfood file manifest for the pinned version (`scripts/expected-package-paths-registry-dogfood-<version>.txt`). When the pin matches workspace `2.0.0`, that manifest matches `expected-package-paths.txt`.
+4. `npm test` selects the registry dogfood file manifest for the pinned version (`scripts/expected-package-paths-registry-dogfood-<version>.txt`). When the pin matches the workspace `"version"`, that manifest matches `expected-package-paths.txt`.
 
 Do **not** bump the devDependency to a version that does not exist on npm (no `file:` link for dogfood).
 
