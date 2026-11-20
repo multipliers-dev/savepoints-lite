@@ -2,7 +2,13 @@
 
 Canonical contract for a single append-only session log record. Providers map these fields to their storage (Notion, Postgres, etc.); the router assembles Savepoints and delegates persistence.
 
+## Machine-readable source of truth
+
+**Requiredness and field inventory** for validation live in [schema.json](./schema.json) next to this file. Do **not** treat the YAML illustration below as a second required-field list — keep [schema.json](./schema.json) authoritative for validators and opt-in post-write checks. This document owns semantics, derivation, and append behaviour.
+
 ## Required and optional fields
+
+Illustration (mirrors [schema.json](./schema.json)):
 
 ```yaml
 title: string
@@ -68,6 +74,6 @@ append(savepoint) → success | failure | unconfirmed
 - Preserve Savepoint content and metadata per provider mapping.
 - Confirm persistence when the provider supports it (`success`); otherwise return `unconfirmed`.
 - On `failure`, return `failure` so the router can report in chat without blocking primary work.
-- **Same-append only (optional provider step):** after a **confirmed** create, the provider may read back that record, validate required fields using this schema’s optionality (fields not marked optional) together with the provider’s field mappings, and attempt **at most one** repair of **that** record. Repair values must already be present on the Savepoint for this append — never invent. Unresolved gaps, contract mismatches, or unavailable verification do **not** change a confirmed create to `failure`. Never create a second record to “fix” the first.
+- **Same-append only (optional, when `validation.post_write` is enabled):** after a **confirmed** create, read back that record, run the package’s deterministic validator against persisted properties ([schema.json](./schema.json) + provider mapping), and attempt **at most one** repair of **that** record using values already on the Savepoint — never invent. Unresolved gaps, contract mismatches, or unavailable verification do **not** change a confirmed create to `failure`. Never create a second record to “fix” the first. When validation is disabled (default), skip this step.
 
 **Per event, not per session:** Each work trigger → one Savepoint → one provider delegation. No session-wide latch after failure. **No retry queue.**

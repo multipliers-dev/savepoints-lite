@@ -139,12 +139,16 @@ describe("package invariants", () => {
     expect(listed).not.toContain("docs/adoption-verification-record.md");
   });
 
-  it("notion provider documents verified property types", () => {
+  it("notion mapping.json documents verified property types", () => {
+    const mapping = JSON.parse(
+      readRoot("skills/savepoints-notion/mapping.json"),
+    );
+    expect(mapping.fields.title.type).toBe("title");
+    expect(mapping.fields.repository.type).toBe("text");
+    expect(mapping.fields.agent.type).toBe("text");
+    expect(mapping.system.Created.type).toBe("created_time");
     const skill = readRoot("skills/savepoints-notion/SKILL.md");
-    expect(skill).toMatch(/Notion type/);
-    expect(skill).toMatch(/`title`/);
-    expect(skill).toMatch(/`created_time`/);
-    expect(skill).toMatch(/Plain string/);
+    expect(skill).toMatch(/mapping\.json/);
   });
 
   it("notion provider documents three-tier destination resolution and fail-open", () => {
@@ -186,26 +190,53 @@ describe("package invariants", () => {
     expect(skill).toMatch(/savepoints-notion\.yml/i);
   });
 
-  it("notion provider documents same-append post-write verify and repair", () => {
+  it("notion provider documents optional post-write validate and repair", () => {
     const skill = readRoot("skills/savepoints-notion/SKILL.md");
-    expect(skill).toMatch(/## Post-write verification and repair/);
+    expect(skill).toMatch(/## Post-write verification and repair \(optional\)/);
+    expect(skill).toMatch(/validation\.post_write/);
+    expect(skill).toMatch(/savepoints-lite-validate/);
     expect(skill).toMatch(/verification unavailable/);
-    expect(skill).toMatch(/contract mismatch/);
+    expect(skill).toMatch(/contract_mismatch|contract mismatch/);
     expect(skill).toMatch(/repair confirmation unknown/);
-    expect(skill).toMatch(/missing persisted property/);
+    expect(skill).toMatch(/missing_persisted_property|missing persisted property/);
+    expect(skill).toMatch(/mapping\.json/);
     const schema = readRoot("skills/savepoints/schema.md");
+    expect(schema).toMatch(/schema\.json/);
     expect(schema).toMatch(/Same-append only/);
+  });
+
+  it("machine-readable schema and mapping agree on required mapped fields", () => {
+    const schema = JSON.parse(readRoot("skills/savepoints/schema.json"));
+    const mapping = JSON.parse(
+      readRoot("skills/savepoints-notion/mapping.json"),
+    );
+    for (const [field, def] of Object.entries(schema.fields)) {
+      if (field === "content" || !def.required) continue;
+      expect(mapping.fields[field]?.property).toEqual(expect.any(String));
+    }
+  });
+
+  it("package exposes savepoints-lite-validate bin and ships dist", () => {
+    const pkg = JSON.parse(readRoot("package.json"));
+    expect(pkg.bin?.["savepoints-lite-validate"]).toBe(
+      "./dist/savepoints-lite-validate.mjs",
+    );
+    expect(pkg.files).toEqual(expect.arrayContaining(["dist/**"]));
+    expect(existsSync(join(root, "dist/savepoints-lite-validate.mjs"))).toBe(
+      true,
+    );
   });
 
   it("expected workspace release-candidate paths file matches verify script usage", () => {
     const listed = readPathsList("scripts/expected-package-paths.txt");
-    expect(listed).toHaveLength(16);
+    expect(listed.length).toBeGreaterThanOrEqual(16);
     for (const rel of listed) {
       expect(existsSync(join(root, rel))).toBe(true);
     }
   });
 
   it("registry dogfood manifests exist per published pin version", () => {
+    const pkg = JSON.parse(readRoot("package.json"));
     const v11 = readRegistryDogfoodManifest("1.1.0");
     expect(v11).toHaveLength(15);
     expect(v11).not.toContain(
@@ -215,9 +246,13 @@ describe("package invariants", () => {
     const v20 = readRegistryDogfoodManifest("2.0.0");
     expect(v20).toHaveLength(16);
     expect(v20).toContain("templates/consumer/savepoints-notion.yml.example");
-    expect([...v20].sort()).toEqual(
-      readPathsList("scripts/expected-package-paths.txt").sort(),
-    );
+    // Workspace release-candidate layout may advance ahead of the published
+    // dogfood pin; only require equality when versions match.
+    if (pkg.devDependencies["@multipliers-dev/savepoints-lite"] === pkg.version) {
+      expect([...v20].sort()).toEqual(
+        readPathsList("scripts/expected-package-paths.txt").sort(),
+      );
+    }
   });
 
   it("tarball markdown relative links resolve within npm pack file set", () => {

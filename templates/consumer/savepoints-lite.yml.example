@@ -1,0 +1,12 @@
+# Optional consumer override — copy to .agents/savepoints-lite.yml.
+# Overrides packaged skills/savepoints/defaults.yml for storage.provider and
+# validation.post_write only.
+
+storage:
+  provider: notion
+
+validation:
+  # When true, after a confirmed Notion create the provider skill runs
+  # savepoints-lite-validate on read-back properties (at most one repair).
+  # Default / absent: false (instruction-only persistence; no CLI required).
+  post_write: false

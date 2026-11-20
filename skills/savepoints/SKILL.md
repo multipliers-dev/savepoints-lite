@@ -28,24 +28,30 @@ Follow [schema.md](./schema.md) for field semantics and metadata derivation. Omi
 
 ## Configuration resolution
 
-Resolve `storage.provider` in two steps (static; no dynamic discovery):
+Resolve `storage.provider` and `validation.post_write` in two steps (static; no dynamic discovery):
 
 1. Start from package [defaults.yml](./defaults.yml) next to this skill under `node_modules`.
-2. If consumer `.agents/savepoints-lite.yml` exists and sets `storage.provider`, that value **overrides** the package default.
+2. If consumer `.agents/savepoints-lite.yml` exists, its keys **override** the packaged defaults for the same keys only.
 
-An absent `.agents/savepoints-lite.yml` is normal — use the packaged default. Only the **resolved** value after step 2 is authoritative.
+An absent `.agents/savepoints-lite.yml` is normal — use the packaged default. Only the **resolved** values after step 2 are authoritative.
 
 | Precedence | Location | Overrides |
 | --- | --- | --- |
-| 1 (highest) | Consumer `.agents/savepoints-lite.yml` (optional) | `storage.provider` only |
-| 2 (default) | Package [defaults.yml](./defaults.yml) | `notion` for v1 |
+| 1 (highest) | Consumer `.agents/savepoints-lite.yml` (optional) | `storage.provider`, `validation.post_write` |
+| 2 (default) | Package [defaults.yml](./defaults.yml) | `notion`; `validation.post_write: false` |
 
 Package default:
 
 ```yaml
 storage:
   provider: notion
+validation:
+  post_write: false
 ```
+
+Example consumer file: [`templates/consumer/savepoints-lite.yml.example`](../../templates/consumer/savepoints-lite.yml.example).
+
+Carry the resolved `validation.post_write` flag into the provider instruction context (so the Notion provider knows whether to run optional post-write CLI validation). The router still does **not** call Notion MCP or the validator CLI.
 
 **Misconfiguration (after resolution):** report in chat when the resolved `storage.provider` is empty/missing, or not supported in v1 (`notion` only). Do not treat “no consumer override file” as misconfiguration. Do not guess or fall back to another provider.
 
@@ -86,7 +92,7 @@ The router **must not** document Notion page properties, Postgres table schemas,
 
 | Outcome | Router behavior |
 | --- | --- |
-| `success` | Continue primary work; optional brief confirmation only if useful. The provider may also report post-write issues after `success` (missing persisted property, contract mismatch, verification unavailable, repair confirmation unknown) — that is **not** a failed append and must **not** trigger another Savepoint |
+| `success` | Continue primary work; optional brief confirmation only if useful. When opt-in post-write validation ran, the provider may report issues after `success` (missing persisted property, contract mismatch, verification unavailable, repair confirmation unknown) — that is **not** a failed append and must **not** trigger another Savepoint |
 | `failure` | One-sentence report (tool name + error summary); **no retry queue**; continue primary work |
 | `unconfirmed` | One-sentence report (“queued — not confirmed”); continue primary work |
 

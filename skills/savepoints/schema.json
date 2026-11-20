@@ -1,0 +1,18 @@
+{
+  "$schema_comment": "Canonical provider-neutral Savepoint field contract. schema.md documents semantics; requiredness for validation is defined only here.",
+  "fields": {
+    "title": { "required": true },
+    "repository": { "required": true },
+    "agent": { "required": true },
+    "session_id": { "required": false },
+    "content": {
+      "required": false,
+      "fields": {
+        "what_was_done": { "required": false },
+        "decisions_made": { "required": false },
+        "open_threads": { "required": false },
+        "errors": { "required": false }
+      }
+    }
+  }
+}

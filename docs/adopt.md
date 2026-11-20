@@ -4,7 +4,7 @@ How to install `@multipliers-dev/savepoints-lite` in a consumer repository, conf
 
 ## What ships in the npm package
 
-`@multipliers-dev/savepoints-lite@2.1.0` is an instruction-only tarball: router + Notion provider skills, `schema.md`, defaults YAML, consumer templates (including optional Notion destination example), shipped docs, and `LICENSE`. Maintainer-only evidence ([adoption verification record on GitHub](https://github.com/multipliers-dev/savepoints-lite/blob/main/docs/adoption-verification-record.md)) is **not** in the npm package.
+`@multipliers-dev/savepoints-lite@2.1.0` ships router + Notion provider skills, `schema.json` / `schema.md`, Notion `mapping.json`, defaults YAML, optional `savepoints-lite-validate` CLI, consumer templates, shipped docs, and `LICENSE`. Default behaviour is instruction-only persistence; set `validation.post_write: true` in `.agents/savepoints-lite.yml` to opt into deterministic post-write checks. Maintainer-only evidence ([adoption verification record on GitHub](https://github.com/multipliers-dev/savepoints-lite/blob/main/docs/adoption-verification-record.md)) is **not** in the npm package.
 
 Pin an **exact** semver and commit the lockfile. Use `npm ci` in CI.
 
@@ -52,6 +52,7 @@ destination:
 | [`templates/consumer/AGENTS.md.snippet`](../templates/consumer/AGENTS.md.snippet) | Runtime session-log contract — merge into root `AGENTS.md` |
 | [`templates/consumer/CLAUDE.md.snippet`](../templates/consumer/CLAUDE.md.snippet) | Claude Code import hook (`@AGENTS.md`) only |
 | [`templates/consumer/savepoints-notion.yml.example`](../templates/consumer/savepoints-notion.yml.example) | Optional `.agents/savepoints-notion.yml` template |
+| [`templates/consumer/savepoints-lite.yml.example`](../templates/consumer/savepoints-lite.yml.example) | Optional `.agents/savepoints-lite.yml` (`storage.provider`, `validation.post_write`) |
 
 After `npm ci`, templates live under `node_modules/@multipliers-dev/savepoints-lite/templates/consumer/`.
 
@@ -82,7 +83,11 @@ The merged `AGENTS.md.snippet` **Session log** section is the canonical standing
 | **Normal operation, not authorized or unclear** | Package install or Notion MCP alone is **not** consent. Do not write to Notion. |
 | **Manual verification** | Behavioral checklist ([`skills/savepoints/verification.md`](../skills/savepoints/verification.md)) requires **explicit operator authorization for that verification session** — separate from routine logging when activation is in place. |
 
-Each Savepoint must capture what was done, decisions (and rationale), open threads, and errors (what happened and how they were handled). `.agents/savepoints-lite.yml` overrides `storage.provider` only; it is **not** the logging opt-in mechanism.
+Each Savepoint must capture what was done, decisions (and rationale), open threads, and errors (what happened and how they were handled). `.agents/savepoints-lite.yml` may override `storage.provider` and `validation.post_write`; it is **not** the logging opt-in mechanism.
+
+### Optional post-write validation
+
+Packaged default: `validation.post_write: false`. When `true`, after a confirmed Notion create the provider skill reads back the page and runs `savepoints-lite-validate` (package bin) against persisted properties, then may attempt one repair. The CLI does not call Notion and does not require Notion credentials. Unit tests cover the validator; they do **not** prove agents invoke it.
 
 ## Router skill path (after install)
 
