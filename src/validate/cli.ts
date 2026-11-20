@@ -4,11 +4,14 @@
  * Does not call Notion; agents pass persisted properties after MCP read-back.
  *
  * Usage:
- *   savepoints-lite-validate --package-root <path> [--stdin | --input <json>]
+ *   savepoints-lite-validate [--package-root <path>] [--stdin | --input <json>]
+ *
+ * When --package-root is omitted, the install root is discovered by walking up
+ * from this executable until skills/savepoints/schema.json and
+ * skills/savepoints-notion/mapping.json are found (npm or vendor layout).
  *
  * Exit: 0 ok, 1 validation issues, 2 invalid CLI/input/runtime
  */
-import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { loadNotionMapping, loadSchema, resolvePackageRoot } from "./load-contract.js";
@@ -18,13 +21,20 @@ function printHelp(): void {
   process.stdout.write(`savepoints-lite-validate — deterministic Savepoint property check
 
 Usage:
+  savepoints-lite-validate --stdin
+  savepoints-lite-validate --input '<json>'
   savepoints-lite-validate --package-root <dir> --stdin
-  savepoints-lite-validate --package-root <dir> --input '<json>'
+
+--package-root is optional. When omitted, the CLI locates the same install root
+that contains skills/savepoints/ and skills/savepoints-notion/ (standalone npm
+or marketplace vendor tree).
 
 Input JSON:
   { "persisted": { "Name": "...", "Repository": "...", "Agent": "..." }, "page_id": "optional" }
 
 Exit codes: 0 ok | 1 issues | 2 usage/runtime error
+Requires Node.js >= 22. No npm install in the consumer repo is required when
+invoking this self-contained file directly (node path/to/savepoints-lite-validate.mjs).
 `);
 }
 
@@ -120,9 +130,17 @@ async function main(): Promise<void> {
     process.exit(2);
   }
 
-  const packageRoot = resolve(
-    resolvePackageRoot(args.packageRoot ? resolve(args.packageRoot) : undefined),
-  );
+  let packageRoot: string;
+  try {
+    packageRoot = resolve(
+      resolvePackageRoot(args.packageRoot ? resolve(args.packageRoot) : undefined),
+    );
+  } catch (err) {
+    process.stderr.write(
+      `${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    process.exit(2);
+  }
 
   let schema;
   let mapping;

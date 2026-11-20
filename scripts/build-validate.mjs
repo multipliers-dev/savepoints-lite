@@ -7,7 +7,9 @@ import * as esbuild from "esbuild";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
 const entry = resolve(root, "src/validate/cli.ts");
-const outfile = resolve(root, "dist/savepoints-lite-validate.mjs");
+// Ship beside canonical skills so marketplace vendor sync (skills/ tree) can
+// copy the same self-contained CLI without consumer node_modules deps.
+const outfile = resolve(root, "skills/bin/savepoints-lite-validate.mjs");
 
 const generatedBanner = `/*!
  * GENERATED FILE — DO NOT EDIT.

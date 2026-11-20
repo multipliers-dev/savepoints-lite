@@ -8,15 +8,16 @@ Contrast with [multipliers-dev/savepoints](https://github.com/multipliers-dev/sa
 flowchart TB
     subgraph Consumer["Consumer repository"]
         Activation["AGENTS.md (+ CLAUDE.md import)"]
-        Package["npm dependency"]
-        AgentsYml[".agents/savepoints-notion.yml (optional)"]
+        Package["npm dependency (standalone)"]
+        AgentsYml[".agents/*.yml (optional)"]
     end
 
     subgraph Integration["Integration / marketplace layer (optional)"]
-        Tier1["destination in instruction context"]
+        Tier1["destination + validation in instruction context"]
+        Vendor["vendor/savepoints-lite skills + CLI"]
     end
 
-    subgraph Installed["Installed package (node_modules)"]
+    subgraph Installed["Package-equivalent install root"]
         direction LR
         Schema["Schema JSON + defaults"]
         Router["Savepoints router"]
@@ -29,10 +30,11 @@ flowchart TB
         Database["Consumer Notion Savepoints database"]
     end
 
-    Package -.->|"Installs"| Installed
+    Package -.->|"Standalone npm"| Installed
+    Vendor -.->|"Marketplace plugin"| Installed
     Integration -->|"Tier 1 handoff"| Router
     Activation -->|"Loads skill"| Router
-    AgentsYml -.->|"Tier 2 when tier 1 absent"| Provider
+    AgentsYml -.->|"Lower-tier overrides"| Router
     Schema -.->|"Protocol + config"| Router
     Router -->|"Delegates append + destination"| Provider
     Provider -->|"notion-create-pages"| MCP
@@ -40,21 +42,21 @@ flowchart TB
     Provider -.->|"opt-in post_write"| Validator
 ```
 
-**Distribution** (dashed): one install step places packaged skills, contracts, and the optional CLI under `node_modules` — install alone does not activate Savepoints.
+**Distribution** (dashed): standalone npm places skills, contracts, and the optional CLI under `node_modules/@multipliers-dev/savepoints-lite/`; Cursor Team Marketplace vendors the same `skills/` tree (including `skills/bin/savepoints-lite-validate.mjs`) under `plugins/team-harness/vendor/savepoints-lite/`. Install alone does not activate Savepoints.
 
-**Execution** (solid): consumer-owned agent instructions load the installed router; the router decides when to create Savepoints and assembles provider-neutral records; the configured provider persists through the consumer’s existing Notion MCP when a valid destination is resolved. Opt-in validation (dotted) runs only when `validation.post_write` is true.
+**Execution** (solid): agents load the router from the package-equivalent install root; the router decides when to create Savepoints and assembles provider-neutral records; the configured provider persists through the consumer’s existing Notion MCP when a valid destination is resolved. Opt-in validation (dotted) runs only when resolved `validation.post_write` is true and a compatible Node runtime can execute the CLI.
 
 ## Layer model
 
 | Layer | Responsibility |
 | --- | --- |
 | **Consumer activation** | Root `AGENTS.md` session-log section; Claude Code via `CLAUDE.md` (`@AGENTS.md`). [`docs/adopt.md`](./adopt.md). |
-| **Integration (optional)** | Tier-1 `destination.data_source_id` in instruction/delegation context — marketplace wrappers, CI agents, etc. |
+| **Integration (optional)** | Tier-1 `destination` and optional `validation.post_write` in instruction/delegation context — marketplace wrappers, CI agents, etc. Wrapper may read host User Rules; **canonical skills do not**. |
 | **Router** [`skills/savepoints/SKILL.md`](../skills/savepoints/SKILL.md) | Event detection, Savepoint assembly, `storage.provider` / `validation.post_write`, carry tier-1 `destination` unchanged, load provider skill, handle outcomes. **No** Notion MCP or validator CLI. |
 | **Provider** [`skills/savepoints-notion/SKILL.md`](../skills/savepoints-notion/SKILL.md) | Resolve destination (3 tiers), map Savepoint → Notion (`mapping.json`), MCP write, bounded confirmation; optional same-append verify/repair when validation is enabled. **Does not** decide when to Savepoint or read User Rules. |
-| **Validator (optional)** | Deterministic CLI `savepoints-lite-validate` — checks persisted Notion properties against [`schema.json`](../skills/savepoints/schema.json) + Notion [`mapping.json`](../skills/savepoints-notion/mapping.json). No Notion credentials or MCP. |
-| **Distribution** | npm package only — consumers must not vendor skills. |
-| **Runtime** | Persistence uses the consumer’s **Notion MCP**. Executable validation is **opt-in** (`validation.post_write`); default remains instruction-only create/confirm. |
+| **Validator (optional)** | Self-contained CLI [`skills/bin/savepoints-lite-validate.mjs`](../skills/bin/savepoints-lite-validate.mjs) (npm bin `savepoints-lite-validate`) — checks persisted Notion properties against [`schema.json`](../skills/savepoints/schema.json) + Notion [`mapping.json`](../skills/savepoints-notion/mapping.json). No Notion credentials or MCP. Discovers install root from its location (npm or vendor). |
+| **Distribution** | Published npm package is canonical. Standalone consumers must not hand-vendor skills; marketplace may commit a vendor copy of the published `skills/` tree for plugin install. |
+| **Runtime** | Persistence uses the consumer’s **Notion MCP**. Executable validation is **opt-in** (`validation.post_write`); requires Node.js ≥ 22 when enabled; missing runtime → **verification unavailable** (fail-open, confirmed create stays `success`). Default remains instruction-only create/confirm. |
 
 **Design principle:** Router owns **what** and **when**; static config and integration context select **where**; provider skills own **how** to persist; the optional validator owns **deterministic property checks** only.
 
@@ -68,12 +70,20 @@ Each meaningful work trigger produces **one new record** — no cross-event upda
 
 Static resolution only — no environment variables in v2.
 
-**Router** — `storage.provider` and `validation.post_write`:
+**Router** — `storage.provider`:
 
 | Precedence | Location | Overrides |
 | --- | --- | --- |
-| 1 (highest) | Consumer `.agents/savepoints-lite.yml` (optional) | `storage.provider`, `validation.post_write` |
-| 2 (default) | Package [`skills/savepoints/defaults.yml`](../skills/savepoints/defaults.yml) | `notion`; `validation.post_write: false` |
+| 1 (highest) | Consumer `.agents/savepoints-lite.yml` (optional) | `storage.provider` |
+| 2 (default) | Package [`skills/savepoints/defaults.yml`](../skills/savepoints/defaults.yml) | `notion` |
+
+**Router** — `validation.post_write`:
+
+| Tier | Location | When |
+| --- | --- | --- |
+| 1 (highest) | Integration **instruction/delegation context** (`validation.post_write`) | Supplied for this delegation |
+| 2 | Consumer `.agents/savepoints-lite.yml` (optional) | Tier 1 absent |
+| 3 (default) | Package [`skills/savepoints/defaults.yml`](../skills/savepoints/defaults.yml) | `false` |
 
 **Notion provider** — `destination.data_source_id`:
 
@@ -105,7 +115,7 @@ Authoritative behavior: [`skills/savepoints-notion/SKILL.md`](../skills/savepoin
 - **Synchronous-first:** `allow_async: false` when supported.
 - **Bounded async:** at most **two** poll follow-ups, then `unconfirmed`.
 - **Three outcomes:** `success`, `failure`, `unconfirmed` — do not claim persistence on `unconfirmed`.
-- **Same-append verify/repair (opt-in):** when `validation.post_write` is true, after confirmed create: read-back → `savepoints-lite-validate` → at most one repair from the Savepoint already assembled for that append. Report missing persisted property, contract mismatch, verification unavailable, or repair confirmation unknown without flipping `success` to `failure`. Default off.
+- **Same-append verify/repair (opt-in):** when resolved `validation.post_write` is true, after confirmed create: read-back → `skills/bin/savepoints-lite-validate.mjs` → at most one repair from the Savepoint already assembled for that append. Report missing persisted property, contract mismatch, verification unavailable (including missing Node/CLI), or repair confirmation unknown without flipping `success` to `failure`. Default off.
 
 ### Failure handling and anti-loop
 

@@ -4,7 +4,7 @@ How to install `@multipliers-dev/savepoints-lite` in a consumer repository, conf
 
 ## What ships in the npm package
 
-`@multipliers-dev/savepoints-lite@2.1.0` ships router + Notion provider skills, `schema.json` / `schema.md`, Notion `mapping.json`, defaults YAML, optional `savepoints-lite-validate` CLI, consumer templates, shipped docs, and `LICENSE`. Default behaviour is instruction-only persistence; set `validation.post_write: true` in `.agents/savepoints-lite.yml` to opt into deterministic post-write checks. Maintainer-only evidence ([adoption verification record on GitHub](https://github.com/multipliers-dev/savepoints-lite/blob/main/docs/adoption-verification-record.md)) is **not** in the npm package.
+`@multipliers-dev/savepoints-lite@2.1.0` ships router + Notion provider skills, `schema.json` / `schema.md`, Notion `mapping.json`, defaults YAML, optional self-contained `skills/bin/savepoints-lite-validate.mjs` CLI (npm bin `savepoints-lite-validate`), consumer templates, shipped docs, and `LICENSE`. Default behaviour is instruction-only persistence; enable `validation.post_write` via integration instruction context or `.agents/savepoints-lite.yml`. Maintainer-only evidence ([adoption verification record on GitHub](https://github.com/multipliers-dev/savepoints-lite/blob/main/docs/adoption-verification-record.md)) is **not** in the npm package.
 
 Pin an **exact** semver and commit the lockfile. Use `npm ci` in CI.
 
@@ -87,7 +87,7 @@ Each Savepoint must capture what was done, decisions (and rationale), open threa
 
 ### Optional post-write validation
 
-Packaged default: `validation.post_write: false`. When `true`, after a confirmed Notion create the provider skill reads back the page and runs `savepoints-lite-validate` (package bin) against persisted properties, then may attempt one repair. The CLI does not call Notion and does not require Notion credentials. Unit tests cover the validator; they do **not** prove agents invoke it.
+Packaged default: `validation.post_write: false`. Enable via (1) integration delegation context `validation.post_write: true` (highest), or (2) `.agents/savepoints-lite.yml`. When enabled, after a confirmed Notion create the provider skill reads back the page and runs `skills/bin/savepoints-lite-validate.mjs` against persisted properties, then may attempt one repair. Requires Node.js ≥ 22 when enabled; if Node or the CLI cannot run, report **verification unavailable** and keep the confirmed create as `success`. The CLI does not call Notion and does not require Notion credentials. Unit tests cover the validator; they do **not** prove agents invoke it.
 
 ## Router skill path (after install)
 
@@ -111,7 +111,7 @@ The hub publishes release-candidate semver from workspace `package.json` while p
 
 | File | Overrides |
 | --- | --- |
-| `.agents/savepoints-lite.yml` | `storage.provider` only |
+| `.agents/savepoints-lite.yml` | `storage.provider`; `validation.post_write` (when integration context omits validation) |
 
 ## Verification
 
@@ -126,7 +126,18 @@ The hub publishes release-candidate semver from workspace `package.json` while p
 
 ## External integrations (provider-neutral)
 
-Wrappers and non-Cursor hosts should pass the tier-1 `destination` block in instruction context when delegating to the Savepoints router, and carry it unchanged to the Notion provider. The public npm package stays host-agnostic — convention in skills, not a programmatic API.
+Wrappers and non-Cursor hosts should pass the tier-1 `destination` block in instruction context when delegating to the Savepoints router, and carry it unchanged to the Notion provider. They may also pass `validation.post_write` in the same handoff so consumers need not commit `.agents/savepoints-lite.yml` solely to enable checks. The public npm package stays host-agnostic — convention in skills, not a programmatic API.
+
+### Cursor Team Marketplace (after publish)
+
+Team-harness vendors the published `skills/` tree under `plugins/team-harness/vendor/savepoints-lite/`. After `@2.1.0` is published, marketplace maintainers should:
+
+1. Bump the root pin `devDependencies["@multipliers-dev/savepoints-lite"]` and re-sync vendor (`npm run sync:savepoints-vendor`).
+2. Ensure `scripts/expected-savepoints-vendor-paths.txt` includes `skills/bin/savepoints-lite-validate.mjs` (copied with the skills tree — no separate validator implementation).
+3. Optionally extend the `/savepoints` wrapper to pass `validation.post_write` from User Rules / engineering invariants into router context (same pattern as destination). Canonical skills must not read User Rules.
+4. Refresh layout verify docs so the package-equivalent install root mentions the optional CLI under `skills/bin/`.
+
+Do not implement those marketplace edits from this package repository.
 
 ## Learn more
 

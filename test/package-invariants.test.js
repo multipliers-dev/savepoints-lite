@@ -172,9 +172,18 @@ describe("package invariants", () => {
 
   it("router carries integration destination unchanged to provider", () => {
     const skill = readRoot("skills/savepoints/SKILL.md");
-    expect(skill).toMatch(/carry this `destination` block unchanged/i);
+    expect(skill).toMatch(/carry this (?:`destination` )?block unchanged/i);
     expect(skill).toMatch(/data_source_id/);
     expect(skill).toMatch(/does \*\*not\*\* call Notion MCP, read Cursor User Rules/i);
+  });
+
+  it("router documents integration-tier validation.post_write precedence", () => {
+    const skill = readRoot("skills/savepoints/SKILL.md");
+    expect(skill).toMatch(/### `validation\.post_write`/);
+    expect(skill).toMatch(/integration instruction\/delegation context/i);
+    expect(skill).toMatch(/validation:\s*\n\s*post_write:/);
+    expect(skill).toMatch(/package-equivalent install root/i);
+    expect(skill).toMatch(/vendor\/savepoints-lite/i);
   });
 
   it("consumer savepoints-notion example template exists", () => {
@@ -195,11 +204,14 @@ describe("package invariants", () => {
     expect(skill).toMatch(/## Post-write verification and repair \(optional\)/);
     expect(skill).toMatch(/validation\.post_write/);
     expect(skill).toMatch(/savepoints-lite-validate/);
+    expect(skill).toMatch(/skills\/bin\/savepoints-lite-validate\.mjs/);
     expect(skill).toMatch(/verification unavailable/);
+    expect(skill).toMatch(/Node\.js is missing|Node\.js is available/);
     expect(skill).toMatch(/contract_mismatch|contract mismatch/);
     expect(skill).toMatch(/repair confirmation unknown/);
     expect(skill).toMatch(/missing_persisted_property|missing persisted property/);
     expect(skill).toMatch(/mapping\.json/);
+    expect(skill).toMatch(/do \*\*not\*\* re-read Cursor User Rules/i);
     const schema = readRoot("skills/savepoints/schema.md");
     expect(schema).toMatch(/schema\.json/);
     expect(schema).toMatch(/Same-append only/);
@@ -216,15 +228,16 @@ describe("package invariants", () => {
     }
   });
 
-  it("package exposes savepoints-lite-validate bin and ships dist", () => {
+  it("package exposes savepoints-lite-validate bin under skills/bin", () => {
     const pkg = JSON.parse(readRoot("package.json"));
     expect(pkg.bin?.["savepoints-lite-validate"]).toBe(
-      "./dist/savepoints-lite-validate.mjs",
+      "./skills/bin/savepoints-lite-validate.mjs",
     );
-    expect(pkg.files).toEqual(expect.arrayContaining(["dist/**"]));
-    expect(existsSync(join(root, "dist/savepoints-lite-validate.mjs"))).toBe(
-      true,
-    );
+    expect(pkg.files).toEqual(expect.arrayContaining(["skills/**"]));
+    expect(pkg.files).not.toContain("dist/**");
+    expect(
+      existsSync(join(root, "skills/bin/savepoints-lite-validate.mjs")),
+    ).toBe(true);
   });
 
   it("expected workspace release-candidate paths file matches verify script usage", () => {

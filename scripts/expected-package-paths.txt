@@ -1,11 +1,11 @@
 LICENSE
 README.md
-dist/savepoints-lite-validate.mjs
 docs/adopt.md
 docs/architecture.md
 docs/publishing.md
 package.json
 skills/README.md
+skills/bin/savepoints-lite-validate.mjs
 skills/savepoints-notion/defaults.yml
 skills/savepoints-notion/mapping.json
 skills/savepoints-notion/SKILL.md

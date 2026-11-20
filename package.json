@@ -21,12 +21,11 @@
     "provenance": true
   },
   "bin": {
-    "savepoints-lite-validate": "./dist/savepoints-lite-validate.mjs"
+    "savepoints-lite-validate": "./skills/bin/savepoints-lite-validate.mjs"
   },
   "files": [
     "skills/**",
     "templates/**",
-    "dist/**",
     "README.md",
     "LICENSE",
     "docs/adopt.md",
