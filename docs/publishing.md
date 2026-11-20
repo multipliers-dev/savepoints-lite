@@ -71,7 +71,7 @@ Do **not** bump the devDependency to a version that does not exist on npm (no `f
 
 Routine hub session logging uses the **team-harness** marketplace Savepoints wrapper with **tier-1** `destination` from global Cursor User Rules ([engineering invariants](https://github.com/multipliers-dev/cursor-team-marketplace/blob/main/docs/engineering-invariants.md)), not per-repo `AGENTS.md` activation or `node_modules` skills for instructions.
 
-After publishing a release that changes the `skills/` inventory (including `skills/bin/savepoints-lite-validate.mjs`), marketplace maintainers must bump the pin and re-sync `plugins/team-harness/vendor/savepoints-lite/` so the vendor tree stays byte-identical to the published skills — see [adopt.md](./adopt.md) § Cursor Team Marketplace.
+After publishing a release that changes the `skills/` inventory (including `skills/bin/savepoints-lite-validate.mjs`), marketplace maintainers must bump the pin and re-sync `plugins/team-harness/vendor/savepoints-lite/` so the vendor tree stays byte-identical to the published skills — see [adopt.md](./adopt.md) § [Cursor Team Marketplace](./adopt.md#cursor-team-marketplace) (team-harness **1.16.0+** already ships `@2.1.0`).
 
 Do not reintroduce maintainer destination ids into packaged defaults, generic docs, or templates.
 
