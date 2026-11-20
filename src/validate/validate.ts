@@ -1,3 +1,4 @@
+import { interpretNotionPropertyValue } from "./notion-value.js";
 import type {
   MappingDocument,
   SchemaDocument,
@@ -5,10 +6,6 @@ import type {
   ValidationIssue,
   ValidationResult,
 } from "./types.js";
-
-function isNonEmptyString(value: unknown): boolean {
-  return typeof value === "string" && value.trim().length > 0;
-}
 
 function propertyValue(
   persisted: Record<string, unknown>,
@@ -23,6 +20,11 @@ function propertyValue(
 /**
  * Deterministic post-write check: required top-level schema fields vs Notion
  * persisted properties via the provider mapping. Does not call Notion.
+ *
+ * Accepts plain strings and common notion-fetch shapes for `title` /
+ * `rich_text` / `text` (see notion-value.ts). Unsupported shapes yield
+ * `unsupported_property_shape` (not `missing_persisted_property`) so agents
+ * must not treat them as repairable gaps.
  */
 export function validatePersistedProperties(
   input: unknown,
@@ -83,15 +85,26 @@ export function validatePersistedProperties(
       continue;
     }
 
-    const value = propertyValue(persisted, mapEntry.property);
-    if (!isNonEmptyString(value)) {
+    const raw = propertyValue(persisted, mapEntry.property);
+    const outcome = interpretNotionPropertyValue(raw);
+    if (outcome.kind === "present") {
+      continue;
+    }
+    if (outcome.kind === "unsupported") {
       issues.push({
-        kind: "missing_persisted_property",
+        kind: "unsupported_property_shape",
         field,
         property: mapEntry.property,
-        message: `required field "${field}" mapped to "${mapEntry.property}" is missing or empty`,
+        message: `required field "${field}" mapped to "${mapEntry.property}" has an unsupported Notion property shape (not treated as missing)`,
       });
+      continue;
     }
+    issues.push({
+      kind: "missing_persisted_property",
+      field,
+      property: mapEntry.property,
+      message: `required field "${field}" mapped to "${mapEntry.property}" is missing or empty`,
+    });
   }
 
   return {

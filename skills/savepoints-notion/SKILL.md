@@ -84,12 +84,12 @@ Use exact `property` names from `mapping.json` in the `properties` map. Pass Sav
    - If read-back fails or no usable page id/url is available: report **verification unavailable** (include page id/url when known); do **not** claim fields are missing; do **not** run the CLI or repair; return `success`.
 2. **Validate (CLI):** only when Node.js is available and the CLI file (or npm bin) can be executed. Run with JSON on stdin or `--input`:
    ```json
-   { "persisted": { "<Notion property>": "<value>", "...": "..." }, "page_id": "<optional>" }
+   { "persisted": { "<Notion property>": <value>, "...": "..." }, "page_id": "<optional>" }
    ```
-   Pass the fetched property map (not the Savepoint YAML). The CLI loads [../savepoints/schema.json](../savepoints/schema.json) and [mapping.json](./mapping.json) — do not re-derive required fields in prose.
-   - Interpret structured `issues[].kind`: `missing_persisted_property`, `contract_mismatch`, `invalid_input`.
+   Pass the **fetched property map** from read-back (not the Savepoint YAML). Values may be plain strings **or** structured Notion `title` / `rich_text` (text) shapes as returned by `notion-fetch` — do **not** hand-flatten before the CLI; the validator accepts those shapes deterministically. The CLI loads [../savepoints/schema.json](../savepoints/schema.json) and [mapping.json](./mapping.json) — do not re-derive required fields in prose.
+   - Interpret structured `issues[].kind`: `missing_persisted_property`, `unsupported_property_shape`, `contract_mismatch`, `invalid_input`.
    - If Node.js is missing, the CLI file/bin is missing, or the process cannot start / exits with usage/runtime failure (exit 2): report **verification unavailable**; do **not** claim deterministic validation succeeded; do not invent diagnostics; do not install a runtime or alter the consumer repository; return `success`.
-3. **Repair (best effort, once):** only for CLI `missing_persisted_property` issues where the Savepoint for this append already has a usable value. One `notion-update-page` setting **only** those mapped properties from that Savepoint. Never invent. Never repair on verification unavailable or `contract_mismatch`. If that update fails terminally, report it (with page id/url when known) without retrying and without changing the confirmed create outcome from `success`.
+3. **Repair (best effort, once):** only for CLI `missing_persisted_property` issues where the Savepoint for this append already has a usable value. One `notion-update-page` setting **only** those mapped properties from that Savepoint. Never invent. Never repair on verification unavailable, `unsupported_property_shape`, or `contract_mismatch` (structured-but-valid Notion values must not be treated as missing). If that update fails terminally, report it (with page id/url when known) without retrying and without changing the confirmed create outcome from `success`.
 4. **Re-verify** with one fetch + one CLI run after a repair attempt that appeared to succeed.
    - If post-repair read-back or CLI fails: report **repair confirmation unknown** (with page id/url when known); do **not** assert remaining gaps as verified missing; return `success`.
    - If re-check succeeds with issues: report remaining kinds; if clean, finish quietly.

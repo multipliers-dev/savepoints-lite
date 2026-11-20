@@ -133,7 +133,7 @@ Wrappers and non-Cursor hosts should pass the tier-1 `destination` block in inst
 Team-harness vendors the published `skills/` tree under `plugins/team-harness/vendor/savepoints-lite/`. After `@2.1.0` is published, marketplace maintainers should:
 
 1. Bump the root pin `devDependencies["@multipliers-dev/savepoints-lite"]` and re-sync vendor (`npm run sync:savepoints-vendor`).
-2. Ensure `scripts/expected-savepoints-vendor-paths.txt` includes `skills/bin/savepoints-lite-validate.mjs` (copied with the skills tree — no separate validator implementation).
+2. Ensure `scripts/expected-savepoints-vendor-paths.txt` includes `skills/bin/savepoints-lite-validate.mjs` (committed under the published `skills/` tree — sync from the npm artifact, not a consumer build).
 3. Optionally extend the `/savepoints` wrapper to pass `validation.post_write` from User Rules / engineering invariants into router context (same pattern as destination). Canonical skills must not read User Rules.
 4. Refresh layout verify docs so the package-equivalent install root mentions the optional CLI under `skills/bin/`.
 

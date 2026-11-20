@@ -56,9 +56,21 @@ function parseArgs(argv: string[]): {
     } else if (arg === "--stdin") {
       stdin = true;
     } else if (arg === "--package-root") {
-      packageRoot = argv[++i];
+      const next = argv[++i];
+      if (next === undefined || next.startsWith("-")) {
+        throw new Error(
+          "--package-root requires a directory path (got missing or flag value)",
+        );
+      }
+      packageRoot = next;
     } else if (arg === "--input") {
-      input = argv[++i];
+      const next = argv[++i];
+      if (next === undefined || (next.startsWith("-") && next !== "-")) {
+        throw new Error(
+          "--input requires a JSON string (got missing or flag value)",
+        );
+      }
+      input = next;
     } else {
       throw new Error(`unknown argument: ${arg}`);
     }

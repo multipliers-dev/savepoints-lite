@@ -208,8 +208,11 @@ describe("package invariants", () => {
     expect(skill).toMatch(/verification unavailable/);
     expect(skill).toMatch(/Node\.js is missing|Node\.js is available/);
     expect(skill).toMatch(/contract_mismatch|contract mismatch/);
+    expect(skill).toMatch(/unsupported_property_shape/);
+    expect(skill).toMatch(/title.*rich_text|structured Notion/i);
     expect(skill).toMatch(/repair confirmation unknown/);
     expect(skill).toMatch(/missing_persisted_property|missing persisted property/);
+    expect(skill).toMatch(/Never repair on verification unavailable, `unsupported_property_shape`/);
     expect(skill).toMatch(/mapping\.json/);
     expect(skill).toMatch(/do \*\*not\*\* re-read Cursor User Rules/i);
     const schema = readRoot("skills/savepoints/schema.md");
@@ -235,9 +238,14 @@ describe("package invariants", () => {
     );
     expect(pkg.files).toEqual(expect.arrayContaining(["skills/**"]));
     expect(pkg.files).not.toContain("dist/**");
-    expect(
-      existsSync(join(root, "skills/bin/savepoints-lite-validate.mjs")),
-    ).toBe(true);
+    const cliRel = "skills/bin/savepoints-lite-validate.mjs";
+    expect(existsSync(join(root, cliRel))).toBe(true);
+    const cli = readRoot(cliRel);
+    expect(cli.startsWith("#!/usr/bin/env node\n")).toBe(true);
+    expect(cli.length).toBeGreaterThan(100);
+    const gitignore = readRoot(".gitignore");
+    expect(gitignore).not.toMatch(/^skills\/bin\/?$/m);
+    expect(gitignore).not.toMatch(/^skills\/bin\//m);
   });
 
   it("expected workspace release-candidate paths file matches verify script usage", () => {

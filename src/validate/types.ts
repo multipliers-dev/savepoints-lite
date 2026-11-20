@@ -1,5 +1,6 @@
 export type IssueKind =
   | "missing_persisted_property"
+  | "unsupported_property_shape"
   | "contract_mismatch"
   | "invalid_input";
 

@@ -1,0 +1,47 @@
+{
+  "page_id": "41e6cffa-ff9c-8150-add2-f992eb944bdb",
+  "persisted": {
+    "Name": {
+      "type": "title",
+      "title": [
+        {
+          "type": "text",
+          "plain_text": "savepoints-lite — marketplace-compat PR #20 revise",
+          "text": {
+            "content": "savepoints-lite — marketplace-compat PR #20 revise"
+          }
+        }
+      ]
+    },
+    "Repository": {
+      "type": "rich_text",
+      "rich_text": [
+        {
+          "type": "text",
+          "plain_text": "multipliers-dev/savepoints-lite",
+          "text": {
+            "content": "multipliers-dev/savepoints-lite"
+          }
+        }
+      ]
+    },
+    "Agent": {
+      "type": "rich_text",
+      "rich_text": [
+        {
+          "type": "text",
+          "plain_text": "Cursor Agent",
+          "text": {
+            "content": "Cursor Agent"
+          }
+        }
+      ]
+    },
+    "Session ID": {
+      "type": "rich_text",
+      "rich_text": []
+    },
+    "Status": "Done",
+    "Created": "2026-11-20T01:20:39.675Z"
+  }
+}

@@ -19,6 +19,20 @@ while IFS= read -r rel || [ -n "$rel" ]; do
   fi
 done < "$EXPECTED_PATHS_FILE"
 
+CLI_REL="skills/bin/savepoints-lite-validate.mjs"
+if [ ! -f "$CLI_REL" ]; then
+  echo "verify-package-contents: missing bundled validator $CLI_REL (run npm run build and commit)" >&2
+  exit 1
+fi
+if ! head -n 1 "$CLI_REL" | grep -q '^#!/usr/bin/env node$'; then
+  echo "verify-package-contents: $CLI_REL must start with #!/usr/bin/env node" >&2
+  exit 1
+fi
+if grep -qE '^skills/bin/?$' .gitignore 2>/dev/null || grep -qE '^skills/bin/' .gitignore 2>/dev/null; then
+  echo "verify-package-contents: skills/bin must not be gitignored (required for npm + marketplace vendor)" >&2
+  exit 1
+fi
+
 if ! grep -q 'docs/adopt.md' README.md 2>/dev/null; then
   echo "verify-package-contents: README.md must link to docs/adopt.md" >&2
   exit 1

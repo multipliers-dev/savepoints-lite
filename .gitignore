@@ -1,6 +1,5 @@
 node_modules/
 dist/
-skills/bin/
 .env*
 .DS_Store
 
