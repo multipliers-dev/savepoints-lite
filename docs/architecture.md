@@ -42,7 +42,7 @@ flowchart TB
     Provider -.->|"opt-in post_write"| Validator
 ```
 
-**Distribution** (dashed): standalone npm places skills, contracts, and the optional CLI under `node_modules/@multipliers-dev/savepoints-lite/`; Cursor Team Marketplace vendors the same `skills/` tree (including `skills/bin/savepoints-lite-validate.mjs`) under `plugins/team-harness/vendor/savepoints-lite/`. Install alone does not activate Savepoints.
+**Distribution** (dashed): standalone npm places skills, contracts, and the optional CLI under `node_modules/@multipliers-dev/savepoints-lite/`; [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) (`multipliers-dev/cursor-team-marketplace`) vendors the same `skills/` tree (including `skills/bin/savepoints-lite-validate.mjs`) under `plugins/team-harness/vendor/savepoints-lite/`. Install alone does not activate Savepoints.
 
 **Execution** (solid): agents load the router from the package-equivalent install root; the router decides when to create Savepoints and assembles provider-neutral records; the configured provider persists through the consumer’s existing Notion MCP when a valid destination is resolved. Opt-in validation (dotted) runs only when resolved `validation.post_write` is true and a compatible Node runtime can execute the CLI.
 
@@ -67,7 +67,7 @@ Savepoints Lite has **two supported distribution paths**. Architectural changes 
 | Path | Shape |
 | --- | --- |
 | **Standalone npm** | Consumers install `@multipliers-dev/savepoints-lite` and load skills from that package install |
-| **Vendored plugin** | An integration (e.g. Cursor Team Marketplace) distributes a package-equivalent copy of the published skill tree for hosts that do not install the package into consumer `node_modules` |
+| **Vendored plugin** | An integration (e.g. [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace)) distributes a package-equivalent copy of the published skill tree for hosts that do not install the package into consumer `node_modules` |
 
 **Invariants** (constraints, not marketplace implementation details):
 
@@ -81,7 +81,7 @@ Downstream vendor scripts and wrapper skills may change without updating this co
 
 ### Why the optional validator is bundled (not a separate package)
 
-Both Savepoints Lite and `@multipliers-dev/plan-validator` (Cursor Team Marketplace) **separate agent orchestration from deterministic checks**. They differ in **who else executes the check**:
+Both Savepoints Lite and `@multipliers-dev/plan-validator` (maintained in [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace)) **separate agent orchestration from deterministic checks**. They differ in **who else executes the check**:
 
 | | `@multipliers-dev/plan-validator` | Savepoints Lite post-write validator |
 | --- | --- | --- |

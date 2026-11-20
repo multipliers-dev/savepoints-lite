@@ -91,7 +91,7 @@ The **package-equivalent install root** is the directory that contains `skills/s
 | Distribution | Install root |
 | --- | --- |
 | Standalone npm | `node_modules/@multipliers-dev/savepoints-lite/` |
-| Cursor Team Marketplace vendor | `plugins/team-harness/vendor/savepoints-lite/` (plugin cache equivalent) |
+| [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) vendor | `plugins/team-harness/vendor/savepoints-lite/` (plugin cache equivalent) |
 
 Load provider skills and the optional validator from **this** install root — never from an unrelated consumer-repo path, and do not assume the consumer repository has Savepoints Lite in `node_modules`.
 

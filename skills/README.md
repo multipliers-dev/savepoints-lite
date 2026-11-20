@@ -15,7 +15,7 @@ Shipped inside `@multipliers-dev/savepoints-lite` under `skills/`.
 
 Optional CLI: `skills/bin/savepoints-lite-validate.mjs` (also npm bin `savepoints-lite-validate`) — deterministic persisted-property check; no Notion credentials. Lives under `skills/` so marketplace vendor sync can copy it with the canonical skill tree.
 
-Standalone consumers install via npm and activate via root `AGENTS.md` (Claude Code: `CLAUDE.md` `@AGENTS.md`); see [docs/adopt.md](../docs/adopt.md). Optional overrides: [templates/consumer/savepoints-notion.yml.example](../templates/consumer/savepoints-notion.yml.example), [templates/consumer/savepoints-lite.yml.example](../templates/consumer/savepoints-lite.yml.example). Do not hand-vendor skills into consumer repos for standalone use — Cursor Team Marketplace commits a vendor copy under `plugins/team-harness/vendor/savepoints-lite/` for plugin install.
+Standalone consumers install via npm and activate via root `AGENTS.md` (Claude Code: `CLAUDE.md` `@AGENTS.md`); see [docs/adopt.md](../docs/adopt.md). Optional overrides: [templates/consumer/savepoints-notion.yml.example](../templates/consumer/savepoints-notion.yml.example), [templates/consumer/savepoints-lite.yml.example](../templates/consumer/savepoints-lite.yml.example). Do not hand-vendor skills into consumer repos for standalone use — [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) commits a vendor copy under `plugins/team-harness/vendor/savepoints-lite/` for plugin install.
 
 ## Privacy
 

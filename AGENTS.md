@@ -30,7 +30,7 @@ Session logging for hub work uses the global **team-harness** Savepoints integra
 
 ## Distribution compatibility
 
-Savepoints Lite supports both standalone npm installation and vendored distribution through Cursor Team Marketplace.
+Savepoints Lite supports both standalone npm installation and vendored distribution through [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) (`multipliers-dev/cursor-team-marketplace`, team-harness plugin).
 
 Architectural changes must preserve both paths:
 
