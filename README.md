@@ -1,16 +1,17 @@
 # @multipliers-dev/savepoints-lite
 
-Instruction-only npm package for append-only **session Savepoints**: a router skill detects meaningful work, builds provider-neutral records, and delegates to provider skills. Version **2.0.0** ships a **Notion** provider that writes through the consumer’s existing **Notion MCP**. Destination configuration is **explicit** — integration instruction context, optional consumer `.agents`, or unconfigured packaged defaults (no maintainer database id in the tarball).
+npm package for append-only **session Savepoints**: a router skill detects meaningful work, builds provider-neutral records, and delegates to provider skills. Version **2.1.0** ships a **Notion** provider that writes through the consumer’s existing **Notion MCP**. Default path is **instruction-only** create/confirm; optional deterministic post-write validation (`validation.post_write`) uses a self-contained in-package CLI under `skills/bin/` (works for standalone npm and marketplace vendor copies). Destination and optional validation preference are **explicit** — integration instruction context, optional consumer `.agents`, or packaged defaults (no maintainer database id in the tarball).
 
-There is no executable runtime, custom MCP server, local spool, or Savepoints learning capture (`emit-learning`). For durable learnings and lifecycle hooks, see [multipliers-dev/savepoints](https://github.com/multipliers-dev/savepoints).
+There is no custom MCP server, local spool, or Savepoints learning capture (`emit-learning`). For durable learnings and lifecycle hooks, see [multipliers-dev/savepoints](https://github.com/multipliers-dev/savepoints).
 
 ## What you get
 
 | Piece | Role |
 | --- | --- |
-| Router skill | When to Savepoint, schema, provider selection, delegation, tier-1 `destination` handoff |
-| Notion provider skill | Destination resolution (3 tiers), Notion property mapping, MCP create, bounded confirmation |
-| `schema.md` + defaults YAML | Protocol; router `storage.provider`; packaged Notion defaults without `data_source_id` |
+| Router skill | When to Savepoint, schema, provider selection, `validation.post_write` (integration → `.agents` → defaults), delegation, tier-1 `destination` handoff |
+| Notion provider skill | Destination resolution (3 tiers), mapping via `mapping.json`, MCP create, bounded confirmation; optional same-append validate/repair |
+| `schema.json` / `schema.md` + defaults YAML | Machine-readable requiredness + semantics; `storage.provider`; `validation.post_write: false` by default |
+| `skills/bin/savepoints-lite-validate.mjs` | Optional deterministic property check (npm bin `savepoints-lite-validate`; no Notion credentials) |
 
 Full skill index: [skills/README.md](./skills/README.md).
 

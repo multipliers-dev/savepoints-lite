@@ -1,2 +1,7 @@
 storage:
   provider: notion
+
+# Optional deterministic post-write property validation (CLI). Default off —
+# instruction-only create/confirm remains the lightweight path.
+validation:
+  post_write: false

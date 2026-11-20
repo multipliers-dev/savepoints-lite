@@ -28,6 +28,20 @@ Cloud Agents: committed `.cursor/environment.json` runs `npm ci` (triggers `prep
 
 Session logging for hub work uses the global **team-harness** Savepoints integration (Cursor User Rules + marketplace plugin), not per-repo `AGENTS.md` activation. Package verification (`npm test`, `npm run verify`) still uses the pinned registry devDependency under `node_modules/` for published-artifact layout checks. Manual behavioral verification: [`skills/savepoints/verification.md`](skills/savepoints/verification.md). Consumer snippet: [`templates/consumer/AGENTS.md.snippet`](templates/consumer/AGENTS.md.snippet).
 
+## Distribution compatibility
+
+Savepoints Lite supports both standalone npm installation and vendored distribution through Cursor Team Marketplace.
+
+Architectural changes must preserve both paths:
+
+- Keep canonical behaviour in Savepoints Lite; marketplace wrappers handle integration-specific configuration and paths.
+- Do not assume consuming repositories have `node_modules`, npm dependencies, or a Node.js runtime.
+- Keep distributed skills, schemas, mappings, and optional executables portable within the vendored package layout.
+- Runtime-dependent features must remain optional and fail open.
+- Prefer installation-relative paths over consumer-repository-relative paths.
+
+See [`docs/architecture.md`](docs/architecture.md) § Distribution compatibility for the distribution contract.
+
 ## Discipline
 
 - Pre-commit runs `npm test` and `npm run verify`; do not bypass hooks.

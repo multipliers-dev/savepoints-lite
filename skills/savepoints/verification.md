@@ -57,5 +57,11 @@ Run at the **Savepoints Lite hub repository root** ([`multipliers-dev/savepoints
 | 11 | **Anti-loop** | Failed write does not recursively trigger more Savepoints |
 | 12 | **No capture hooks** | Logging via instructions + activation only; hub [`.cursor/hooks.json`](https://github.com/multipliers-dev/savepoints-lite/blob/main/.cursor/hooks.json) unchanged for Savepoints capture |
 | 13 | **Claude Code** | Repeat applicable scenarios (2–11) in Claude Code at hub root (`AGENTS.md` via `CLAUDE.md` `@AGENTS.md`; activation opt-in + verification session authorization when required) |
+| 14 | **Validation default off** | With packaged / absent `validation.post_write: false`, confirmed create does **not** require CLI; no mandatory post-write verify |
+| 15 | **Post-write verify (opt-in, complete)** | `validation.post_write: true`; confirmed create with required mapped properties → CLI `ok`; outcome `success` |
+| 16 | **Post-write repair (opt-in)** | Opt-in; create missing a mapped required property present on the Savepoint → one repair; re-check clean; no duplicate page |
+| 17 | **Irreparable missing (opt-in)** | Opt-in; CLI `missing_persisted_property` and no usable Savepoint value → report + page id/url; page preserved; `success` |
+| 18 | **Verification unavailable (opt-in)** | Opt-in; failed initial read-back or CLI cannot run → **verification unavailable**; do **not** claim fields missing; no repair; `success` |
+| 19 | **Repair confirmation unknown (opt-in)** | Opt-in; repair then failed re-check → **repair confirmation unknown**; `success` |
 
 **Do not** claim `npm test` or CI proves this table.

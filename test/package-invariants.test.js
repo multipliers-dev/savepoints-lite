@@ -51,10 +51,10 @@ function isExternalOrAnchorLink(link) {
 }
 
 describe("package invariants", () => {
-  it("package.json is publishable @multipliers-dev/savepoints-lite at 2.0.0", () => {
+  it("package.json is publishable @multipliers-dev/savepoints-lite at 2.1.0", () => {
     const pkg = JSON.parse(readRoot("package.json"));
     expect(pkg.name).toBe("@multipliers-dev/savepoints-lite");
-    expect(pkg.version).toBe("2.0.0");
+    expect(pkg.version).toBe("2.1.0");
     expect(pkg.private).not.toBe(true);
     expect(pkg.publishConfig?.access).toBe("public");
     expect(pkg.publishConfig?.provenance).toBe(true);
@@ -94,12 +94,13 @@ describe("package invariants", () => {
   });
 
   it("README links consumer adoption and architecture docs", () => {
+    const pkg = JSON.parse(readRoot("package.json"));
     const readme = readRoot("README.md");
     expect(readme).toMatch(/docs\/adopt\.md/);
     expect(readme).toMatch(/docs\/architecture\.md/);
     expect(readme).not.toMatch(/docs\/publishing\.md/);
     expect(readme).not.toMatch(/npm run verify/);
-    expect(readme).toMatch(/2\.0\.0/);
+    expect(readme).toContain(pkg.version);
   });
 
   it("README does not claim Cursor or Claude integration verified", () => {
@@ -138,12 +139,16 @@ describe("package invariants", () => {
     expect(listed).not.toContain("docs/adoption-verification-record.md");
   });
 
-  it("notion provider documents verified property types", () => {
+  it("notion mapping.json documents verified property types", () => {
+    const mapping = JSON.parse(
+      readRoot("skills/savepoints-notion/mapping.json"),
+    );
+    expect(mapping.fields.title.type).toBe("title");
+    expect(mapping.fields.repository.type).toBe("text");
+    expect(mapping.fields.agent.type).toBe("text");
+    expect(mapping.system.Created.type).toBe("created_time");
     const skill = readRoot("skills/savepoints-notion/SKILL.md");
-    expect(skill).toMatch(/Notion type/);
-    expect(skill).toMatch(/`title`/);
-    expect(skill).toMatch(/`created_time`/);
-    expect(skill).toMatch(/Plain string/);
+    expect(skill).toMatch(/mapping\.json/);
   });
 
   it("notion provider documents three-tier destination resolution and fail-open", () => {
@@ -167,9 +172,18 @@ describe("package invariants", () => {
 
   it("router carries integration destination unchanged to provider", () => {
     const skill = readRoot("skills/savepoints/SKILL.md");
-    expect(skill).toMatch(/carry this `destination` block unchanged/i);
+    expect(skill).toMatch(/carry this (?:`destination` )?block unchanged/i);
     expect(skill).toMatch(/data_source_id/);
     expect(skill).toMatch(/does \*\*not\*\* call Notion MCP, read Cursor User Rules/i);
+  });
+
+  it("router documents integration-tier validation.post_write precedence", () => {
+    const skill = readRoot("skills/savepoints/SKILL.md");
+    expect(skill).toMatch(/### `validation\.post_write`/);
+    expect(skill).toMatch(/integration instruction\/delegation context/i);
+    expect(skill).toMatch(/validation:\s*\n\s*post_write:/);
+    expect(skill).toMatch(/package-equivalent install root/i);
+    expect(skill).toMatch(/vendor\/savepoints-lite/i);
   });
 
   it("consumer savepoints-notion example template exists", () => {
@@ -185,15 +199,65 @@ describe("package invariants", () => {
     expect(skill).toMatch(/savepoints-notion\.yml/i);
   });
 
+  it("notion provider documents optional post-write validate and repair", () => {
+    const skill = readRoot("skills/savepoints-notion/SKILL.md");
+    expect(skill).toMatch(/## Post-write verification and repair \(optional\)/);
+    expect(skill).toMatch(/validation\.post_write/);
+    expect(skill).toMatch(/savepoints-lite-validate/);
+    expect(skill).toMatch(/skills\/bin\/savepoints-lite-validate\.mjs/);
+    expect(skill).toMatch(/verification unavailable/);
+    expect(skill).toMatch(/Node\.js is missing|Node\.js is available/);
+    expect(skill).toMatch(/contract_mismatch|contract mismatch/);
+    expect(skill).toMatch(/unsupported_property_shape/);
+    expect(skill).toMatch(/title.*rich_text|structured Notion/i);
+    expect(skill).toMatch(/repair confirmation unknown/);
+    expect(skill).toMatch(/missing_persisted_property|missing persisted property/);
+    expect(skill).toMatch(/Never repair on verification unavailable, `unsupported_property_shape`/);
+    expect(skill).toMatch(/mapping\.json/);
+    expect(skill).toMatch(/do \*\*not\*\* re-read Cursor User Rules/i);
+    const schema = readRoot("skills/savepoints/schema.md");
+    expect(schema).toMatch(/schema\.json/);
+    expect(schema).toMatch(/Same-append only/);
+  });
+
+  it("machine-readable schema and mapping agree on required mapped fields", () => {
+    const schema = JSON.parse(readRoot("skills/savepoints/schema.json"));
+    const mapping = JSON.parse(
+      readRoot("skills/savepoints-notion/mapping.json"),
+    );
+    for (const [field, def] of Object.entries(schema.fields)) {
+      if (field === "content" || !def.required) continue;
+      expect(mapping.fields[field]?.property).toEqual(expect.any(String));
+    }
+  });
+
+  it("package exposes savepoints-lite-validate bin under skills/bin", () => {
+    const pkg = JSON.parse(readRoot("package.json"));
+    expect(pkg.bin?.["savepoints-lite-validate"]).toBe(
+      "./skills/bin/savepoints-lite-validate.mjs",
+    );
+    expect(pkg.files).toEqual(expect.arrayContaining(["skills/**"]));
+    expect(pkg.files).not.toContain("dist/**");
+    const cliRel = "skills/bin/savepoints-lite-validate.mjs";
+    expect(existsSync(join(root, cliRel))).toBe(true);
+    const cli = readRoot(cliRel);
+    expect(cli.startsWith("#!/usr/bin/env node\n")).toBe(true);
+    expect(cli.length).toBeGreaterThan(100);
+    const gitignore = readRoot(".gitignore");
+    expect(gitignore).not.toMatch(/^skills\/bin\/?$/m);
+    expect(gitignore).not.toMatch(/^skills\/bin\//m);
+  });
+
   it("expected workspace release-candidate paths file matches verify script usage", () => {
     const listed = readPathsList("scripts/expected-package-paths.txt");
-    expect(listed).toHaveLength(16);
+    expect(listed.length).toBeGreaterThanOrEqual(16);
     for (const rel of listed) {
       expect(existsSync(join(root, rel))).toBe(true);
     }
   });
 
   it("registry dogfood manifests exist per published pin version", () => {
+    const pkg = JSON.parse(readRoot("package.json"));
     const v11 = readRegistryDogfoodManifest("1.1.0");
     expect(v11).toHaveLength(15);
     expect(v11).not.toContain(
@@ -203,9 +267,13 @@ describe("package invariants", () => {
     const v20 = readRegistryDogfoodManifest("2.0.0");
     expect(v20).toHaveLength(16);
     expect(v20).toContain("templates/consumer/savepoints-notion.yml.example");
-    expect([...v20].sort()).toEqual(
-      readPathsList("scripts/expected-package-paths.txt").sort(),
-    );
+    // Workspace release-candidate layout may advance ahead of the published
+    // dogfood pin; only require equality when versions match.
+    if (pkg.devDependencies["@multipliers-dev/savepoints-lite"] === pkg.version) {
+      expect([...v20].sort()).toEqual(
+        readPathsList("scripts/expected-package-paths.txt").sort(),
+      );
+    }
   });
 
   it("tarball markdown relative links resolve within npm pack file set", () => {
@@ -254,12 +322,11 @@ describe("package invariants", () => {
     expect(hooks).not.toMatch(/observe\.sh/);
   });
 
-  it("hub dogfoods published package with exact devDependency pin matching workspace", () => {
+  it("hub dogfoods published package with exact semver pin (may lag workspace until post-publish bump)", () => {
     const pkg = JSON.parse(readRoot("package.json"));
     const dogfoodVersion =
       pkg.devDependencies["@multipliers-dev/savepoints-lite"];
     expect(dogfoodVersion).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(dogfoodVersion).toBe(pkg.version);
     readRegistryDogfoodManifest(dogfoodVersion);
   });
 
@@ -277,6 +344,26 @@ describe("package invariants", () => {
     expect(agents).not.toMatch(/savepoints-lite\.mdc/);
     const claude = readRoot("CLAUDE.md").trim();
     expect(claude).toBe("@AGENTS.md");
+  });
+
+  it("documents dual-distribution compatibility for agents and architecture", () => {
+    const architecture = readRoot("docs/architecture.md");
+    expect(architecture).toMatch(/## Distribution compatibility/);
+    expect(architecture).toMatch(/Two supported distribution paths|standalone npm/i);
+    expect(architecture).toMatch(/Canonical ownership|Self-contained package tree/);
+    expect(architecture).toMatch(/fail open/i);
+    expect(architecture).toMatch(/No host-specific branching/i);
+    expect(architecture).toMatch(
+      /Why the optional validator is bundled \(not a separate package\)/,
+    );
+    expect(architecture).toMatch(/plan-validator/);
+    expect(architecture).toMatch(
+      /distribute validators as independent packages when they have independent execution consumers/i,
+    );
+    const agents = readRoot("AGENTS.md");
+    expect(agents).toMatch(/## Distribution compatibility/);
+    expect(agents).toMatch(/docs\/architecture\.md/);
+    expect(agents).toMatch(/vendored package layout/i);
   });
 
   it("consumer AGENTS snippet is runtime-only (no adoption install prose)", () => {

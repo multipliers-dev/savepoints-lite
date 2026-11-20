@@ -28,26 +28,49 @@ Follow [schema.md](./schema.md) for field semantics and metadata derivation. Omi
 
 ## Configuration resolution
 
-Resolve `storage.provider` in two steps (static; no dynamic discovery):
+### `storage.provider`
 
-1. Start from package [defaults.yml](./defaults.yml) next to this skill under `node_modules`.
-2. If consumer `.agents/savepoints-lite.yml` exists and sets `storage.provider`, that value **overrides** the package default.
+Resolve in two steps (static; no dynamic discovery):
 
-An absent `.agents/savepoints-lite.yml` is normal — use the packaged default. Only the **resolved** value after step 2 is authoritative.
+1. Start from package [defaults.yml](./defaults.yml) next to this skill (same install root as this router).
+2. If consumer `.agents/savepoints-lite.yml` exists, its `storage.provider` **overrides** the packaged default.
 
 | Precedence | Location | Overrides |
 | --- | --- | --- |
-| 1 (highest) | Consumer `.agents/savepoints-lite.yml` (optional) | `storage.provider` only |
-| 2 (default) | Package [defaults.yml](./defaults.yml) | `notion` for v1 |
+| 1 (highest) | Consumer `.agents/savepoints-lite.yml` (optional) | `storage.provider` |
+| 2 (default) | Package [defaults.yml](./defaults.yml) | `notion` |
+
+### `validation.post_write`
+
+Resolve in **three** tiers (static; no dynamic discovery). An absent key at a tier falls through — do **not** invent `true` or `false` when the key is missing.
+
+| Tier | Source | When it applies |
+| --- | --- | --- |
+| 1 (highest) | Labelled `validation` in the **integration instruction/delegation context** | Calling integration (e.g. marketplace wrapper) supplied `validation.post_write` for this Savepoint |
+| 2 | Consumer `.agents/savepoints-lite.yml` (optional) | Tier 1 **absent** for this delegation |
+| 3 (default) | Package [defaults.yml](./defaults.yml) | `validation.post_write: false` |
+
+**Tier 1 block** (same handoff channel as destination; provider-neutral):
+
+```yaml
+validation:
+  post_write: true
+```
 
 Package default:
 
 ```yaml
 storage:
   provider: notion
+validation:
+  post_write: false
 ```
 
-**Misconfiguration (after resolution):** report in chat when the resolved `storage.provider` is empty/missing, or not supported in v1 (`notion` only). Do not treat “no consumer override file” as misconfiguration. Do not guess or fall back to another provider.
+Example consumer file: [`templates/consumer/savepoints-lite.yml.example`](../../templates/consumer/savepoints-lite.yml.example).
+
+Carry the **resolved** `validation.post_write` flag into the provider instruction context (so the Notion provider knows whether to run optional post-write CLI validation). The router still does **not** call Notion MCP or the validator CLI, and does **not** read Cursor User Rules.
+
+**Misconfiguration (after resolution):** report in chat when the resolved `storage.provider` is empty/missing, or not supported in v1 (`notion` only). Do not treat “no consumer override file” or “no integration validation block” as misconfiguration. Do not guess or fall back to another provider.
 
 ## Provider resolution (v1)
 
@@ -61,23 +84,39 @@ From the consumer install root:
 
 Load and follow that provider skill for persistence. Unknown provider → misconfiguration; stop delegation.
 
-## Integration destination (tier 1 handoff)
+## Install root (standalone npm and marketplace vendor)
 
-When the calling integration (host `AGENTS.md`, marketplace wrapper, or other delegation context) supplies an explicit Notion destination for this Savepoint, it appears as labelled YAML in the **instruction/delegation context** passed into the router:
+The **package-equivalent install root** is the directory that contains `skills/savepoints/` and `skills/savepoints-notion/` (and, when built/published, `skills/bin/savepoints-lite-validate.mjs`). Typical layouts:
+
+| Distribution | Install root |
+| --- | --- |
+| Standalone npm | `node_modules/@multipliers-dev/savepoints-lite/` |
+| Cursor Team Marketplace vendor | `plugins/team-harness/vendor/savepoints-lite/` (plugin cache equivalent) |
+
+Load provider skills and the optional validator from **this** install root — never from an unrelated consumer-repo path, and do not assume the consumer repository has Savepoints Lite in `node_modules`.
+
+## Integration handoff (tier 1)
+
+When the calling integration (host `AGENTS.md`, marketplace wrapper, or other delegation context) supplies labelled YAML in the **instruction/delegation context**, the router may receive:
 
 ```yaml
 destination:
   data_source_id: "<NOTION_DATA_SOURCE_ID>"
+validation:
+  post_write: true
 ```
 
-On delegation to the Notion provider, **carry this `destination` block unchanged** in the provider’s instruction context. The router does **not** call Notion MCP, read Cursor User Rules, or resolve `data_source_id` itself.
+- **`destination`:** on delegation to the Notion provider, **carry this block unchanged**. The router does **not** call Notion MCP, read Cursor User Rules, or resolve `data_source_id` itself.
+- **`validation.post_write`:** apply the three-tier resolution above; carry the **resolved** boolean into the provider context (not a second User Rules read).
+
+Either key may be omitted independently. Missing `validation` falls through to consumer `.agents` then packaged defaults.
 
 ## Delegation steps
 
 1. Assemble the Savepoint per [schema.md](./schema.md).
-2. Resolve `storage.provider` from config (table above).
-3. Read the matching provider `SKILL.md` from the **same** `@multipliers-dev/savepoints-lite` install.
-4. Pass the Savepoint to the provider skill together with any tier-1 `destination` block from the integration context (unchanged); let the provider perform MCP writes and bounded confirmation.
+2. Resolve `storage.provider` and `validation.post_write` from config (tables above).
+3. Read the matching provider `SKILL.md` from the **same** install root as this router.
+4. Pass the Savepoint to the provider skill together with any tier-1 `destination` block from the integration context (unchanged) and the resolved `validation.post_write` flag; let the provider perform MCP writes and bounded confirmation.
 5. Handle the provider outcome (`success` | `failure` | `unconfirmed`).
 
 The router **must not** document Notion page properties, Postgres table schemas, or MCP tool parameters.
@@ -86,7 +125,7 @@ The router **must not** document Notion page properties, Postgres table schemas,
 
 | Outcome | Router behavior |
 | --- | --- |
-| `success` | Continue primary work; optional brief confirmation only if useful |
+| `success` | Continue primary work; optional brief confirmation only if useful. When opt-in post-write validation ran, the provider may report issues after `success` (missing persisted property, contract mismatch, verification unavailable, repair confirmation unknown) — that is **not** a failed append and must **not** trigger another Savepoint |
 | `failure` | One-sentence report (tool name + error summary); **no retry queue**; continue primary work |
 | `unconfirmed` | One-sentence report (“queued — not confirmed”); continue primary work |
 

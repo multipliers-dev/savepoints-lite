@@ -1,0 +1,32 @@
+{
+  "$schema_comment": "Canonical Notion property mapping for Savepoints. Provider skill prose references this file; do not maintain a parallel required-field list.",
+  "provider": "notion",
+  "fields": {
+    "title": {
+      "property": "Name",
+      "type": "title",
+      "set_on_create": "always"
+    },
+    "repository": {
+      "property": "Repository",
+      "type": "text",
+      "set_on_create": "always"
+    },
+    "agent": {
+      "property": "Agent",
+      "type": "text",
+      "set_on_create": "always"
+    },
+    "session_id": {
+      "property": "Session ID",
+      "type": "text",
+      "set_on_create": "when_known"
+    }
+  },
+  "system": {
+    "Created": {
+      "type": "created_time",
+      "set_on_create": false
+    }
+  }
+}
