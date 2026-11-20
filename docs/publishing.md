@@ -1,6 +1,6 @@
 # Publishing @multipliers-dev/savepoints-lite
 
-Operator-controlled npm releases for an instruction-only package (skills and docs; no `bin` or runtime).
+Operator-controlled npm releases for an **instruction-first** package: router and provider skills plus docs. There is **no** custom MCP server and **no** persistent runtime service. An optional bundled validation CLI (`skills/bin/savepoints-lite-validate.mjs`, npm bin `savepoints-lite-validate`) ships in the tarball for opt-in post-write checks — not a required daemon.
 
 **Mechanism:** [GitHub Trusted Publishing](https://docs.npmjs.com/trusted-publishers) via the repository [publish workflow](https://github.com/multipliers-dev/savepoints-lite/blob/main/.github/workflows/publish.yml) — manual `workflow_dispatch` on **`main` only**. OIDC (`id-token: write`); do not use long-lived `NPM_TOKEN` for registry releases.
 
@@ -56,12 +56,12 @@ Record version, date, commit, and install-check summary (release PR or maintaine
 
 ## Post-publish hub dogfood bump (follow-up PR)
 
-After `@2.0.0` (or the released version) is on the registry:
+After the released version is on the registry (e.g. `@2.1.0`):
 
 1. Open a **separate** hub PR on `multipliers-dev/savepoints-lite`.
 2. Bump `devDependencies["@multipliers-dev/savepoints-lite"]` to the new exact version and refresh `package-lock.json`.
 3. Run `npm ci`, `npm test`, `npm run verify`, `npm run validate:plans`.
-4. `npm test` selects the registry dogfood file manifest for the pinned version (`scripts/expected-package-paths-registry-dogfood-<version>.txt`). When the pin matches workspace `2.0.0`, that manifest matches `expected-package-paths.txt`.
+4. `npm test` selects the registry dogfood file manifest for the pinned version (`scripts/expected-package-paths-registry-dogfood-<version>.txt`). When the pin matches the workspace `"version"`, that manifest matches `expected-package-paths.txt`.
 
 Do **not** bump the devDependency to a version that does not exist on npm (no `file:` link for dogfood).
 

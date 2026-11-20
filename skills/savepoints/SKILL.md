@@ -5,11 +5,16 @@ description: Router for append-only session Savepoints — detect work events, b
 
 # Savepoints (router)
 
-Instruction-only router shipped in `@multipliers-dev/savepoints-lite`. Recognizes meaningful work, builds a Savepoint per [schema.md](./schema.md), resolves `storage.provider`, loads the matching **provider skill from the same npm package install**, and surfaces the provider outcome. The router **never** calls Notion/Postgres MCP or documents provider-specific property schemas.
+Instruction-only router shipped in `@multipliers-dev/savepoints-lite`. Recognizes meaningful work, builds a Savepoint per [schema.md](./schema.md), resolves `storage.provider`, loads the matching **provider skill from the same package-equivalent install root**, and surfaces the provider outcome. The router **never** calls Notion/Postgres MCP or documents provider-specific property schemas.
 
-**Installed path (consumer):** `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md`
+**Distribution (how this file is loaded):**
 
-`node_modules` must exist (after `npm install` / `npm ci`).
+| Path | Where agents load this router |
+| --- | --- |
+| Standalone npm | `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` after `npm install` / `npm ci` |
+| [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) vendor | Package-equivalent tree under `plugins/team-harness/vendor/savepoints-lite/` (plugin cache equivalent) — **no** consumer `node_modules` or npm install required |
+
+All provider, schema, mapping, defaults, and optional validator paths resolve **relative to the active install root** (see [Install root](#install-root-standalone-npm-and-marketplace-vendor) below). Marketplace consumers must not look for Savepoints skills in the consumer repository’s `node_modules`.
 
 ## When to Savepoint (same turn)
 
@@ -74,15 +79,15 @@ Carry the **resolved** `validation.post_write` flag into the provider instructio
 
 ## Provider resolution (v1)
 
-| `storage.provider` | Provider skill (same package install) |
+| `storage.provider` | Provider skill (same install root) |
 | --- | --- |
 | `notion` | `../savepoints-notion/SKILL.md` relative to this router skill directory |
 
-From the consumer install root:
+Standalone example from the npm install root:
 
 `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints-notion/SKILL.md`
 
-Load and follow that provider skill for persistence. Unknown provider → misconfiguration; stop delegation.
+Load and follow that provider skill for persistence from the **same** install root as this router. Unknown provider → misconfiguration; stop delegation.
 
 ## Install root (standalone npm and marketplace vendor)
 

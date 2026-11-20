@@ -1,6 +1,22 @@
 # Adoption verification record (adopt-and-verify)
 
-Durable record of automated checks and manual agent behavioral runs. Status values: **Pass**, **Fail**, **Not run**. Link Notion page URLs in the GitHub PR description when recording verification evidence — not in this file. **Ongoing session logging** opt-in is committed hub activation; **verification-session authorization** applies to deliberate checklist runs (see `skills/savepoints/verification.md` § Authorization).
+Durable record of automated checks and manual agent behavioral runs. Status values: **Pass**, **Fail**, **Not run**, **Inconclusive**. Link Notion page URLs in the GitHub PR description when recording verification evidence — not in this file. **Ongoing session logging** opt-in is committed hub activation; **verification-session authorization** applies to deliberate checklist runs (see `skills/savepoints/verification.md` § Authorization).
+
+## Marketplace adoption verification (2026-11-20)
+
+Evidence for [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) distribution of published Savepoints Lite **`@2.1.0`** via team-harness **1.16.0**. Authoritative scenario detail and Notion page links live in the marketplace plan archive — do not duplicate lengthy evidence here.
+
+| Item | Status | Notes |
+| --- | --- | --- |
+| Marketplace implementation [PR #78](https://github.com/multipliers-dev/cursor-team-marketplace/pull/78) | **Merged** | Pin, vendor sync (including `skills/bin/`), wrapper `validation.post_write` handoff, team-harness **1.16.0** |
+| Marketplace plan-closure [PR #79](https://github.com/multipliers-dev/cursor-team-marketplace/pull/79) | **Merged** | Docs-only archive + `# Shipped` (2026-11-20) |
+| Automated package / vendor checks (marketplace) | **Pass** | Marketplace CI / vendor layout for `@2.1.0` (not a substitute for agent behaviour) |
+| Live agent/MCP scenarios against **marketplace checkout** vendored `@2.1.0` | **Pass** (5 scenarios) | Default validation off; validation enabled (read-back + CLI); missing property detected and repaired once; CLI unavailable (create preserved); explicit validation disabled. Full table: [marketplace plan `# Shipped`](https://github.com/multipliers-dev/cursor-team-marketplace/blob/main/.cursor/plans/archive/2026-11-20-savepoints-lite-2.1.0-adoption.plan.md) |
+| Refreshed **installed** plugin file presence (1.16.0 cache) | **Pass** (files only) | Operator refreshed installed plugin to 1.16.0; CLI present under vendor `skills/bin/` |
+| Installed-plugin **agent invocation** | **Not verified** | Successful agent invocation through the refreshed installed plugin has **not** been independently demonstrated |
+| Hub implicit logging / delegated-work scenarios (rows 4–5 below) | Unchanged | Still **Fail** / **Not run** from October hub dogfooding — not converted by marketplace evidence |
+
+**Do not treat this section as “full verification checklist passed.”** It records marketplace distribution + checkout-vendor live MCP evidence only.
 
 ## Automated checks
 

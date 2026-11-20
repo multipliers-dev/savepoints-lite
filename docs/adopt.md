@@ -39,13 +39,15 @@ destination:
 
 ## Prerequisites
 
-- **Node.js 22+**
-- **Authenticated Notion MCP** in the agent host
-- **Configured destination** per the table above
+| Requirement | Standalone npm | Marketplace (team-harness) |
+| --- | --- | --- |
+| **Node.js 22+** | Required for install; also required when opt-in validation runs | **Not** required for ordinary Notion MCP create/confirm; required only if `validation.post_write` runs |
+| **Authenticated Notion MCP** | Required | Required |
+| **Configured destination** | Tier 2 `.agents` and/or tier 1 integration context | Tier 1 via User Rules → wrapper (typical) |
 
 ## Installation does not activate Savepoints
 
-`npm install` does **not** register skills with Cursor or Claude native discovery. Consumers need **one-time activation** that makes **session logging** an immediate obligation — **when** to record (including at least one Savepoint per engineering session when logging is available), **what** each entry should capture, and **where** the installed logging workflow lives under `node_modules`.
+`npm install` (or installing the marketplace plugin) does **not** register skills with Cursor or Claude native discovery by itself. Consumers need **one-time activation** that makes **session logging** an immediate obligation — **when** to record (including at least one Savepoint per engineering session when logging is available), **what** each entry should capture, and **where** the installed logging workflow lives (under `node_modules` for standalone npm, or the marketplace vendor tree for team-harness).
 
 ### Activation templates (in the tarball)
 

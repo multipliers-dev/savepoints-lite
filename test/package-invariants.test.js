@@ -258,6 +258,9 @@ describe("package invariants", () => {
 
   it("registry dogfood manifests exist per published pin version", () => {
     const pkg = JSON.parse(readRoot("package.json"));
+    const dogfoodVersion =
+      pkg.devDependencies["@multipliers-dev/savepoints-lite"];
+
     const v11 = readRegistryDogfoodManifest("1.1.0");
     expect(v11).toHaveLength(15);
     expect(v11).not.toContain(
@@ -267,10 +270,17 @@ describe("package invariants", () => {
     const v20 = readRegistryDogfoodManifest("2.0.0");
     expect(v20).toHaveLength(16);
     expect(v20).toContain("templates/consumer/savepoints-notion.yml.example");
+
+    const v21 = readRegistryDogfoodManifest("2.1.0");
+    expect(v21).toHaveLength(20);
+    expect(v21).toContain("skills/bin/savepoints-lite-validate.mjs");
+    expect(v21).toContain("skills/savepoints/schema.json");
+    expect(v21).toContain("skills/savepoints-notion/mapping.json");
+
     // Workspace release-candidate layout may advance ahead of the published
     // dogfood pin; only require equality when versions match.
-    if (pkg.devDependencies["@multipliers-dev/savepoints-lite"] === pkg.version) {
-      expect([...v20].sort()).toEqual(
+    if (dogfoodVersion === pkg.version) {
+      expect([...readRegistryDogfoodManifest(dogfoodVersion)].sort()).toEqual(
         readPathsList("scripts/expected-package-paths.txt").sort(),
       );
     }
