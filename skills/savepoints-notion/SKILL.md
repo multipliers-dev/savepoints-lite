@@ -76,18 +76,6 @@ Use exact property names in the `properties` map. Pass Savepoint string fields a
 - When the accepted call is async: poll at most **two** follow-ups (e.g. `notion-get-async-task` or equivalent), then stop.
 - Use `notion-fetch` for property mismatch or tool-required discovery, and for **same-append** post-write verification below — **not** as a session preflight before create.
 
-Return to the router:
-
-```text
-success | failure | unconfirmed
-```
-
-- `success` — persistence **confirmed** only after a write was attempted and succeeded (synchronous create succeeded, or async polling reached a terminal succeeded state).
-- `failure` — configuration prevented persistence (missing or invalid destination; no MCP write attempted), or a write was attempted and failed terminally (tool error, auth failure, terminal async failure with no confirmed row).
-- `unconfirmed` — a write was attempted but confirmation remains uncertain (async still unresolved after bounded polling, or the first create might have persisted and a duplicate create was refused).
-
-Never imply persistence on queue alone or on an unconfirmed async task.
-
 ## Post-write verification and repair
 
 Run **only** after create outcome is confirmed `success` (skip for `failure` / `unconfirmed`). Fail-open: the page already exists; verification issues are reported and do **not** change the outcome to `failure`. Outcomes remain `success | failure | unconfirmed` only.
@@ -99,13 +87,25 @@ Do **not** maintain a separate required-field list. Derive required fields from 
 2. **Map required fields** to the Notion mapping table above (same skill — no duplicated rules).
    - If a required schema field has **no** mapping row: report an unresolved **contract mismatch** naming the field; do **not** invent a mapping or value; do **not** silently skip.
    - For each mapped required field: the mapped Notion property on the fetched page must be present and non-empty.
-3. **Repair (best effort, once):** only for **verified missing** mapped properties where the Savepoint for this append already has a usable value. One `notion-update-page` (or equivalent) setting **only** those properties from that Savepoint. Never invent. Never repair when verification was unavailable. Contract-mismatch fields are not repairable via invented mappings.
+3. **Repair (best effort, once):** only for **verified missing** mapped properties where the Savepoint for this append already has a usable value. One `notion-update-page` (or equivalent) setting **only** those properties from that Savepoint. Never invent. Never repair when verification was unavailable. Contract-mismatch fields are not repairable via invented mappings. If that update fails terminally, report it (with page id/url) without retrying and without changing the confirmed create outcome from `success`.
 4. **Re-verify** with one fetch after a repair attempt that appeared to succeed.
    - If post-repair read-back fails: report **repair confirmation unknown** with page id/url; do **not** assert remaining gaps as verified missing; return `success`.
    - If post-repair read-back succeeds: report any still-missing mapped properties, or finish quietly if complete.
 5. **Report** unresolved issues in one short chat line including **page id/url**, using precise labels: **missing persisted property**, **contract mismatch**, **verification unavailable**, or **repair confirmation unknown**. Still return `success` for the confirmed create.
 
 **Bounds:** no second create; single repair attempt; no retry loop; do not modify other Savepoint rows.
+
+Return to the router:
+
+```text
+success | failure | unconfirmed
+```
+
+- `success` — persistence **confirmed** only after a write was attempted and succeeded (synchronous create succeeded, or async polling reached a terminal succeeded state).
+- `failure` — configuration prevented persistence (missing or invalid destination; no MCP write attempted), or a write was attempted and failed terminally (tool error, auth failure, terminal async failure with no confirmed row).
+- `unconfirmed` — a write was attempted but confirmation remains uncertain (async still unresolved after bounded polling, or the first create might have persisted and a duplicate create was refused).
+
+Never imply persistence on queue alone or on an unconfirmed async task.
 
 ## Forbidden (provider)
 
