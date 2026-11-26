@@ -18,6 +18,16 @@ Agent → router skill → Notion provider skill → Notion MCP → your Notion 
 
 Installing the package or plugin does **not** by itself activate agent logging. Activation is a separate step (User Rules for marketplace, or root `AGENTS.md` for standalone npm).
 
+## Design principle: deterministic capabilities, flexible orchestration
+
+Savepoints Lite separates invocation and verification into independently usable capabilities. The orchestration between them is intentionally left to the consumer.
+
+Agents can invoke verification at their discretion, while adopters requiring stronger guarantees can integrate their own hooks, automation or host-specific lifecycle mechanisms.
+
+Savepoints Lite is responsible for making its capabilities discoverable, intuitive, reliable and portable. It is not responsible for enforcing when or how frequently those capabilities are invoked.
+
+This separation allows consumers to choose their own reliability, execution and cost trade-offs without introducing vendor-specific dependencies into the core implementation.
+
 ## Adoption paths
 
 Two supported ways to get the skills into the agent host:

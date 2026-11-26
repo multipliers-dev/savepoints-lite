@@ -7,7 +7,7 @@ todos:
     status: completed
   - id: principle-docs
     content: "PR (savepoints-lite): document 'deterministic capabilities, flexible orchestration' (README canonical, AGENTS.md constraints, concise references), docs only"
-    status: pending
+    status: completed
   - id: cli-and-skill-hardening
     content: "PR (savepoints-lite): implicit stdin, notion-fetch input, advisory repository warning, instruction consolidation, tests, docs, version 2.2.0"
     status: pending
