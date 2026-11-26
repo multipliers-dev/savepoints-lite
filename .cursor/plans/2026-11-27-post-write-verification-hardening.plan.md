@@ -1,6 +1,6 @@
 ---
 name: Post-write verification hardening
-overview: "Document 'deterministic capabilities, flexible orchestration' as a project-wide principle (README canonical, AGENTS.md constraints), then ship Savepoints Lite 2.2.0: make the optional verification tooling easy to find and use correctly (implicit piped stdin, direct notion-fetch input, an advisory owner/repo check, shorter front-loaded instructions) without making verification mandatory. Roll out via npm and team-harness, run a live smoke gate, then re-audit after about one week against the v2.1.0 baseline, with record quality as the primary outcome."
+overview: "Document 'deterministic capabilities, flexible orchestration' as a project-wide principle (README canonical, AGENTS.md constraints), then ship Savepoints Lite 2.2.0: make the optional verification tooling easy to find and use correctly (implicit piped stdin, direct notion-fetch input, an advisory owner/repo check, shorter front-loaded instructions) without making verification mandatory. Roll out via npm and team-harness, run a live smoke gate. Later effectiveness audits are optional, operator-initiated, and independent of release and plan closure."
 todos:
   - id: plan-review
     content: "Plan-only PR: commit this plan to .cursor/plans/ in savepoints-lite; do not implement"
@@ -20,11 +20,8 @@ todos:
   - id: hub-dogfood-pin
     content: "PR (savepoints-lite): bump devDependency pin to 2.2.0, registry dogfood manifest, adoption record; also records marketplace-adopt completed (plan-status)"
     status: pending
-  - id: effectiveness-review
-    content: "Manual verification gate (read-only): one-week post-adoption audit against v2.1.0 baseline, about 7 days after plugin refresh (no PR)"
-    status: pending
   - id: plan-closure
-    content: "Docs-only PR: add # Shipped with review verdict, archive plan to .cursor/plans/archive/"
+    content: "Docs-only PR: add # Shipped with smoke verdict, archive plan to .cursor/plans/archive/"
     status: pending
 isProject: false
 ---
@@ -94,6 +91,32 @@ Source: the completed one-week v2.1.0 effectiveness audit (20-27 Nov 2026). This
 | Bare repository name (not `owner/repo`) | 5/39 (format compliance 34/39, 87.2%) |
 | Titles missing `{owner/repo} — ` prefix | 22/39 |
 
+### Reference baseline for optional future audits
+
+Effectiveness audits are not a slice, release dependency, or plan-closure dependency. The operator may run one independently during normal dogfooding, at their discretion, using the same method as the v2.1.0 audit (paginate the whole Notion Savepoints database, compare `page_last_edited_at` to `Created`, inspect session transcripts). No thresholds act as gates; report attempt counts with every percentage and distinguish observed, inferred, and unverified.
+
+**Two denominators, kept separate.** Record-quality metrics use **all records** in the cohort. Verification-correctness metrics use **verification attempts** only (a record counts as an attempt when the agent ran the validator CLI or a post-create `notion-fetch` read-back for it). Records where verification was not attempted are contextual evidence and never enter the correctness denominator.
+
+*Record quality (denominator: all cohort records):*
+
+| Metric | v2.1.0 baseline | Role in a future audit |
+| --- | --- | --- |
+| Required property completeness | 100% (39/39) | **Primary** |
+| Repository format compliance (`owner/repo`) | 87.2% (34/39) | **Primary** |
+| Title prefix conformance | 43.6% (17/39) | Secondary |
+| Organic repairs | 0 | Observational |
+
+*Verification correctness (denominator: verification attempts; baseline 18 attempts):*
+
+| Metric | v2.1.0 baseline | Role in a future audit |
+| --- | --- | --- |
+| Correct verification (persisted-data read-back plus successful CLI validation) | 61.1% (11/18) | Diagnostic (expected to rise) |
+| Synthetic input (CLI on self-built JSON, no read-back) | 33.3% (6/18) | Diagnostic (expected to fall) |
+| Invalid invocation (unsupported flag, suppressed failure) | 5.6% (1/18) | Diagnostic (expected to fall) |
+| First-attempt CLI success (denominator: CLI-invoking sessions) | 44.4% (4/9) | Diagnostic (discoverability; expected to rise) |
+
+*Context only (not a correctness input, not a defect):* verification not attempted 53.8% (21/39); attempt rate 46.2% (18/39); usage by append position within a session.
+
 Root causes observed in transcripts (observed, not inferred):
 
 - Provider `SKILL.md` post-write section sits at lines 73-99 of 117; one agent read only the first 80 lines and invented `--page-id ... || true`.
@@ -132,7 +155,6 @@ Original failure mode (missing Agent/Repository) has not recurred, so changes st
 | marketplace-adopt | Open PR only | Do not merge. Stop after opening the PR. Do not edit the plan from the marketplace repo. |
 | smoke-verification | Manual verification gate | Do not commit or open a PR. Run only the specified verification; report the verdict; stop. |
 | hub-dogfood-pin | Open PR only | Do not merge. Stop after opening the PR. |
-| effectiveness-review | Manual verification gate | Do not commit, edit Notion, or open a PR. Read-only audit; report the verdict; stop. |
 | plan-closure | Open PR only | Do not merge. Stop after opening the PR. |
 
 Repo default: **Open PR only**. No slice grants Merge granted. Operator-only steps (not agent actions): npm publish, plugin refresh, User Rules paste.
@@ -152,7 +174,6 @@ flowchart LR
   market --> refresh["Operator: refresh plugin to 1.17.0, fresh chats"]
   refresh --> smoke["smoke-verification gate"]
   smoke --> pin["hub-dogfood-pin PR"]
-  refresh --> review["effectiveness-review, about 7 days later"]
   pin --> closure["plan-closure"]
   review --> closure
 ```
@@ -295,53 +316,15 @@ flowchart LR
 
 ---
 
-## Slice — effectiveness-review
-
-**Recommended authority:** Manual verification gate
-
-**Rationale:** Measures whether the changes improved record quality without disproportionate overhead; read-only, same method as the v2.1.0 audit.
-
-**Agent instruction:** Do not commit, edit Notion, or open a PR. Read-only audit; report the verdict; stop. Do not infer verification from complete records.
-
-**Prerequisite:** about 7 days of normal dogfooding after the plugin refresh date (cohort = records created after that timestamp; also report volume and repo/agent diversity).
-
-**Method:** paginate the whole Notion Savepoints database (not the view); fetch pages for `page_last_edited_at` versus `Created`; inspect desktop session transcripts for `notion-fetch`, CLI invocation, exit codes, and tool-call counts per Savepoint.
-
-**Two denominators, kept separate.** Record-quality metrics use **all records** in the cohort. Verification-correctness metrics use **verification attempts** only (a record counts as an attempt when the agent ran the validator CLI or a post-create `notion-fetch` read-back for it). Records where verification was not attempted are contextual evidence and never enter the correctness denominator.
-
-*Record quality (denominator: all cohort records):*
-
-| Metric | v2.1.0 baseline | Role |
-| --- | --- | --- |
-| Required property completeness | 100% (39/39) | **Primary** |
-| Repository format compliance (`owner/repo`) | 87.2% (34/39) | **Primary** |
-| Title prefix conformance | 43.6% (17/39) | Secondary |
-| Organic repairs | 0 | Observational |
-
-*Verification correctness (denominator: verification attempts; baseline 18 attempts):*
-
-| Metric | v2.1.0 baseline | Role |
-| --- | --- | --- |
-| Correct verification (persisted-data read-back plus successful CLI validation) | 61.1% (11/18) | Diagnostic (expected to rise) |
-| Synthetic input (CLI on self-built JSON, no read-back) | 33.3% (6/18) | Diagnostic (expected to fall) |
-| Invalid invocation (unsupported flag, suppressed failure) | 5.6% (1/18) | Diagnostic (expected to fall) |
-| First-attempt CLI success (denominator: CLI-invoking sessions) | 44.4% (4/9) | Diagnostic (discoverability; expected to rise) |
-
-*Context only (not a correctness input, not a defect):* verification not attempted 53.8% (21/39); attempt rate 46.2% (18/39); usage by append position within a session.
-
-Also report: extra tool calls or latency attributable to verification, any `repository_format` warnings and how they were handled, and anomalies with Notion links. Report the attempt count alongside every percentage so small denominators are visible. Distinguish observed, inferred, and unverified. No pass/fail thresholds; recommend resolve, continue monitoring, or investigate.
-
----
-
 ## Plan closure (docs-only PR)
 
 **Recommended authority:** Open PR only
 
-**Rationale:** Archive after all implementation PRs merge and both gates have verdicts.
+**Rationale:** Archive after all implementation PRs merge and the smoke gate has a verdict.
 
 **Agent instruction:** Do not merge. Stop after opening the PR.
 
-After `hub-dogfood-pin` merges and gate verdicts exist: verify PRs merged in both repos, add `# Shipped` (date, PR links, npm evidence, smoke and review verdicts, deferred work), move to `.cursor/plans/archive/2026-11-27-post-write-verification-hardening.plan.md`, mark `plan-closure` completed, update references.
+After `hub-dogfood-pin` merges and the smoke verdict exists: verify PRs merged in both repos, add `# Shipped` (date, PR links, npm evidence, smoke verdict, deferred work), move to `.cursor/plans/archive/2026-11-27-post-write-verification-hardening.plan.md`, mark `plan-closure` completed, update references.
 
 ---
 
@@ -452,7 +435,7 @@ Verification: operator-authorized live Notion MCP only; do not claim automated t
 ```text
 @.cursor/plans/2026-11-27-post-write-verification-hardening.plan.md
 
-Implement slice hub-dogfood-pin only. Prerequisites: 2.2.0 on npm; marketplace-adopt PR merged (link it). Do not start effectiveness-review or plan-closure. Do not archive the plan.
+Implement slice hub-dogfood-pin only. Prerequisites: 2.2.0 on npm; marketplace-adopt PR merged (link it). Do not start plan-closure. Do not archive the plan.
 
 Authority: Open PR only - implement and open the PR; do not merge.
 
@@ -461,22 +444,6 @@ Topology: start from latest origin/main; branch represents only this slice; PR b
 Deliverables: bump devDependency pin to exact 2.2.0 + lockfile; add expected-package-paths-registry-dogfood-2.2.0.txt; update docs/adoption-verification-record.md with the smoke verdict and marketplace PR link. Mark hub-dogfood-pin and marketplace-adopt completed in plan frontmatter in this PR (plan-status for the cross-repo slice).
 
 Verification: npm ci; npm test; npm run verify; npm run validate:plans.
-```
-
-### effectiveness-review
-
-```text
-@.cursor/plans/2026-11-27-post-write-verification-hardening.plan.md
-
-Execute only effectiveness-review. Prerequisite: about 7 days of normal dogfooding after the plugin refresh date.
-
-Authority: Manual verification gate - read-only; do not commit, edit Notion, modify files, or open a PR; report the verdict; stop. Do not infer verification from complete records.
-
-Topology: n/a (no PR).
-
-Deliverables: paginated audit of the full Notion Savepoints database plus transcript inspection; metric tables versus the v2.1.0 baseline in the plan, with record-quality metrics over all records and verification-correctness metrics over verification attempts only (non-attempts reported as context, never in the correctness denominator; attempt counts shown with every percentage); append-position analysis as context; overhead observations; anomalies with Notion links; observed vs inferred vs unverified; recommendation (resolve, continue monitoring, investigate).
-
-Verification: counts reconcile to total database rows; no thresholds applied as gates.
 ```
 
 ### plan-closure
@@ -488,11 +455,11 @@ Execute only plan-closure.
 
 Authority: Open PR only - docs-only archive PR; do not merge.
 
-Prerequisites: implementation PRs actually merged in both repos (principle-docs, cli-and-skill-hardening, marketplace-adopt, hub-dogfood-pin); smoke-verification and effectiveness-review verdicts recorded.
+Prerequisites: implementation PRs actually merged in both repos (principle-docs, cli-and-skill-hardening, marketplace-adopt, hub-dogfood-pin); smoke-verification verdict recorded.
 
 Topology: start from latest origin/main; branch represents only this slice; PR base must be main.
 
-Deliverables: verify slice todos, add # Shipped (date, PR links, npm evidence, verdicts, deferred work), move plan to .cursor/plans/archive/2026-11-27-post-write-verification-hardening.plan.md, mark plan-closure completed, update references. No production behavior changes.
+Deliverables: verify slice todos, add # Shipped (date, PR links, npm evidence, smoke verdict, deferred work), move plan to .cursor/plans/archive/2026-11-27-post-write-verification-hardening.plan.md, mark plan-closure completed, update references. No production behavior changes.
 
 Verification: gh pr view confirms merged PRs; npm run validate:plans.
 ```
