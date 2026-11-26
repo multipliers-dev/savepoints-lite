@@ -175,7 +175,6 @@ flowchart LR
   refresh --> smoke["smoke-verification gate"]
   smoke --> pin["hub-dogfood-pin PR"]
   pin --> closure["plan-closure"]
-  review --> closure
 ```
 
 ---
