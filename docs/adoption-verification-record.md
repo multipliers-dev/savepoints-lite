@@ -4,7 +4,7 @@ Durable record of automated checks and manual agent behavioral runs. Status valu
 
 ## Post-write verification hardening adoption (2026-11-27)
 
-Evidence for published Savepoints Lite **`@2.2.0`** distributed via team-harness **1.17.0** (plan: `.cursor/plans/2026-11-27-post-write-verification-hardening.plan.md`). The smoke gate judges whether the optional verification tooling is discoverable and works first time **when an agent uses it**, not how often agents choose to use it. Notion page links for the smoke scenarios are in the PR description, not in this file.
+Evidence for published Savepoints Lite **`@2.2.0`** distributed via team-harness **1.17.0** (plan archive: [`.cursor/plans/archive/2026-11-27-post-write-verification-hardening.plan.md`](../.cursor/plans/archive/2026-11-27-post-write-verification-hardening.plan.md)). The smoke gate judges whether the optional verification tooling is discoverable and works first time **when an agent uses it**, not how often agents choose to use it. Notion page links for the smoke scenarios are in the PR description, not in this file.
 
 | Item | Status | Notes |
 | --- | --- | --- |
