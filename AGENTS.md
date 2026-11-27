@@ -42,6 +42,15 @@ Architectural changes must preserve both paths:
 
 See [`docs/architecture.md`](docs/architecture.md) § Distribution compatibility for the distribution contract.
 
+## Architectural constraints
+
+Principle: [README § Design principle: deterministic capabilities, flexible orchestration](README.md#design-principle-deterministic-capabilities-flexible-orchestration). The package provides the capabilities; consumers own the orchestration.
+
+- Do not bundle vendor-specific orchestration or enforcement in the core package: no hooks, lifecycle integrations, or mandatory execution (including mandatory verification).
+- Do not make external orchestration harder. Keep the CLI contract stable and standalone: documented input shapes, JSON output, and exit codes; no Notion calls and no host coupling.
+- Low invocation is not a defect. Skipped verification is acceptable; incorrectly performed verification is a tooling or instruction usability concern. Apply this when reviewing audit metrics.
+- Scope: this limits what the package enforces. It does not change the session-logging contract an operator opts into through their own activation (User Rules or root `AGENTS.md`); that stays separate, outside the package.
+
 ## Discipline
 
 - Pre-commit runs `npm test` and `npm run verify`; do not bypass hooks.

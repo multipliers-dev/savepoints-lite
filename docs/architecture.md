@@ -56,7 +56,7 @@ flowchart TB
 | **Distribution** | Published npm package is canonical. Standalone consumers must not hand-vendor skills; marketplace may commit a vendor copy of the published `skills/` tree for plugin install. |
 | **Runtime** | Persistence uses the consumer’s **Notion MCP**. Executable validation is **opt-in** (`validation.post_write`); requires Node.js ≥ 22 when enabled; missing runtime → **verification unavailable** (fail-open, confirmed create stays `success`). Default remains instruction-only create/confirm. |
 
-**Design principle:** Router owns **what** and **when**; static config and integration context select **where**; provider skills own **how** to persist; the optional validator owns **deterministic property checks** only.
+**Design principle:** Router owns **what** and **when**; static config and integration context select **where**; provider skills own **how** to persist; the optional validator owns **deterministic property checks** only. The package provides capabilities and consumers own their orchestration; see [README § Design principle](../README.md#design-principle-deterministic-capabilities-flexible-orchestration).
 
 ## Distribution compatibility
 
