@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@multipliers-dev/plan-validator": "0.1.0",
-    "@multipliers-dev/savepoints-lite": "2.1.0",
+    "@multipliers-dev/savepoints-lite": "2.2.0",
     "esbuild": "^0.28.2",
     "husky": "^9.1.7",
     "vitest": "^3.2.4",
