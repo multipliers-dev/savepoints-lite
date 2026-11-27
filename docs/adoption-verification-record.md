@@ -2,6 +2,24 @@
 
 Durable record of automated checks and manual agent behavioral runs. Status values: **Pass**, **Fail**, **Not run**, **Inconclusive**. Link Notion page URLs in the GitHub PR description when recording verification evidence — not in this file. **Ongoing session logging** opt-in is committed hub activation; **verification-session authorization** applies to deliberate checklist runs (see `skills/savepoints/verification.md` § Authorization).
 
+## Post-write verification hardening adoption (2026-11-27)
+
+Evidence for published Savepoints Lite **`@2.2.0`** distributed via team-harness **1.17.0** (plan: `.cursor/plans/2026-11-27-post-write-verification-hardening.plan.md`). The smoke gate judges whether the optional verification tooling is discoverable and works first time **when an agent uses it**, not how often agents choose to use it. Notion page links for the smoke scenarios are in the PR description, not in this file.
+
+| Item | Status | Notes |
+| --- | --- | --- |
+| Hub PRs [#25](https://github.com/multipliers-dev/savepoints-lite/pull/25) (principle docs), [#26](https://github.com/multipliers-dev/savepoints-lite/pull/26) (CLI and skill hardening) | **Merged** | Implicit stdin, `notion-fetch` input adapter, advisory `repository_format` warning, leaner skills |
+| `@2.2.0` on npm | **Pass** | `npm view` returns `2.2.0` and `dist-tags.latest` is `2.2.0` |
+| Marketplace implementation [PR #80](https://github.com/multipliers-dev/cursor-team-marketplace/pull/80) | **Merged** (2026-11-27) | Pin, vendor sync (`PACKAGE_VERSION=2.2.0`), vendored CLI smoke update, team-harness **1.17.0** |
+| Hub dogfood pin to `@2.2.0` | **Pass** | Exact devDependency pin, `scripts/expected-package-paths-registry-dogfood-2.2.0.txt` matches the installed registry artifact (20 files) and `expected-package-paths.txt` |
+| Smoke 1: successive appends, operator-requested verification on first and last | **Pass** | Three appends. Verified appends: `notion-fetch`, documented heredoc command (no `--stdin`, no `\|\| true`), exit 0 on the first attempt. Middle append not verified (agent discretion; not a failure) |
+| Smoke 2: repository and title | **Pass** | `Repository` is `owner/repo` from `origin`; titles follow `owner/repo — verb phrase` |
+| Smoke 3: induced bare repository | **Pass** | One advisory `repository_format` warning, exit 0, no repair, no second create |
+| Smoke 4: induced missing property | **Pass** | `missing_persisted_property` (exit 1), one bounded repair, re-fetch and re-validate clean (exit 0), same page |
+| Smoke 5: default off (no `validation` key) | **Inconclusive** | Not exercised: the operator's User Rules set `validation.post_write: true` and cannot be changed from the run. Only static checks were made (no consumer override in the test repo; packaged default is `false`). Needs a fresh chat whose User Rules omit the `validation` key |
+
+**Limits of this evidence:** one agent, desktop Cursor, one session, run through the installed team-harness **1.17.0** vendored CLI with live Notion MCP. The run's chat started in the hub checkout and used a non-hub repository (with a real `origin`) for the work events, rather than a fresh non-hub chat. The agent read both skills in full, so the earlier failure of reading only part of the provider skill was not exercised. Automated tests prove CLI and layout only, not agent behaviour. The two induced scenarios created test fixture rows in the Savepoints database. This section does not convert the hub implicit-logging rows below.
+
 ## Marketplace adoption verification (2026-11-20)
 
 Evidence for [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) distribution of published Savepoints Lite **`@2.1.0`** via team-harness **1.16.0**. Authoritative scenario detail and Notion page links live in the marketplace plan archive — do not duplicate lengthy evidence here.

@@ -13,13 +13,13 @@ todos:
     status: completed
   - id: marketplace-adopt
     content: "PR (cursor-team-marketplace, cross-repo): pin 2.2.0, vendor sync, vendored CLI smoke update, docs, team-harness 1.17.0"
-    status: pending
+    status: completed
   - id: smoke-verification
     content: "Manual verification gate: live smoke of the verification tooling on installed team-harness 1.17.0, including successive appends (no PR)"
     status: pending
   - id: hub-dogfood-pin
     content: "PR (savepoints-lite): bump devDependency pin to 2.2.0, registry dogfood manifest, adoption record; also records marketplace-adopt completed (plan-status)"
-    status: pending
+    status: completed
   - id: plan-closure
     content: "Docs-only PR: add # Shipped with smoke verdict, archive plan to .cursor/plans/archive/"
     status: pending
