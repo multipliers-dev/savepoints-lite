@@ -295,15 +295,18 @@ function printHelp() {
   process.stdout.write(`savepoints-lite-validate — deterministic Savepoint property check
 
 Usage:
-  savepoints-lite-validate <<'EOF'
-  <properties>
-  {...properties block from the notion-fetch result...}
-  </properties>
-  EOF
   savepoints-lite-validate < fetch-result.txt
   savepoints-lite-validate --input '<json>'
   savepoints-lite-validate --stdin
   savepoints-lite-validate --package-root <dir> --stdin
+
+Example (heredoc; the closing EOF must start at column 0):
+
+node /path/to/install-root/skills/bin/savepoints-lite-validate.mjs <<'EOF'
+<properties>
+{...properties block from the notion-fetch result...}
+</properties>
+EOF
 
 Input is read from stdin when piped (no flag needed), or from --input.
 --stdin is the explicit form and waits for EOF.

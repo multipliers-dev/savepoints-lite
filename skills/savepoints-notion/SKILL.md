@@ -16,10 +16,10 @@ When the router's resolved `validation.post_write` is `true`, you **may** verify
 To verify, only after create is confirmed `success`:
 
 1. `notion-fetch` the created page (page id/url from the create result).
-2. Run the CLI on the fetch result, with no `--stdin` and no `|| true`:
+2. Run the CLI on the fetch result (replace `/path/to/install-root` with the install root; no `--stdin`, no `|| true`):
 
 ```bash
-node <install-root>/skills/bin/savepoints-lite-validate.mjs <<'EOF'
+node /path/to/install-root/skills/bin/savepoints-lite-validate.mjs <<'EOF'
 <properties>
 {...paste the properties block from the notion-fetch result...}
 </properties>
