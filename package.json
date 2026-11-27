@@ -1,6 +1,6 @@
 {
   "name": "@multipliers-dev/savepoints-lite",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Savepoints router and Notion provider skills for append-only session logging via Notion MCP, with optional deterministic post-write validation",
   "license": "MIT",
   "type": "module",

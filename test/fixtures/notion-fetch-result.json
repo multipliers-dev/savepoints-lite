@@ -1,0 +1,7 @@
+{
+  "metadata": { "type": "page" },
+  "title": "savepoints-lite — implement CLI input hardening",
+  "url": "https://www.notion.so/41e6cffaff9c8150add2f992eb944bdb",
+  "page_id": "41e6cffa-ff9c-8150-add2-f992eb944bdb",
+  "text": "Here is the result of \"view\" for the Page with URL https://www.notion.so/41e6cffaff9c8150add2f992eb944bdb:\n<page url=\"https://www.notion.so/41e6cffaff9c8150add2f992eb944bdb\">\n<ancestor-path>\n<parent-data-source url=\"collection://822cbc89-7c89-4863-af3a-2fe0cd8ab56e\" name=\"Savepoints\"/>\n</ancestor-path>\n<properties>\n{\"Name\": \"savepoints-lite — implement CLI input hardening\", \"Repository\": \"multipliers-dev/savepoints-lite\", \"Agent\": \"Cursor Agent\", \"Status\": \"Done\", \"date:Created:start\": \"2026-11-27T00:00:00.000Z\"}\n</properties>\n<content>\n## What was done\nAdded implicit stdin.\n</content>\n</page>"
+}

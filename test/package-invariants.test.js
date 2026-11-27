@@ -51,10 +51,10 @@ function isExternalOrAnchorLink(link) {
 }
 
 describe("package invariants", () => {
-  it("package.json is publishable @multipliers-dev/savepoints-lite at 2.1.0", () => {
+  it("package.json is publishable @multipliers-dev/savepoints-lite at 2.2.0", () => {
     const pkg = JSON.parse(readRoot("package.json"));
     expect(pkg.name).toBe("@multipliers-dev/savepoints-lite");
-    expect(pkg.version).toBe("2.1.0");
+    expect(pkg.version).toBe("2.2.0");
     expect(pkg.private).not.toBe(true);
     expect(pkg.publishConfig?.access).toBe("public");
     expect(pkg.publishConfig?.provenance).toBe(true);

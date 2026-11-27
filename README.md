@@ -2,7 +2,7 @@
 
 Append-only **session Savepoints** for AI coding agents: when meaningful work happens, agents record what was done, decisions, open threads, and errors into **your** Notion database.
 
-Version **2.1.0** ships a router skill and a **Notion** provider that writes through the host’s authenticated **Notion MCP**. Default path is instruction-only create/confirm. Optional deterministic post-write validation (`validation.post_write`) can inspect persisted properties and attempt **at most one** repair of the newly created record.
+Version **2.2.0** ships a router skill and a **Notion** provider that writes through the host’s authenticated **Notion MCP**. Default path is instruction-only create/confirm. Optional deterministic post-write validation (`validation.post_write`) can inspect persisted properties and attempt **at most one** repair of the newly created record.
 
 There is no custom MCP server, local spool, or automated learning capture (`emit-learning`).
 
@@ -56,7 +56,7 @@ Best when you want a pinned package install in a specific repository.
 Requires **Node.js 22+** for package install and for optional executable validation. Full setup: [docs/adopt.md](./docs/adopt.md).
 
 ```bash
-npm install @multipliers-dev/savepoints-lite@2.1.0 --save-dev --save-exact
+npm install @multipliers-dev/savepoints-lite@2.2.0 --save-dev --save-exact
 ```
 
 ## What you get

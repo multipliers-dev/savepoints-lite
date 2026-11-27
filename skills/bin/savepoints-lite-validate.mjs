@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /*!
  * GENERATED FILE — DO NOT EDIT.
- * Source: src/validate/cli.ts (+ validate.ts, load-contract.ts, notion-value.ts).
+ * Source: src/validate/cli.ts (+ normalize-input.ts, notion-fetch-input.ts,
+ * validate.ts, load-contract.ts, notion-value.ts).
  * Rebuild: npm run build (commit skills/bin/ with the package — required for
  * marketplace vendor sync without consumer builds).
  */
@@ -45,6 +46,67 @@ function loadSchema(packageRoot) {
 function loadNotionMapping(packageRoot) {
   const raw = readFileSync(join(packageRoot, MAPPING_REL), "utf8");
   return JSON.parse(raw);
+}
+
+// src/validate/notion-fetch-input.ts
+var PROPERTIES_BLOCK = /<properties>([\s\S]*?)<\/properties>/;
+function hasPropertiesBlock(text) {
+  return PROPERTIES_BLOCK.test(text);
+}
+function isFetchEnvelope(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const text = value.text;
+  return typeof text === "string" && hasPropertiesBlock(text);
+}
+function adaptFetchText(text, pageId) {
+  const match = PROPERTIES_BLOCK.exec(text);
+  if (!match) {
+    return { ok: false, message: "no <properties> block found in input" };
+  }
+  let persisted;
+  try {
+    persisted = JSON.parse(match[1]);
+  } catch {
+    return {
+      ok: false,
+      message: "<properties> block does not contain valid JSON"
+    };
+  }
+  if (persisted === null || typeof persisted !== "object" || Array.isArray(persisted)) {
+    return {
+      ok: false,
+      message: "<properties> block must contain a JSON object"
+    };
+  }
+  const input = {
+    persisted
+  };
+  if (typeof pageId === "string" && pageId.trim()) {
+    input.page_id = pageId.trim();
+  }
+  return { ok: true, input };
+}
+
+// src/validate/normalize-input.ts
+var UNRECOGNIZED = 'input must be {"persisted": {...}} JSON or a notion-fetch result containing a <properties> block';
+function normalizeCliInput(raw) {
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    const adapted = adaptFetchText(raw);
+    return adapted.ok ? { ok: true, input: adapted.input } : { ok: false, message: UNRECOGNIZED };
+  }
+  if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed) && Object.prototype.hasOwnProperty.call(parsed, "persisted")) {
+    return { ok: true, input: parsed };
+  }
+  if (isFetchEnvelope(parsed)) {
+    const adapted = adaptFetchText(parsed.text, parsed.page_id);
+    return adapted.ok ? { ok: true, input: adapted.input } : { ok: false, message: adapted.message };
+  }
+  return { ok: false, message: UNRECOGNIZED };
 }
 
 // src/validate/notion-value.ts
@@ -140,6 +202,7 @@ function interpretNotionPropertyValue(value) {
 }
 
 // src/validate/validate.ts
+var REPOSITORY_FORMAT = /^[^\s/]+\/[^\s/]+$/;
 function propertyValue(persisted, property) {
   if (Object.prototype.hasOwnProperty.call(persisted, property)) {
     return persisted[property];
@@ -148,6 +211,7 @@ function propertyValue(persisted, property) {
 }
 function validatePersistedProperties(input, schema, mapping) {
   const issues = [];
+  const warnings = [];
   if (input === null || typeof input !== "object" || Array.isArray(input)) {
     return {
       ok: false,
@@ -190,6 +254,14 @@ function validatePersistedProperties(input, schema, mapping) {
     const raw = propertyValue(persisted, mapEntry.property);
     const outcome = interpretNotionPropertyValue(raw);
     if (outcome.kind === "present") {
+      if (field === "repository" && !REPOSITORY_FORMAT.test(outcome.text)) {
+        warnings.push({
+          kind: "repository_format",
+          field,
+          property: mapEntry.property,
+          message: `"${mapEntry.property}" is not in owner/repo form (advisory; not repaired)`
+        });
+      }
       continue;
     }
     if (outcome.kind === "unsupported") {
@@ -211,27 +283,40 @@ function validatePersistedProperties(input, schema, mapping) {
   return {
     ok: issues.length === 0,
     issues,
-    page_id: pageId
+    page_id: pageId,
+    ...warnings.length > 0 ? { warnings } : {}
   };
 }
 
 // src/validate/cli.ts
+var IMPLICIT_STDIN_IDLE_MS = 3e3;
+var ACCEPTED_FLAGS = "--stdin, --input <json>, --package-root <dir>, --help";
 function printHelp() {
   process.stdout.write(`savepoints-lite-validate — deterministic Savepoint property check
 
 Usage:
-  savepoints-lite-validate --stdin
+  savepoints-lite-validate <<'EOF'
+  <properties>
+  {...properties block from the notion-fetch result...}
+  </properties>
+  EOF
+  savepoints-lite-validate < fetch-result.txt
   savepoints-lite-validate --input '<json>'
+  savepoints-lite-validate --stdin
   savepoints-lite-validate --package-root <dir> --stdin
 
+Input is read from stdin when piped (no flag needed), or from --input.
+--stdin is the explicit form and waits for EOF.
 --package-root is optional. When omitted, the CLI locates the same install root
 that contains skills/savepoints/ and skills/savepoints-notion/ (standalone npm
 or marketplace vendor tree).
 
-Input JSON:
+Accepted input:
   { "persisted": { "Name": "...", "Repository": "...", "Agent": "..." }, "page_id": "optional" }
+  a notion-fetch result (raw or JSON with a string "text") containing a <properties>...</properties> block
 
-Exit codes: 0 ok | 1 issues | 2 usage/runtime error
+Output: JSON { ok, issues, page_id?, warnings? }. warnings is advisory and omitted when empty.
+Exit codes: 0 ok | 1 issues | 2 usage/runtime/invalid input
 Requires Node.js >= 22. No npm install in the consumer repo is required when
 invoking this self-contained file directly (node path/to/savepoints-lite-validate.mjs).
 `);
@@ -264,17 +349,52 @@ function parseArgs(argv) {
       }
       input = next;
     } else {
-      throw new Error(`unknown argument: ${arg}`);
+      throw new Error(`unknown argument: ${arg} (accepted: ${ACCEPTED_FLAGS})`);
     }
   }
   return { packageRoot, stdin, input, help };
 }
-async function readStdin() {
-  const chunks = [];
-  for await (const chunk of process.stdin) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+var NoInputError = class extends Error {
+  constructor() {
+    super("no input");
   }
-  return Buffer.concat(chunks).toString("utf8");
+};
+function readStdin(idleMs) {
+  return new Promise((resolvePromise, reject) => {
+    const chunks = [];
+    let timer;
+    const stopTimer = () => {
+      if (timer !== void 0) {
+        clearTimeout(timer);
+        timer = void 0;
+      }
+    };
+    if (idleMs !== void 0) {
+      timer = setTimeout(() => reject(new NoInputError()), idleMs);
+    }
+    process.stdin.on("data", (chunk) => {
+      stopTimer();
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    process.stdin.on("end", () => {
+      stopTimer();
+      resolvePromise(Buffer.concat(chunks).toString("utf8"));
+    });
+    process.stdin.on("error", (err) => {
+      stopTimer();
+      reject(err);
+    });
+  });
+}
+function failInvalidInput(message) {
+  process.stdout.write(
+    JSON.stringify(
+      { ok: false, issues: [{ kind: "invalid_input", message }] },
+      null,
+      2
+    ) + "\n"
+  );
+  process.exit(2);
 }
 async function main() {
   let args;
@@ -289,43 +409,33 @@ async function main() {
     printHelp();
     process.exit(0);
   }
-  if (!args.stdin && args.input === void 0) {
-    process.stderr.write("provide --stdin or --input <json>\n");
-    printHelp();
-    process.exit(2);
-  }
   if (args.stdin && args.input !== void 0) {
     process.stderr.write("use only one of --stdin or --input\n");
     process.exit(2);
   }
+  const implicitStdin = !args.stdin && args.input === void 0;
+  if (implicitStdin && process.stdin.isTTY) {
+    process.stderr.write(
+      "no input: pipe a notion-fetch result or JSON on stdin, or pass --input <json>\n"
+    );
+    printHelp();
+    process.exit(2);
+  }
   let raw;
   try {
-    raw = args.stdin ? await readStdin() : args.input;
+    raw = args.input !== void 0 ? args.input : await readStdin(implicitStdin ? IMPLICIT_STDIN_IDLE_MS : void 0);
   } catch (err) {
     process.stderr.write(`${err instanceof Error ? err.message : String(err)}
 `);
     process.exit(2);
   }
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    process.stdout.write(
-      JSON.stringify(
-        {
-          ok: false,
-          issues: [
-            {
-              kind: "invalid_input",
-              message: "input is not valid JSON"
-            }
-          ]
-        },
-        null,
-        2
-      ) + "\n"
-    );
+  if (implicitStdin && raw.trim() === "") {
+    process.stderr.write("no input\n");
     process.exit(2);
+  }
+  const normalized = normalizeCliInput(raw);
+  if (!normalized.ok) {
+    failInvalidInput(normalized.message);
   }
   let packageRoot;
   try {
@@ -351,7 +461,7 @@ async function main() {
     );
     process.exit(2);
   }
-  const result = validatePersistedProperties(parsed, schema, mapping);
+  const result = validatePersistedProperties(normalized.input, schema, mapping);
   process.stdout.write(JSON.stringify(result, null, 2) + "\n");
   process.exit(result.ok ? 0 : result.issues.some((i) => i.kind === "invalid_input") ? 2 : 1);
 }

@@ -13,7 +13,8 @@ const outfile = resolve(root, "skills/bin/savepoints-lite-validate.mjs");
 
 const generatedBanner = `/*!
  * GENERATED FILE — DO NOT EDIT.
- * Source: src/validate/cli.ts (+ validate.ts, load-contract.ts, notion-value.ts).
+ * Source: src/validate/cli.ts (+ normalize-input.ts, notion-fetch-input.ts,
+ * validate.ts, load-contract.ts, notion-value.ts).
  * Rebuild: npm run build (commit skills/bin/ with the package — required for
  * marketplace vendor sync without consumer builds).
  */`;

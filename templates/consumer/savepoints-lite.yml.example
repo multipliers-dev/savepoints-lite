@@ -7,9 +7,12 @@ storage:
   provider: notion
 
 validation:
-  # When true, after a confirmed Notion create the provider skill runs
-  # savepoints-lite-validate on read-back properties (at most one repair).
+  # When true, verification tooling and guidance are available: after a
+  # confirmed Notion create the agent may read back the page and run
+  # savepoints-lite-validate on it (at most one repair). Optional per append.
   # Default / absent: false (instruction-only persistence; no CLI required).
+  # Integration surface for your own hooks or automation: structured JSON
+  # input, JSON output, and exit codes.
   # Integrations (e.g. marketplace wrapper) may enable this via tier-1 handoff
   # without requiring this file in every consumer repository.
   post_write: false

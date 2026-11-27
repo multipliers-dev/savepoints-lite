@@ -5,7 +5,11 @@ import type {
   ValidatePersistedInput,
   ValidationIssue,
   ValidationResult,
+  ValidationWarning,
 } from "./types.js";
+
+/** Advisory `owner/repo` shape; a folder-name fallback is legitimate without an origin remote. */
+const REPOSITORY_FORMAT = /^[^\s/]+\/[^\s/]+$/;
 
 function propertyValue(
   persisted: Record<string, unknown>,
@@ -32,6 +36,7 @@ export function validatePersistedProperties(
   mapping: MappingDocument,
 ): ValidationResult {
   const issues: ValidationIssue[] = [];
+  const warnings: ValidationWarning[] = [];
 
   if (input === null || typeof input !== "object" || Array.isArray(input)) {
     return {
@@ -88,6 +93,14 @@ export function validatePersistedProperties(
     const raw = propertyValue(persisted, mapEntry.property);
     const outcome = interpretNotionPropertyValue(raw);
     if (outcome.kind === "present") {
+      if (field === "repository" && !REPOSITORY_FORMAT.test(outcome.text)) {
+        warnings.push({
+          kind: "repository_format",
+          field,
+          property: mapEntry.property,
+          message: `"${mapEntry.property}" is not in owner/repo form (advisory; not repaired)`,
+        });
+      }
       continue;
     }
     if (outcome.kind === "unsupported") {
@@ -111,5 +124,6 @@ export function validatePersistedProperties(
     ok: issues.length === 0,
     issues,
     page_id: pageId,
+    ...(warnings.length > 0 ? { warnings } : {}),
   };
 }
