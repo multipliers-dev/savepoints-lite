@@ -8,7 +8,7 @@ Operator-controlled npm releases for an **instruction-first** package: router an
 
 ## Operator checklist (before publish)
 
-- [ ] Intended release merged to **`main`** with workspace `"version"` matching the release (e.g. `2.0.0`).
+- [ ] Intended release merged to **`main`** with workspace `"version"` matching the release (e.g. `2.2.0`).
 - [ ] **Preflight registry:** `npm view @multipliers-dev/savepoints-lite@<version> version` must **404** (workflow repeats this; ambiguous responses fail the run).
 - [ ] Clean checkout of that commit:
 
@@ -56,7 +56,7 @@ Record version, date, commit, and install-check summary (release PR or maintaine
 
 ## Post-publish hub dogfood bump (follow-up PR)
 
-After the released version is on the registry (e.g. `@2.1.0`):
+After the released version is on the registry (e.g. `@2.2.0`):
 
 1. Open a **separate** hub PR on `multipliers-dev/savepoints-lite`.
 2. Bump `devDependencies["@multipliers-dev/savepoints-lite"]` to the new exact version and refresh `package-lock.json`.
@@ -67,11 +67,11 @@ Do **not** bump the devDependency to a version that does not exist on npm (no `f
 
 ### Hub session logging (marketplace integration)
 
-`@1.1.0` packaged defaults included a maintainer `destination.data_source_id`. **`@2.0.0` does not** — the hub does not commit `.agents/savepoints-notion.yml` or a personal destination in this repository.
+`@1.1.0` packaged defaults included a maintainer `destination.data_source_id`. **`@2.0.0` does not** (nor does any later `2.x` release, including current `@2.2.0`) — the hub does not commit `.agents/savepoints-notion.yml` or a personal destination in this repository.
 
 Routine hub session logging uses the **team-harness** marketplace Savepoints wrapper with **tier-1** `destination` from global Cursor User Rules ([engineering invariants](https://github.com/multipliers-dev/cursor-team-marketplace/blob/main/docs/engineering-invariants.md)), not per-repo `AGENTS.md` activation or `node_modules` skills for instructions.
 
-After publishing a release that changes the `skills/` inventory (including `skills/bin/savepoints-lite-validate.mjs`), marketplace maintainers must bump the pin and re-sync `plugins/team-harness/vendor/savepoints-lite/` so the vendor tree stays byte-identical to the published skills — see [adopt.md](./adopt.md) § [Cursor Team Marketplace](./adopt.md#cursor-team-marketplace) (team-harness **1.16.0+** already ships `@2.1.0`).
+After publishing a release that changes the `skills/` inventory (including `skills/bin/savepoints-lite-validate.mjs`), marketplace maintainers must bump the pin and re-sync `plugins/team-harness/vendor/savepoints-lite/` so the vendor tree stays byte-identical to the published skills — see [adopt.md](./adopt.md) § [Cursor Team Marketplace](./adopt.md#cursor-team-marketplace) (team-harness **1.17.0+** already ships `@2.2.0`; **1.16.0** shipped `@2.1.0`).
 
 Do not reintroduce maintainer destination ids into packaged defaults, generic docs, or templates.
 

@@ -16,14 +16,61 @@ todos:
     status: completed
   - id: smoke-verification
     content: "Manual verification gate: live smoke of the verification tooling on installed team-harness 1.17.0, including successive appends (no PR)"
-    status: pending
+    status: completed
   - id: hub-dogfood-pin
     content: "PR (savepoints-lite): bump devDependency pin to 2.2.0, registry dogfood manifest, adoption record; also records marketplace-adopt completed (plan-status)"
     status: completed
   - id: plan-closure
     content: "Docs-only PR: add # Shipped with smoke verdict, archive plan to .cursor/plans/archive/"
-    status: pending
+    status: completed
 isProject: false
+---
+
+# Shipped
+
+**Archived 2026-11-27** in `multipliers-dev/savepoints-lite`.
+
+| Slice | Delivered |
+| --- | --- |
+| plan-review | [PR #24](https://github.com/multipliers-dev/savepoints-lite/pull/24): plan-only PR |
+| principle-docs | [PR #25](https://github.com/multipliers-dev/savepoints-lite/pull/25): README canonical principle, `AGENTS.md` constraints, one `docs/architecture.md` reference |
+| cli-and-skill-hardening | [PR #26](https://github.com/multipliers-dev/savepoints-lite/pull/26): implicit stdin, `notion-fetch` input adapter, advisory `repository_format` warning, leaner skills, `2.2.0` |
+| marketplace-adopt | [cursor-team-marketplace PR #80](https://github.com/multipliers-dev/cursor-team-marketplace/pull/80): pin `2.2.0`, vendor sync, vendored CLI smoke update, team-harness `1.17.0` (merged 2026-11-27) |
+| smoke-verification | Manual verification gate, no PR; verdict below and in `docs/adoption-verification-record.md` |
+| hub-dogfood-pin | [PR #27](https://github.com/multipliers-dev/savepoints-lite/pull/27): devDependency pin `2.2.0`, `expected-package-paths-registry-dogfood-2.2.0.txt`, adoption record, plan-status for `marketplace-adopt` |
+| plan-closure | This PR (docs-only archive) |
+
+All slice PRs above were confirmed `MERGED` into `main` with `gh pr view` at closure.
+
+### npm publication evidence (`@2.2.0`)
+
+| Check | Result | Date (UTC) |
+| --- | --- | --- |
+| Operator publish | [Actions run #45918218896](https://github.com/multipliers-dev/savepoints-lite/actions/runs/45918218896) **success** on `main` @ `e0469cf` (merge of PR #26) | 2026-11-27 |
+| `npm view @multipliers-dev/savepoints-lite@2.2.0 version` | `2.2.0` (20 files) | 2026-11-27 (verified at plan-closure) |
+| `npm view @multipliers-dev/savepoints-lite dist-tags.latest` | `2.2.0` | 2026-11-27 (verified at plan-closure) |
+| Provenance | Registry attestation URL present for `2.2.0` (not independently inspected on npmjs.com) | 2026-11-27 |
+
+### Smoke verdict (manual verification gate)
+
+Live Notion MCP, installed team-harness `1.17.0` cache (`PACKAGE_VERSION` `2.2.0`), `validation.post_write: true`, work events in `mastermichaelt/portfolio` (real `origin`). Pass means the tooling was discoverable and worked first time when used; usage rate was not judged.
+
+| # | Scenario | Verdict | Notion |
+| --- | --- | --- | --- |
+| 1 | Three successive appends, verification on first and last | **Pass** | [append 1](https://app.notion.com/p/4256cffaff9c815c8b31fc44239d3424), [append 2 (not verified, by choice)](https://app.notion.com/p/4256cffaff9c81d8b68fd53b388d9a7e), [append 3](https://app.notion.com/p/4256cffaff9c81e39572eaf68411357f) |
+| 2 | Repository and title | **Pass** | same three pages |
+| 3 | Induced bare repository | **Pass** | [page](https://app.notion.com/p/4256cffaff9c8115bd67de2c3211d04f) |
+| 4 | Induced missing property | **Pass** | [page](https://app.notion.com/p/4256cffaff9c81e5b1e7eda2ee0e09a7) |
+| 5 | Default off (no `validation` key) | **Inconclusive** (operator-accepted) | none: User Rules set `post_write: true` and could not be changed from the run; only static checks were made |
+
+**Operator decision (2026-11-27):** scenario 5 is accepted as inconclusive. It is not recorded as a pass, and a further live run is optional, not outstanding release work and not a closure requirement. The `smoke-verification` todo is marked `completed` because the gate ran and a verdict is recorded, not because every scenario passed. The two "Induced" fixture pages (scenarios 3 and 4) are retained in the Savepoints database as smoke-test evidence. Limits: one agent, desktop Cursor, one session; the run's chat started in the hub checkout; both skills were read in full; automated tests prove CLI and layout only, not agent behaviour.
+
+### Deferred work
+
+- **Optional, not outstanding:** a further live run of scenario 5 (a fresh chat whose User Rules omit the `validation` key) is at the operator's discretion; if run, record the result in `docs/adoption-verification-record.md`. It is not release work and not a closure requirement.
+- **Optional effectiveness audit:** operator-initiated, same method as the v2.1.0 audit; not a release or closure dependency, no thresholds.
+- **Unobserved hosts:** Cloud Agents and non-Cursor hosts remain unobserved.
+
 ---
 
 # Post-write verification hardening (Savepoints Lite 2.2.0)
