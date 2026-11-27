@@ -36,7 +36,7 @@ Two supported ways to get the skills into the agent host:
 
 Best when you already use (or can install) the multipliers-dev **team-harness** plugin.
 
-1. Install or refresh **team-harness** **1.16.0+** from [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace).
+1. Install or refresh **team-harness** **1.17.0+** (ships Savepoints Lite **`@2.2.0`**) from [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace).
 2. Configure session logging and the Notion destination in Cursor **User Rules** (engineering invariants).
 3. Use your existing authenticated **Notion MCP**.
 

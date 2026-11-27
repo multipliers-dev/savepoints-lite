@@ -136,7 +136,7 @@ Distribution layers (wrappers and non-Cursor hosts — see § Notion destination
 
 ### [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace)
 
-**Available now:** [team-harness](https://github.com/multipliers-dev/cursor-team-marketplace) **1.16.0+** (marketplace [PR #78](https://github.com/multipliers-dev/cursor-team-marketplace/pull/78)) distributes published Savepoints Lite **`@2.1.0`** as a vendored skill tree under `plugins/team-harness/vendor/savepoints-lite/` (including optional `skills/bin/savepoints-lite-validate.mjs`) plus a `/savepoints` wrapper that maps Cursor User Rules → tier-1 `destination` and, when configured, `validation.post_write`. Canonical skills still do not read User Rules.
+**Available now:** [team-harness](https://github.com/multipliers-dev/cursor-team-marketplace) **1.17.0+** (marketplace [PR #80](https://github.com/multipliers-dev/cursor-team-marketplace/pull/80)) distributes published Savepoints Lite **`@2.2.0`** as a vendored skill tree under `plugins/team-harness/vendor/savepoints-lite/` (including optional `skills/bin/savepoints-lite-validate.mjs`) plus a `/savepoints` wrapper that maps Cursor User Rules → tier-1 `destination` and, when configured, `validation.post_write`. Canonical skills still do not read User Rules. *History:* team-harness **1.16.0** ([PR #78](https://github.com/multipliers-dev/cursor-team-marketplace/pull/78)) first vendored the optional validator CLI with `@2.1.0`; `@2.2.0` adds implicit stdin, `notion-fetch` input, and the advisory `repository_format` warning.
 
 **Install / configure** (plugin path — no consumer `npm install` of this package required):
 

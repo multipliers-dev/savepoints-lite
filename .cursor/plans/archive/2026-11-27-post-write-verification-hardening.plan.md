@@ -61,15 +61,13 @@ Live Notion MCP, installed team-harness `1.17.0` cache (`PACKAGE_VERSION` `2.2.0
 | 2 | Repository and title | **Pass** | same three pages |
 | 3 | Induced bare repository | **Pass** | [page](https://app.notion.com/p/4256cffaff9c8115bd67de2c3211d04f) |
 | 4 | Induced missing property | **Pass** | [page](https://app.notion.com/p/4256cffaff9c81e5b1e7eda2ee0e09a7) |
-| 5 | Default off (no `validation` key) | **Inconclusive** | none: User Rules set `post_write: true` and could not be changed from the run; only static checks were made |
+| 5 | Default off (no `validation` key) | **Inconclusive** (operator-accepted) | none: User Rules set `post_write: true` and could not be changed from the run; only static checks were made |
 
-The `smoke-verification` todo is marked `completed` because the gate ran and a verdict is recorded, not because every scenario passed. Limits: one agent, desktop Cursor, one session; the run's chat started in the hub checkout; both skills were read in full; automated tests prove CLI and layout only, not agent behaviour.
+**Operator decision (2026-11-27):** scenario 5 is accepted as inconclusive. It is not recorded as a pass, and a further live run is optional, not outstanding release work and not a closure requirement. The `smoke-verification` todo is marked `completed` because the gate ran and a verdict is recorded, not because every scenario passed. The two "Induced" fixture pages (scenarios 3 and 4) are retained in the Savepoints database as smoke-test evidence. Limits: one agent, desktop Cursor, one session; the run's chat started in the hub checkout; both skills were read in full; automated tests prove CLI and layout only, not agent behaviour.
 
 ### Deferred work
 
-- **Scenario 5 (default off):** rerun in a fresh chat whose User Rules omit the `validation` key; record Pass or Fail in `docs/adoption-verification-record.md`. Not claimed here.
-- **Test fixture rows:** the two induced pages (scenarios 3 and 4) are labelled "Induced" in the Savepoints database; delete at the operator's discretion.
-- **Doc wording lag (not errors):** `README.md`, `docs/adopt.md`, and `docs/publishing.md` still reference team-harness `1.16.0+` and `@2.1.0` examples; refresh to `1.17.0` / `@2.2.0` in a separate docs PR.
+- **Optional, not outstanding:** a further live run of scenario 5 (a fresh chat whose User Rules omit the `validation` key) is at the operator's discretion; if run, record the result in `docs/adoption-verification-record.md`. It is not release work and not a closure requirement.
 - **Optional effectiveness audit:** operator-initiated, same method as the v2.1.0 audit; not a release or closure dependency, no thresholds.
 - **Unobserved hosts:** Cloud Agents and non-Cursor hosts remain unobserved.
 
