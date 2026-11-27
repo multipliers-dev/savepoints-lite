@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: cli-and-skill-hardening
     content: "PR (savepoints-lite): implicit stdin, notion-fetch input, advisory repository warning, instruction consolidation, tests, docs, version 2.2.0"
-    status: pending
+    status: completed
   - id: marketplace-adopt
     content: "PR (cursor-team-marketplace, cross-repo): pin 2.2.0, vendor sync, vendored CLI smoke update, docs, team-harness 1.17.0"
     status: pending

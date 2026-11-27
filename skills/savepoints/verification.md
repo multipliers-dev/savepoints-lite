@@ -63,5 +63,8 @@ Run at the **Savepoints Lite hub repository root** ([`multipliers-dev/savepoints
 | 17 | **Irreparable missing (opt-in)** | Opt-in; CLI `missing_persisted_property` and no usable Savepoint value → report + page id/url; page preserved; `success` |
 | 18 | **Verification unavailable (opt-in)** | Opt-in; failed initial read-back or CLI cannot run → **verification unavailable**; do **not** claim fields missing; no repair; `success` |
 | 19 | **Repair confirmation unknown (opt-in)** | Opt-in; repair then failed re-check → **repair confirmation unknown**; `success` |
+| 20 | **Verification tooling smoke, successive appends (opt-in)** | Opt-in; three or more successive appends in one session; operator asks the agent to verify at least the first and the last. When verification is performed: `notion-fetch`, then the documented command (no `--stdin`, no `\|\| true`) with input taken from the fetch result, exit 0 on the first attempt; the later append works as easily as the first. Appends the agent chooses not to verify are recorded, not failed |
+
+Rows 14–20 assess tool correctness and usability, not invocation frequency.
 
 **Do not** claim `npm test` or CI proves this table.

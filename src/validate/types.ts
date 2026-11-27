@@ -11,10 +11,22 @@ export type ValidationIssue = {
   message: string;
 };
 
+export type WarningKind = "repository_format";
+
+/** Advisory only: never affects `ok`, `issues`, or the exit code. */
+export type ValidationWarning = {
+  kind: WarningKind;
+  field?: string;
+  property?: string;
+  message: string;
+};
+
 export type ValidationResult = {
   ok: boolean;
   issues: ValidationIssue[];
   page_id?: string;
+  /** Omitted when empty. */
+  warnings?: ValidationWarning[];
 };
 
 export type SchemaField = {

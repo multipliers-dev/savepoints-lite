@@ -4,19 +4,19 @@ How to install `@multipliers-dev/savepoints-lite` in a consumer repository, conf
 
 ## What ships in the npm package
 
-`@multipliers-dev/savepoints-lite@2.1.0` ships router + Notion provider skills, `schema.json` / `schema.md`, Notion `mapping.json`, defaults YAML, optional self-contained `skills/bin/savepoints-lite-validate.mjs` CLI (npm bin `savepoints-lite-validate`), consumer templates, shipped docs, and `LICENSE`. Default behaviour is instruction-only persistence; enable `validation.post_write` via integration instruction context or `.agents/savepoints-lite.yml`. Maintainer-only evidence ([adoption verification record on GitHub](https://github.com/multipliers-dev/savepoints-lite/blob/main/docs/adoption-verification-record.md)) is **not** in the npm package.
+`@multipliers-dev/savepoints-lite@2.2.0` ships router + Notion provider skills, `schema.json` / `schema.md`, Notion `mapping.json`, defaults YAML, optional self-contained `skills/bin/savepoints-lite-validate.mjs` CLI (npm bin `savepoints-lite-validate`), consumer templates, shipped docs, and `LICENSE`. Default behaviour is instruction-only persistence; enable `validation.post_write` via integration instruction context or `.agents/savepoints-lite.yml`. Maintainer-only evidence ([adoption verification record on GitHub](https://github.com/multipliers-dev/savepoints-lite/blob/main/docs/adoption-verification-record.md)) is **not** in the npm package.
 
 Pin an **exact** semver and commit the lockfile. Use `npm ci` in CI.
 
 ```bash
-npm install @multipliers-dev/savepoints-lite@2.1.0 --save-dev --save-exact
+npm install @multipliers-dev/savepoints-lite@2.2.0 --save-dev --save-exact
 ```
 
 npm is the single source of truth for installed **skill** file versions — **do not** vendor or copy router/provider skills from this package into your repo.
 
 ## Notion destination (`destination.data_source_id`)
 
-`@2.1.0` does **not** ship a maintainer Notion database id in packaged defaults. You must supply a valid `data_source_id` through one of these tiers (provider resolves in order).
+`@2.2.0` does **not** ship a maintainer Notion database id in packaged defaults. You must supply a valid `data_source_id` through one of these tiers (provider resolves in order).
 
 **Distribution layer (optional):** anything *outside* this npm package that (1) delivers the skill tree to the agent host and/or (2) injects labelled config (`destination`, optional `validation.post_write`) into the router’s instruction context when delegating. Standalone consumers usually skip this and use **tier 2**. The public example is [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `team-harness`: it vendors `plugins/team-harness/vendor/savepoints-lite/` and a `/savepoints` wrapper that maps Cursor User Rules → tier-1 `destination` (see § External integrations below).
 
@@ -91,7 +91,9 @@ Each Savepoint must capture what was done, decisions (and rationale), open threa
 
 ### Optional post-write validation
 
-Packaged default: `validation.post_write: false`. Enable via (1) integration delegation context `validation.post_write: true` (highest), or (2) `.agents/savepoints-lite.yml`. When enabled, after a confirmed Notion create the provider skill reads back the page and runs `skills/bin/savepoints-lite-validate.mjs` against persisted properties, then may attempt one repair. Requires Node.js ≥ 22 when enabled; if Node or the CLI cannot run, report **verification unavailable** and keep the confirmed create as `success`. The CLI does not call Notion and does not require Notion credentials. Unit tests cover the validator; they do **not** prove agents invoke it.
+Packaged default: `validation.post_write: false`. Enable via (1) integration delegation context `validation.post_write: true` (highest), or (2) `.agents/savepoints-lite.yml`. Enabling makes verification tooling and guidance available: after a confirmed Notion create the agent **may** read back the page, run `skills/bin/savepoints-lite-validate.mjs` against the persisted properties, and attempt one repair, deciding each append for itself. Requires Node.js ≥ 22 when used; if Node or the CLI cannot run, report **verification unavailable** and keep the confirmed create as `success`. The CLI does not call Notion and does not require Notion credentials. Unit tests cover the validator; they do **not** prove agents invoke it.
+
+**Integration surface:** adopters orchestrating verification with their own hooks or automation use the structured JSON input (`{ "persisted": {...}, "page_id"?: "..." }`, via stdin or `--input`), the JSON output, and the exit codes (0 ok, 1 issues, 2 usage/runtime/invalid input). The Notion fetch (`<properties>`) parser is an agent convenience, not the contract. A `warnings` array (advisory `repository_format`) is omitted when empty and never changes `ok` or the exit code.
 
 ## Router skill path (after install)
 

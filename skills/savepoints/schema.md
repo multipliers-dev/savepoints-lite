@@ -42,8 +42,8 @@ content:
 
 | Field | Source |
 | --- | --- |
-| `title` | Short event label: `{repository} — {verb phrase}` |
-| `repository` | `owner/repo` from `git remote get-url origin`, else workspace folder name |
+| `title` | `owner/repo — short verb phrase`, plain text with no Markdown escapes (see Example) |
+| `repository` | `owner/repo` parsed from `git remote get-url origin` in the checkout where the work happened. Folder name only when no `origin` exists — never a bare folder name when a remote exists. Post-write validation warns (advisory) on a value that is not `owner/repo`: non-empty, no whitespace, exactly one `/` separating two parts |
 | `agent` | Best available host label; never invent vendor names |
 | `session_id` | Host-provided id only; do not fabricate |
 
@@ -74,6 +74,6 @@ append(savepoint) → success | failure | unconfirmed
 - Preserve Savepoint content and metadata per provider mapping.
 - Confirm persistence when the provider supports it (`success`); otherwise return `unconfirmed`.
 - On `failure`, return `failure` so the router can report in chat without blocking primary work.
-- **Same-append only (optional, when `validation.post_write` is enabled):** after a **confirmed** create, read back that record, run the package’s deterministic validator against persisted properties ([schema.json](./schema.json) + provider mapping), and attempt **at most one** repair of **that** record using values already on the Savepoint — never invent. Unresolved gaps, contract mismatches, or unavailable verification do **not** change a confirmed create to `failure`. Never create a second record to “fix” the first. When validation is disabled (default), skip this step.
+- **Same-append only (optional, when `validation.post_write` is enabled):** the agent may read back that record after a **confirmed** create, run the package’s deterministic validator against persisted properties ([schema.json](./schema.json) + provider mapping), and attempt **at most one** repair of **that** record using values already on the Savepoint — never invent. Unresolved gaps, contract mismatches, or unavailable verification do **not** change a confirmed create to `failure`. Never create a second record to “fix” the first. When validation is disabled (default), skip this step.
 
 **Per event, not per session:** Each work trigger → one Savepoint → one provider delegation. No session-wide latch after failure. **No retry queue.**

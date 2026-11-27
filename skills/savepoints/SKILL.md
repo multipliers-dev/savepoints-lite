@@ -5,16 +5,16 @@ description: Router for append-only session Savepoints — detect work events, b
 
 # Savepoints (router)
 
-Instruction-only router shipped in `@multipliers-dev/savepoints-lite`. Recognizes meaningful work, builds a Savepoint per [schema.md](./schema.md), resolves `storage.provider`, loads the matching **provider skill from the same package-equivalent install root**, and surfaces the provider outcome. The router **never** calls Notion/Postgres MCP or documents provider-specific property schemas.
+Instruction-only router shipped in `@multipliers-dev/savepoints-lite`. Recognizes meaningful work, builds a Savepoint per [schema.md](./schema.md), resolves `storage.provider`, loads the matching **provider skill from the same install root**, and surfaces the provider outcome. The router **never** calls Notion/Postgres MCP or documents provider-specific property schemas.
 
-**Distribution (how this file is loaded):**
+## Install root
 
-| Path | Where agents load this router |
+The **package-equivalent install root** contains `skills/savepoints/`, `skills/savepoints-notion/`, and `skills/bin/savepoints-lite-validate.mjs`. Provider skills, schema, mapping, defaults, and the optional validator all resolve from it — never from an unrelated consumer-repo path.
+
+| Distribution | Install root |
 | --- | --- |
-| Standalone npm | `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints/SKILL.md` after `npm install` / `npm ci` |
-| [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) vendor | Package-equivalent tree under `plugins/team-harness/vendor/savepoints-lite/` (plugin cache equivalent) — **no** consumer `node_modules` or npm install required |
-
-All provider, schema, mapping, defaults, and optional validator paths resolve **relative to the active install root** (see [Install root](#install-root-standalone-npm-and-marketplace-vendor) below). Marketplace consumers must not look for Savepoints skills in the consumer repository’s `node_modules`.
+| Standalone npm | `node_modules/@multipliers-dev/savepoints-lite/` (after `npm install` / `npm ci`) |
+| [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) vendor | `plugins/team-harness/vendor/savepoints-lite/` (plugin cache equivalent) — no consumer `node_modules` or npm install required |
 
 ## When to Savepoint (same turn)
 
@@ -29,21 +29,13 @@ Require a Savepoint **in the same turn** when any of these occur:
 
 ## Build the Savepoint
 
-Follow [schema.md](./schema.md) for field semantics and metadata derivation. Omit empty `content` sections.
+Follow [schema.md](./schema.md) for field semantics. In short: `repository` is `owner/repo` from `git remote get-url origin` in the checkout where the work happened (a bare folder name only when no `origin` exists); `title` is `owner/repo — short verb phrase` in plain text, e.g. `multipliers-dev/portfolio — Implemented authentication`. Omit empty `content` sections.
 
 ## Configuration resolution
 
 ### `storage.provider`
 
-Resolve in two steps (static; no dynamic discovery):
-
-1. Start from package [defaults.yml](./defaults.yml) next to this skill (same install root as this router).
-2. If consumer `.agents/savepoints-lite.yml` exists, its `storage.provider` **overrides** the packaged default.
-
-| Precedence | Location | Overrides |
-| --- | --- | --- |
-| 1 (highest) | Consumer `.agents/savepoints-lite.yml` (optional) | `storage.provider` |
-| 2 (default) | Package [defaults.yml](./defaults.yml) | `notion` |
+Static; no dynamic discovery. Consumer `.agents/savepoints-lite.yml` (optional) `storage.provider` overrides the package [defaults.yml](./defaults.yml) value (`notion`).
 
 ### `validation.post_write`
 
@@ -51,58 +43,32 @@ Resolve in **three** tiers (static; no dynamic discovery). An absent key at a ti
 
 | Tier | Source | When it applies |
 | --- | --- | --- |
-| 1 (highest) | Labelled `validation` in the **integration instruction/delegation context** | Calling distribution layer (e.g. [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `/savepoints` wrapper) supplied `validation.post_write` for this Savepoint |
-| 2 | Consumer `.agents/savepoints-lite.yml` (optional) | Tier 1 **absent** for this delegation |
+| 1 (highest) | Labelled `validation` in the **integration instruction/delegation context** | Calling distribution layer (e.g. the [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `/savepoints` wrapper) supplied it for this Savepoint |
+| 2 | Consumer `.agents/savepoints-lite.yml` (optional) | Tier 1 **absent** |
 | 3 (default) | Package [defaults.yml](./defaults.yml) | `validation.post_write: false` |
-
-**Tier 1 block** (same handoff channel as destination; provider-neutral):
 
 ```yaml
 validation:
   post_write: true
 ```
 
-Package default:
-
-```yaml
-storage:
-  provider: notion
-validation:
-  post_write: false
-```
-
 Example consumer file: [`templates/consumer/savepoints-lite.yml.example`](../../templates/consumer/savepoints-lite.yml.example).
 
-Carry the **resolved** `validation.post_write` flag into the provider instruction context (so the Notion provider knows whether to run optional post-write CLI validation). The router still does **not** call Notion MCP or the validator CLI, and does **not** read Cursor User Rules.
+When the resolved value is `true`, optional post-write verification is available for each append and is the agent's call; carry the resolved boolean to the provider. The router still does **not** call Notion MCP or the validator CLI, and does **not** read Cursor User Rules.
 
-**Misconfiguration (after resolution):** report in chat when the resolved `storage.provider` is empty/missing, or not supported in v1 (`notion` only). Do not treat “no consumer override file” or “no integration validation block” as misconfiguration. Do not guess or fall back to another provider.
+**Misconfiguration (after resolution):** report in chat when the resolved `storage.provider` is empty/missing or not supported in v1 (`notion` only). Do not treat a missing consumer file or missing integration `validation` block as misconfiguration. Do not guess another provider.
 
 ## Provider resolution (v1)
 
 | `storage.provider` | Provider skill (same install root) |
 | --- | --- |
-| `notion` | `../savepoints-notion/SKILL.md` relative to this router skill directory |
+| `notion` | `../savepoints-notion/SKILL.md` relative to this router skill directory (npm example: `node_modules/@multipliers-dev/savepoints-lite/skills/savepoints-notion/SKILL.md`) |
 
-Standalone example from the npm install root:
-
-`node_modules/@multipliers-dev/savepoints-lite/skills/savepoints-notion/SKILL.md`
-
-Load and follow that provider skill for persistence from the **same** install root as this router. Unknown provider → misconfiguration; stop delegation.
-
-## Install root (standalone npm and marketplace vendor)
-
-The **package-equivalent install root** is the directory that contains `skills/savepoints/` and `skills/savepoints-notion/` (and, when built/published, `skills/bin/savepoints-lite-validate.mjs`). Typical layouts:
-
-| Distribution | Install root |
-| --- | --- |
-| Standalone npm | `node_modules/@multipliers-dev/savepoints-lite/` |
-| [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) vendor | `plugins/team-harness/vendor/savepoints-lite/` (plugin cache equivalent) |
-
-Load provider skills and the optional validator from **this** install root — never from an unrelated consumer-repo path, and do not assume the consumer repository has Savepoints Lite in `node_modules`.
+Unknown provider → misconfiguration; stop delegation.
 
 ## Integration handoff (tier 1)
 
-When the calling distribution layer (host `AGENTS.md`, [Cursor Team Marketplace](https://github.com/multipliers-dev/cursor-team-marketplace) `/savepoints` wrapper, or other delegation context) supplies labelled YAML in the **instruction/delegation context**, the router may receive:
+A calling distribution layer (host `AGENTS.md`, marketplace wrapper, or other delegation context) may supply labelled YAML in the instruction context:
 
 ```yaml
 destination:
@@ -112,31 +78,27 @@ validation:
 ```
 
 - **`destination`:** on delegation to the Notion provider, **carry this block unchanged**. The router does **not** call Notion MCP, read Cursor User Rules, or resolve `data_source_id` itself.
-- **`validation.post_write`:** apply the three-tier resolution above; carry the **resolved** boolean into the provider context (not a second User Rules read).
+- **`validation.post_write`:** apply the tiers above and carry the **resolved** boolean (not a second User Rules read).
 
-Either key may be omitted independently. Missing `validation` falls through to consumer `.agents` then packaged defaults.
+Either key may be omitted independently.
 
 ## Delegation steps
 
 1. Assemble the Savepoint per [schema.md](./schema.md).
-2. Resolve `storage.provider` and `validation.post_write` from config (tables above).
-3. Read the matching provider `SKILL.md` from the **same** install root as this router.
-4. Pass the Savepoint to the provider skill together with any tier-1 `destination` block from the integration context (unchanged) and the resolved `validation.post_write` flag; let the provider perform MCP writes and bounded confirmation.
+2. Resolve `storage.provider` and `validation.post_write`.
+3. Read the matching provider `SKILL.md` from the **same** install root.
+4. Pass the Savepoint, any tier-1 `destination` block (unchanged), and the resolved `validation.post_write` flag to the provider; let it perform MCP writes and bounded confirmation.
 5. Handle the provider outcome (`success` | `failure` | `unconfirmed`).
-
-The router **must not** document Notion page properties, Postgres table schemas, or MCP tool parameters.
 
 ## Outcomes and user reporting
 
 | Outcome | Router behavior |
 | --- | --- |
-| `success` | Continue primary work; optional brief confirmation only if useful. When opt-in post-write validation ran, the provider may report issues after `success` (missing persisted property, contract mismatch, verification unavailable, repair confirmation unknown) — that is **not** a failed append and must **not** trigger another Savepoint |
+| `success` | Continue primary work; optional brief confirmation only if useful. If the provider reports verification findings after `success` (missing persisted property, contract mismatch, repository warning, verification unavailable, repair confirmation unknown), that is **not** a failed append and must **not** trigger another Savepoint |
 | `failure` | One-sentence report (tool name + error summary); **no retry queue**; continue primary work |
 | `unconfirmed` | One-sentence report (“queued — not confirmed”); continue primary work |
 
-**Anti-loop:** A **failed `append`** (MCP unavailable, auth error, create error, or unconfirmed async) is **not** an error event that triggers another Savepoint. Report the persistence failure in chat and continue. Do **not** chain “write failed → new Savepoint to log the failure → write failed again.” Only a **later, independent** work trigger may attempt another `append`.
-
-Do not disable subsequent Savepoint attempts in the same session after a failure.
+**Anti-loop:** A **failed `append`** (MCP unavailable, auth error, create error, or unconfirmed async) is **not** an error event that triggers another Savepoint. Report it in chat and continue; do **not** chain “write failed → new Savepoint to log the failure.” Only a **later, independent** work trigger may attempt another `append`. Do not disable later Savepoint attempts in the session after a failure.
 
 ## Forbidden (router)
 
